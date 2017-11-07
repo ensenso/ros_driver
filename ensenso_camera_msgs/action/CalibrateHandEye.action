@@ -84,7 +84,7 @@ CalibrationPattern pattern
 # Only for the step START_CALIBRATION:
 float64 calibration_time    # How long the calibration took (in seconds).
 uint32 number_of_iterations # The number of iterations that were executed.
-float64 reprojection_error  # The reprojection error after the last iteration.
+float64 residual            # The residual after the last iteration.
 
 # Only for the step START_CALIBRATION:
 # The transformations that were calculated during the calibration.
@@ -104,5 +104,5 @@ NxLibException error
 
 # The number of calibration iterations done so far.
 uint32 number_of_iterations
-# The reprojection error after the latest iteration.
-float64 reprojection_error
+# The residual after the latest iteration.
+float64 residual

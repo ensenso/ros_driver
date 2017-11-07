@@ -12,6 +12,8 @@ from ensenso_camera_msgs.msg import LocatePatternAction, LocatePatternGoal
 
 from geometry_msgs.msg import Pose, Point, Quaternion
 
+tolerance = 0.001
+
 
 class TestWorkspaceCalibration(unittest.TestCase):
     def setUp(self):
@@ -45,9 +47,9 @@ class TestWorkspaceCalibration(unittest.TestCase):
             self.assertEqual(len(result.pattern_poses), 1)
 
             pose = result.pattern_poses[0].pose
-            self.assertAlmostEqual(pose.position.x, x)
-            self.assertAlmostEqual(pose.position.y, y)
-            self.assertAlmostEqual(pose.position.z, z)
+            self.assertTrue(abs(pose.position.x - x) < tolerance)
+            self.assertTrue(abs(pose.position.y - y) < tolerance)
+            self.assertTrue(abs(pose.position.z - z) < tolerance)
 
 
 if __name__ == "__main__":

@@ -92,7 +92,7 @@ class TestHandEyeCalibration(unittest.TestCase):
 
         self.assertIsNotNone(self.last_feedback)
         self.assertNotEqual(self.last_feedback.number_of_iterations, 0)
-        self.assertNotEqual(self.last_feedback.reprojection_error, 0)
+        self.assertNotEqual(self.last_feedback.residual, 0)
 
         result = self.calibration_client.get_result()
         self.assertEqual(result.command, CalibrateHandEyeGoal.START_CALIBRATION)
@@ -101,7 +101,7 @@ class TestHandEyeCalibration(unittest.TestCase):
 
         self.assertNotEqual(result.calibration_time, 0)
         self.assertNotEqual(result.number_of_iterations, 0)
-        self.assertNotEqual(result.reprojection_error, 0)
+        self.assertNotEqual(result.residual, 0)
 
         final_link = Pose.from_json(os.path.join(DATA_SET_DIRECTORY, "final_link.json")).inverse()
         final_pattern_pose = Pose.from_json(os.path.join(DATA_SET_DIRECTORY, "final_pattern_pose.json"))

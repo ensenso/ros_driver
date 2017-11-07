@@ -940,12 +940,22 @@ void Camera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalConstPt
 
     calibrateHandEye.execute(false);
 
+    auto getCalibrationResidual = [](NxLibItem const &node)
+    {
+      if (node[itmResidual].exists())
+      {
+        return node[itmResidual].asDouble();
+      }
+      // Compatibility with the SDK 2.0.
+      return node[itmReprojectionError].asDouble();
+    };
+
     ros::Rate waitingRate(5);
     while (!calibrateHandEye.finished())
     {
       ensenso_camera_msgs::CalibrateHandEyeFeedback feedback;
       feedback.number_of_iterations = calibrateHandEye.result()[itmProgress][itmIterations].asInt();
-      feedback.reprojection_error = calibrateHandEye.result()[itmProgress][itmReprojectionError].asDouble();
+      feedback.residual = getCalibrationResidual(calibrateHandEye.result()[itmProgress]);
       calibrateHandEyeServer->publishFeedback(feedback);
 
       if (calibrateHandEyeServer->isPreemptRequested())
@@ -963,7 +973,7 @@ void Camera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalConstPt
         calibrateHandEye.result()[itmTime].asDouble() / 1000;  // NxLib time is in milliseconds, ROS
                                                                // expects time to be in seconds.
     result.number_of_iterations = calibrateHandEye.result()[itmIterations].asInt();
-    result.reprojection_error = calibrateHandEye.result()[itmReprojectionError].asDouble();
+    result.residual = getCalibrationResidual(calibrateHandEye.result());
 
     tf::poseTFToMsg(poseFromNxLib(cameraNode[itmLink]).inverse(), result.link);
     tf::poseTFToMsg(poseFromNxLib(calibrateHandEye.result()[itmPatternPose]), result.pattern_pose);
