@@ -1,0 +1,42 @@
+# This action gives direct access to the NxLib JSON tree. It is meant to be used
+# only when the functionality that is provided by the rest of this package is
+# not enough for your use case.
+#
+# The action takes the path to a tree item. It then modifies the item according
+# to the other parameters that are given in the action goal. The default values
+# do not change anything.
+# Once all modifications are done, it extracts the current value of the item and
+# returns it in the action's result.
+#
+# Note: Be careful when accessing the tree directly. Other actions overwrite
+#       the camera's whole parameter tree when they switch between different
+#       parameter sets.
+
+# The path to the JSON tree item.
+string path
+
+# If this flag is set, the item will be removed from the tree.
+bool erase
+
+# If this flag is set, the item will be set to null.
+bool set_null
+
+# Set the content of the tree item to the JSON value specified by this string
+# (only if the string is not empty).
+string json_value
+
+---
+
+# True if the tree item exists.
+bool exists
+
+# The value of the tree item as a JSON string (only if it exists).
+string json_value
+
+# The binary data in the tree item (only if it exists and if it is binary).
+sensor_msgs/Image binary_data
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---

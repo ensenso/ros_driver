@@ -1,0 +1,15 @@
+# The parameter set in which we write the values.
+string parameter_set
+
+# The parameters that should be written.
+Parameter[] parameters
+
+---
+
+# The actual values of the parameters after writing them.
+Parameter[] results
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---

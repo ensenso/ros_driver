@@ -1,0 +1,34 @@
+<launch>
+  <arg name="rate" value="1"/>
+  <include file="$(find ensenso_camera)/launch/file_camera.launch">
+    <arg name="serial" value="ros_test"/>
+    <arg name="path" value="$(find ensenso_camera_test)/data/camera.zip"/>
+  </include>
+  <node pkg="ensenso_camera" type="request_data" name="request_data">
+    <param name="rate" value="$(arg rate)"/>
+  </node>
+
+  <group>
+    <param name="~hz" value="$(arg rate)"/>
+    <param name="~hzerror" value="0.5"/>
+    <param name="~test_duration" value="10"/>
+	<test pkg="rostest" type="hztest" test-name="raw_left_image_test">
+      <param name="topic" value="raw/left/image"/>
+	</test>
+	<test pkg="rostest" type="hztest" test-name="raw_right_image_test">
+      <param name="topic" value="raw/right/image"/>
+	</test>
+	<test pkg="rostest" type="hztest" test-name="rectified_left_image_test">
+      <param name="topic" value="rectified/left/image"/>
+	</test>
+	<test pkg="rostest" type="hztest" test-name="rectified_right_image_test">
+      <param name="topic" value="rectified/right/image"/>
+	</test>
+	<test pkg="rostest" type="hztest" test-name="disparity_map_test">
+      <param name="topic" value="disparity_map"/>
+	</test>
+	<test pkg="rostest" type="hztest" test-name="point_cloud_test">
+      <param name="topic" value="point_cloud"/>
+	</test>
+  </group>
+</launch>

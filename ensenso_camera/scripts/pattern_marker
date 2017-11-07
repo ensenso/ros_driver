@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+import rospy
+import sys
+
+from tf import transformations
+
+import actionlib
+from actionlib_msgs.msg import GoalStatus
+from ensenso_camera_msgs.msg import Parameter
+from ensenso_camera_msgs.msg import LocatePatternAction, LocatePatternGoal
+from ensenso_camera_msgs.msg import SetParameterAction, SetParameterGoal
+
+from visualization_msgs.msg import Marker
+
+
+def main():
+    loop_rate = rospy.get_param("~rate", 2)
+    parameter_set = rospy.get_param("~parameter_set", "locate_pattern")
+
+    set_parameter_client = actionlib.SimpleActionClient("set_parameter", SetParameterAction)
+    locate_pattern_client = actionlib.SimpleActionClient("locate_pattern", LocatePatternAction)
+    for client in [set_parameter_client, locate_pattern_client]:
+        if not client.wait_for_server(rospy.Duration(10)):
+            rospy.logerr("The camera node is not running!")
+            sys.exit()
+
+    marker_publisher = rospy.Publisher("pattern_marker", Marker, queue_size=10)
+
+    set_parameter_client.send_goal(SetParameterGoal(parameter_set=parameter_set, parameters=[
+        Parameter(key=Parameter.PROJECTOR, bool_value=False),
+        Parameter(key=Parameter.FRONT_LIGHT, bool_value=True)
+    ]))
+    set_parameter_client.wait_for_result()
+
+    rate = rospy.Rate(loop_rate)
+    while not rospy.is_shutdown():
+        locate_pattern_client.send_goal(LocatePatternGoal(parameter_set=parameter_set))
+        locate_pattern_client.wait_for_result()
+
+        if locate_pattern_client.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logwarn("Action was not successful.")
+        else:
+            result = locate_pattern_client.get_result()
+            if result.error.code != 0:
+                rospy.logerr("Error while searching for patterns!")
+            elif result.found_pattern:
+                rospy.logdebug("Found patterns.")
+
+                for i, pattern, pose in zip(range(len(result.patterns)), result.patterns, result.pattern_poses):
+                    pose = pose.pose
+                    pattern_thickness = max(0.001, pattern.thickness)
+
+                    marker = Marker()
+                    marker.header.frame_id = result.frame
+                    marker.header.stamp = rospy.Time.now()
+                    marker.ns = "calibration_pattern"
+                    marker.id = i
+                    marker.type = Marker.CUBE
+                    marker.action = Marker.ADD
+                    marker.lifetime = rospy.Duration(2)
+
+                    marker.color.a = 1.0
+                    marker.color.r = 1.0
+                    marker.color.g = 1.0
+                    marker.color.b = 1.0
+
+                    marker.scale.x = (pattern.grid_size_x + 1) * pattern.grid_spacing
+                    marker.scale.y = (pattern.grid_size_y + 1) * pattern.grid_spacing
+                    marker.scale.z = pattern_thickness
+
+                    # Calculate the pose of the marker. It is the pose of the pattern, but with an
+                    # offset of half the pattern thickness in the pattern's z direction. This is
+                    # because the reference point of the marker is in the middle of the cube, but
+                    # the reference point of the pattern is on its surface.
+
+                    t = transformations.translation_matrix((
+                        pose.position.x,
+                        pose.position.y,
+                        pose.position.z
+                    ))
+                    r = transformations.quaternion_matrix([
+                        pose.orientation.x,
+                        pose.orientation.y,
+                        pose.orientation.z,
+                        pose.orientation.w
+                    ])
+                    z_offset = transformations.translation_matrix((0, 0, 0.5 * pattern_thickness))
+
+                    m = transformations.concatenate_matrices(t, r, z_offset)
+                    position = transformations.translation_from_matrix(m)
+                    orientation = transformations.quaternion_from_matrix(m)
+
+                    marker.pose.position.x = position[0]
+                    marker.pose.position.y = position[1]
+                    marker.pose.position.z = position[2]
+                    marker.pose.orientation.x = orientation[0]
+                    marker.pose.orientation.y = orientation[1]
+                    marker.pose.orientation.z = orientation[2]
+                    marker.pose.orientation.w = orientation[3]
+
+                    marker_publisher.publish(marker)
+
+        rate.sleep()
+
+
+if __name__ == "__main__":
+    try:
+        rospy.init_node("ensenso_camera_pattern_marker")
+        main()
+    except rospy.ROSInterruptException:
+        pass

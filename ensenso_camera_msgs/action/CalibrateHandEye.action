@@ -1,0 +1,108 @@
+# This action does a hand eye calibration with the Ensenso SDK. It estimates the
+# position of the camera relative to the robot wrist (for a camera that is
+# mounted on the robot arm) or relative to the robot base (for a fixed camera).
+#
+# The action consists of multiple steps which are indicated by different values
+# for the command parameter.
+#
+# * Before starting a calibration, you should call it with command = RESET.
+#   This deletes all previous observations of calibration patterns.
+# * Move the robot into a position where the calibration pattern is visible
+#   and call it with command = CAPTURE_PATTERN. The corresponding robot pose
+#   is automatically fetched from TF, based on the robot and wrist frame that
+#   are given in the node's parameters.
+#   It is important that you do not move the robot until the action is done.
+#   Otherwise it is possible that the captured pattern and the corresponding
+#   robot pose are inconsistent.
+# * When you collected enough patterns (you will need at least 5), call the
+#   action with command = START_CALIBRATION.
+#   This does not clear the memorized patterns and robot poses, so you can
+#   continue to collect more patterns when the resulting calibration is not
+#   precise enough.
+#
+# After the calibration is done, the camera's link is automatically updated, so
+# that the transformation between the camera and the robot wrist (or base
+# respectively) is taken into account for all data.
+
+uint8 RESET = 0
+uint8 CAPTURE_PATTERN = 1
+uint8 START_CALIBRATION = 2
+
+uint8 command
+
+# Only for the step CAPTURE_PATTERN:
+# The parameter set that is used to capture the image before searching for
+# calibration patterns.
+string parameter_set
+
+# Optional for the step START_CALIBRATION:
+# An initial guess for the position of the camera relative to the robot wrist
+# (for a moving camera) or the robot base (for a fixed camera).
+geometry_msgs/Pose link
+
+# Optional for the step START_CALIBRATION:
+# An initial guess for the position of the pattern relative to the robot base
+# (for a moving camera) or the robot wrist (for a fixed camera).
+geometry_msgs/Pose pattern_pose
+
+# Optional for the step START_CALIBRATION:
+# A list of robot poses to associate with the captured patterns. By default,
+# the poses are automatically memorized while capturing the patterns, but you
+# can override them with this parameter.
+geometry_msgs/Pose[] robot_poses
+
+# Optional for the step START_CALIBRATION:
+# A list of pattern observations. By default the observations are automatically
+# memorized while they are captures, but you can override them with this
+# parameter.
+CalibrationPattern[] pattern_observations
+
+# Optional for the step START_CALIBRATION:
+# If this flag is set, the resulting link will be written to the camera's EEPROM
+# and can be used after the camera is restarted.
+bool write_calibration_to_eeprom
+
+---
+
+# The command that was executed.
+uint8 command
+
+# Only for the step CAPTURE_PATTERN:
+# Whether we actually found a pattern at the current robot position.
+bool found_pattern
+
+# Only for the step CAPTURE_PATTERN:
+# The robot pose in which the pattern was captured.
+geometry_msgs/Pose robot_pose
+
+# Only for the step CAPTURE_PATTERN:
+# Information about the pattern that was found.
+# Note: In the CAPTURE_PATTERN step the estimated pattern pose in the camera
+#       frame is written to the pattern_pose field below.
+CalibrationPattern pattern
+
+# Only for the step START_CALIBRATION:
+float64 calibration_time    # How long the calibration took (in seconds).
+uint32 number_of_iterations # The number of iterations that were executed.
+float64 reprojection_error  # The reprojection error after the last iteration.
+
+# Only for the step START_CALIBRATION:
+# The transformations that were calculated during the calibration.
+geometry_msgs/Pose link
+geometry_msgs/Pose pattern_pose
+
+# Only when the action was aborted: a message that specifies why the calibration
+# step could not be executed successfully. Note that this is only used for
+# errors in the ROS interface. If there is an NxLib exception, it will be stored
+# in the error field below.
+string error_message
+
+# A potential NxLib exception that occurred while executing the action.
+NxLibException error
+
+---
+
+# The number of calibration iterations done so far.
+uint32 number_of_iterations
+# The reprojection error after the latest iteration.
+float64 reprojection_error

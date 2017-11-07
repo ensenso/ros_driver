@@ -1,0 +1,28 @@
+# The pose of a pattern in the camera's target frame.
+geometry_msgs/Pose pattern_pose
+
+float64 grid_spacing  # The distance between two grid points in meters.
+int32 grid_size_x     # The grid size in x and y direction.
+int32 grid_size_y
+
+# Optional:
+# A transformation between the camera frame and the camera's target frame. If
+# this is given, it replaces the transformation that would normally be fetched
+# from TF. This can be used to check whether a pattern would be visible at a
+# hypothetical camera position.
+geometry_msgs/Pose target_frame_transformation
+
+---
+
+# True if all of the projected pattern points are visible in the camera.
+bool pattern_is_visible
+
+# The position of the pattern points projected into the left and right camera
+# respectively.
+ImagePoint[] left_points
+ImagePoint[] right_points
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---

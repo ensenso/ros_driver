@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+import rospy
+import sys
+
+import actionlib
+from actionlib_msgs.msg import GoalStatus
+from ensenso_camera_msgs.msg import Parameter
+from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
+from ensenso_camera_msgs.msg import SetParameterAction, SetParameterGoal
+
+from sensor_msgs.msg import Image
+
+
+def main():
+    loop_rate = rospy.get_param("~rate", 2)
+    parameter_set = rospy.get_param("~parameter_set", "image_stream")
+    use_rectified_image = rospy.get_param("~rectified", False)
+    use_right_image = rospy.get_param("~right", False)
+
+    set_parameter_client = actionlib.SimpleActionClient("set_parameter", SetParameterAction)
+    request_data_client = actionlib.SimpleActionClient("request_data", RequestDataAction)
+    for client in [set_parameter_client, request_data_client]:
+        if not client.wait_for_server(rospy.Duration(10)):
+            rospy.logerr("The camera node is not running!")
+            sys.exit()
+
+    image_publisher = rospy.Publisher("image", Image, queue_size=1)
+
+    set_parameter_client.send_goal(SetParameterGoal(parameter_set=parameter_set, parameters=[
+        Parameter(key=Parameter.PROJECTOR, bool_value=False),
+        Parameter(key=Parameter.FRONT_LIGHT, bool_value=True)
+    ]))
+    set_parameter_client.wait_for_result()
+
+    request_data_goal = RequestDataGoal()
+    request_data_goal.parameter_set = parameter_set
+    if use_rectified_image:
+        request_data_goal.request_rectified_images = True
+    else:
+        request_data_goal.request_raw_images = True
+    request_data_goal.include_results_in_response = True
+
+    rate = rospy.Rate(loop_rate)
+    while not rospy.is_shutdown():
+        request_data_client.send_goal(request_data_goal)
+        request_data_client.wait_for_result()
+
+        if request_data_client.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logwarn("Action was not successful.")
+        else:
+            data = request_data_client.get_result()
+            if data.error.code != 0:
+                rospy.logerr("Error while acquiring images!")
+            else:
+                if use_rectified_image:
+                    if use_right_image:
+                        image = data.right_rectified_images[0]
+                    else:
+                        image = data.left_rectified_images[0]
+                else:
+                    if use_right_image:
+                        image = data.right_raw_images[0]
+                    else:
+                        image = data.left_raw_images[0]
+                image_publisher.publish(image)
+
+        rate.sleep()
+
+
+if __name__ == "__main__":
+    try:
+        rospy.init_node("ensenso_camera_image_stream")
+        main()
+    except rospy.ROSInterruptException:
+        pass

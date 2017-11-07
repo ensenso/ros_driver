@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+import rospy
+import sys
+
+import actionlib
+from actionlib_msgs.msg import GoalStatus
+from ensenso_camera_msgs.msg import CalibrateWorkspaceAction, CalibrateWorkspaceGoal
+
+from geometry_msgs.msg import Pose, Point, Quaternion
+
+
+def main():
+    parameter_set = rospy.get_param("~parameter_set", "")
+
+    calibrate_workspace_client = actionlib.SimpleActionClient("calibrate_workspace", CalibrateWorkspaceAction)
+    if not calibrate_workspace_client.wait_for_server(rospy.Duration(10)):
+        rospy.logerr("The camera node is not running!")
+        sys.exit()
+
+    goal = CalibrateWorkspaceGoal()
+    goal.parameter_set = parameter_set
+    goal.number_of_shots = 10
+    goal.defined_pattern_pose = Pose(Point(0, 0, 0), Quaternion(0, 0, 0, 1))
+    calibrate_workspace_client.send_goal(goal)
+    calibrate_workspace_client.wait_for_result()
+
+    if calibrate_workspace_client.get_state() != GoalStatus.SUCCEEDED:
+        rospy.logerr("Action was not successful.")
+    else:
+        result = calibrate_workspace_client.get_result()
+        if result.error.code != 0:
+            rospy.logerr("Error while performing the workspace calibration!")
+        elif result.successful:
+            rospy.loginfo("Successfully calibrated the workspace.")
+        else:
+            rospy.logerr("Could not calibrate the workspace. Can the camera see a pattern?")
+
+
+if __name__ == "__main__":
+    try:
+        rospy.init_node("ensenso_camera_set_origin")
+        main()
+    except rospy.ROSInterruptException:
+        pass

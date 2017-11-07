@@ -1,0 +1,53 @@
+# The parameter set that is used for capturing the image for this data set.
+string parameter_set
+
+# Enable these flags for every type of data that you want to receive from the
+# camera.
+bool request_raw_images
+bool request_rectified_images
+bool request_disparity_map
+bool request_point_cloud
+bool request_normals
+
+# When this flag is enabled, the requested data will be published on the
+# corresponding topics (see the documentation of the camera node).
+bool publish_results
+# When this flag is enabled, the resulting data will be included in the result
+# of this action (see below).
+bool include_results_in_response
+
+# When this flag is enabled, the TF transformation between camera and target
+# frame will not be updated from the TF server, but fetched from a cache. This
+# can be used to save some time when the camera and the target frame did not
+# move since the last data request.
+bool use_cached_transformation
+
+---
+
+# The resulting point cloud. Also contains the normals when they are requested.
+sensor_msgs/PointCloud2 point_cloud
+
+# The disparity map as it is represented in the NxLib.
+sensor_msgs/Image disparity_map
+
+# The raw images of the left and right camera respectively. A single image if
+# FlexView is disabled.
+sensor_msgs/Image[] left_raw_images
+sensor_msgs/Image[] right_raw_images
+sensor_msgs/CameraInfo left_camera_info
+sensor_msgs/CameraInfo right_camera_info
+
+# The rectified images of the left and right camera respectively. A single image
+# if FlexView is disabled.
+sensor_msgs/Image[] left_rectified_images
+sensor_msgs/Image[] right_rectified_images
+sensor_msgs/CameraInfo left_rectified_camera_info
+sensor_msgs/CameraInfo right_rectified_camera_info
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---
+
+# Set to true as soon as the images were captured.
+bool images_acquired

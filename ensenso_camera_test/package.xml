@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package>
+  <name>ensenso_camera_test</name>
+  <version>1.0.0</version>
+  <description>Tests for the ensenso_camera package</description>
+
+  <license>BSD</license>
+
+  <url type="repository">https://github.com/ensenso/ros_driver.git</url>
+  <url type="bugtracker">https://github.com/ensenso/ros_driver/issues</url>
+
+  <maintainer email="daniel.saier@ensenso.com">Daniel Saier</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>ensenso_camera</build_depend>
+  <build_depend>ensenso_camera_msgs</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>roslint</build_depend>
+  <build_depend>rostest</build_depend>
+  <build_depend>tf</build_depend>
+
+  <run_depend>ensenso_camera</run_depend>
+  <run_depend>ensenso_camera_msgs</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>rostest</run_depend>
+  <run_depend>tf</run_depend>
+
+  <export>
+  </export>
+</package>

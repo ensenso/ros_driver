@@ -1,0 +1,46 @@
+# The parameter set that will be used for capturing the image before searching
+# for calibration patterns.
+string parameter_set
+
+# Optional. Takes multiple images and averages the position of the calibration
+# pattern. This allows a more precise estimation of the pose.
+# Note: When there is more than one visible pattern, the averaging is not
+# supported by the NxLib. In that case, the capturing is canceled after the
+# first shot and the pose of all each pattern is estimated from this single
+# image.
+uint32 number_of_shots
+
+# The frame in which the pattern position is calculated. If this is empty, it
+# will be the same frame that is used for the point cloud.
+string target_frame
+
+# Publish the pattern pose as TF transformation from the target frame to the
+# frame given here. If this is empty, the pose will not be published on TF.
+# Note: When there is more than one visible pattern, it is not clear which pose
+# should be published. In that case, the node will not publish any
+# transformation.
+string tf_frame
+
+---
+
+# True when we found a pattern in both of the cameras.
+bool found_pattern
+
+# The frame in which the pattern poses are given.
+string frame
+
+# The estimated pattern poses.
+geometry_msgs/PoseStamped[] pattern_poses
+
+# Information about the patterns. When there is only one pattern visible and we
+# took multiple shots of it, the image points will be the ones from the last
+# image.
+CalibrationPattern[] patterns
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---
+
+# Set to true as soon as the images were captured.
+bool images_acquired

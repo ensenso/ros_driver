@@ -1,0 +1,17 @@
+# The parameter set from which we read the values.
+string parameter_set
+
+# The names of the parameters to read.
+string[] keys
+
+---
+
+# The time at which the parameters were read.
+time stamp
+
+Parameter[] results
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---

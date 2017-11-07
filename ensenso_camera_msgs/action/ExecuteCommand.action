@@ -1,0 +1,22 @@
+# This action allows you to directly execute a command in the NxLib. It is meant
+# to be used only when the functionality that is provided by the rest of this
+# package is not enough for your use case.
+#
+# Note: Be careful when accessing the tree directly. Other actions overwrite
+#       the camera's whole parameter tree when they switch between different
+#       parameter sets.
+
+string command
+
+# The command parameters as a JSON string.
+string parameters
+
+---
+
+# The command result as a JSON string.
+string result
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---

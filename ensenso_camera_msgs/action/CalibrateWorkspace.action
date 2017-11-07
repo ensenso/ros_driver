@@ -1,0 +1,29 @@
+# Calibrates the workspace by searching for a calibration pattern and updating
+# the camera link such that this pattern ends up in a specific pose.
+
+# The parameter set that is used to capture the image before searching for
+# calibration patterns.
+string parameter_set
+
+# Optional. Takes multiple images and averages the position of the calibration
+# pattern. This allows a more precise pose estimate.
+uint32 number_of_shots
+
+# The pose that the calibration pattern should have after the calibration
+# (in the target frame).
+# Will be set to the origin if it is not filled.
+geometry_msgs/Pose defined_pattern_pose
+
+# If this flag is set, the resulting link will be written to the camera's EEPROM
+# and can be used after the camera is restarted.
+bool write_calibration_to_eeprom
+
+---
+
+# Whether we found a pattern and could perform the calibration.
+bool successful
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---
