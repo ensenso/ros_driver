@@ -443,23 +443,20 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   ensenso_camera_msgs::RequestDataResult result;
   ensenso_camera_msgs::RequestDataFeedback feedback;
 
+  bool publishResults = goal->publish_results;
   if (!goal->publish_results && !goal->include_results_in_response)
   {
-    ROS_WARN("Please specify how the data should be returned!");
-
-    requestDataServer->setSucceeded(result);
-    return;
+    publishResults = true;
   }
+
+  bool requestPointCloud = goal->request_point_cloud;
   if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_point_cloud &&
       !goal->request_normals)
   {
-    ROS_WARN("Please specify the desired data types!");
-
-    requestDataServer->setSucceeded(result);
-    return;
+    requestPointCloud = true;
   }
 
-  bool computePointCloud = goal->request_point_cloud || goal->request_normals;
+  bool computePointCloud = requestPointCloud || goal->request_normals;
   bool computeDisparityMap = goal->request_disparity_map || computePointCloud;
 
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
@@ -487,7 +484,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
       result.left_camera_info = *leftCameraInfo;
       result.right_camera_info = *rightCameraInfo;
     }
-    if (goal->publish_results)
+    if (publishResults)
     {
       // We only publish one of the images on the topic, even if FlexView is enabled.
       leftRawImagePublisher.publish(rawImages[0].first, leftCameraInfo);
@@ -529,7 +526,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
       result.left_rectified_camera_info = *leftRectifiedCameraInfo;
       result.right_rectified_camera_info = *rightRectifiedCameraInfo;
     }
-    if (goal->publish_results)
+    if (publishResults)
     {
       // We only publish one of the images on the topic, even if FlexView is enabled.
       leftRectifiedImagePublisher.publish(rectifiedImages[0].first, leftRectifiedCameraInfo);
@@ -545,7 +542,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     {
       result.disparity_map = *disparityMap;
     }
-    if (goal->publish_results)
+    if (publishResults)
     {
       disparityMapPublisher.publish(disparityMap);
     }
@@ -567,7 +564,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     computePointMap.parameters()[itmCameras] = serial;
     computePointMap.execute();
 
-    if (goal->request_point_cloud && !goal->request_normals)
+    if (requestPointCloud && !goal->request_normals)
     {
       auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI);
 
@@ -575,7 +572,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
       {
         pcl::toROSMsg(*pointCloud, result.point_cloud);
       }
-      if (goal->publish_results)
+      if (publishResults)
       {
         pointCloudPublisher.publish(pointCloud);
       }
@@ -595,7 +592,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     {
       pcl::toROSMsg(*pointCloud, result.point_cloud);
     }
-    if (goal->publish_results)
+    if (publishResults)
     {
       pointCloudPublisher.publish(pointCloud);
     }
