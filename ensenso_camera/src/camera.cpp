@@ -489,19 +489,31 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     }
     if (goal->publish_results)
     {
-      // We only publish one of the images on the topic, even if FlexView
-      // is enabled.
+      // We only publish one of the images on the topic, even if FlexView is enabled.
       leftRawImagePublisher.publish(rawImages[0].first, leftCameraInfo);
       rightRawImagePublisher.publish(rawImages[0].second, rightCameraInfo);
     }
   }
 
-  if (goal->request_rectified_images)
+  PREEMPT_ACTION_IF_REQUESTED
+
+  // If we need the disparity map, we do the rectification implicitly in cmdComputeDisparityMap. This is more
+  // efficient when using CUDA.
+  if (goal->request_rectified_images && !computeDisparityMap)
   {
     NxLibCommand rectify(cmdRectifyImages);
     rectify.parameters()[itmCameras] = serial;
     rectify.execute();
+  }
+  else if (computeDisparityMap)
+  {
+    NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
+    computeDisparityMap.parameters()[itmCameras] = serial;
+    computeDisparityMap.execute();
+  }
 
+  if (goal->request_rectified_images)
+  {
     auto rectifiedImages = imagesFromNxLibNode(cameraNode[itmImages][itmRectified], cameraFrame);
 
     leftRectifiedCameraInfo->header.stamp = rectifiedImages[0].first->header.stamp;
@@ -515,37 +527,27 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
         result.right_rectified_images.push_back(*imagePair.second);
       }
       result.left_rectified_camera_info = *leftRectifiedCameraInfo;
-      result.right_rectified_camera_info = * rightRectifiedCameraInfo;
+      result.right_rectified_camera_info = *rightRectifiedCameraInfo;
     }
     if (goal->publish_results)
     {
-      // We only publish one of the images on the topic, even if FlexView
-      // is enabled.
+      // We only publish one of the images on the topic, even if FlexView is enabled.
       leftRectifiedImagePublisher.publish(rectifiedImages[0].first, leftRectifiedCameraInfo);
       rightRectifiedImagePublisher.publish(rectifiedImages[0].second, rightRectifiedCameraInfo);
     }
   }
 
-  PREEMPT_ACTION_IF_REQUESTED
-
-  if (computeDisparityMap)
+  if (goal->request_disparity_map)
   {
-    NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
-    computeDisparityMap.parameters()[itmCameras] = serial;
-    computeDisparityMap.execute();
+    auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], cameraFrame);
 
-    if (goal->request_disparity_map)
+    if (goal->include_results_in_response)
     {
-      auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], cameraFrame);
-
-      if (goal->include_results_in_response)
-      {
-        result.disparity_map = *disparityMap;
-      }
-      if (goal->publish_results)
-      {
-        disparityMapPublisher.publish(disparityMap);
-      }
+      result.disparity_map = *disparityMap;
+    }
+    if (goal->publish_results)
+    {
+      disparityMapPublisher.publish(disparityMap);
     }
   }
 
