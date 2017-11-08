@@ -23,6 +23,11 @@
 double const STATUS_INTERVAL = 3.0;  // Seconds.
 
 /**
+ * The maximum time that we wait for a tf transformation to become available.
+ */
+double const TRANSFORMATION_REQUEST_TIMEOUT = 0.1;  // Seconds.
+
+/**
  * The name of the parameter set that is used when an action was not given a
  * parameter set explicitly.
  */
@@ -1361,20 +1366,28 @@ void Camera::updateTransformations(ros::Time time, std::string frame, bool useCa
   }
   else
   {
+    bool gotTransformation = false;
     try
     {
-      transformListener.lookupTransform(cameraFrame, frame, time, transform);
+      if (transformListener.waitForTransform(cameraFrame, frame, time, ros::Duration(TRANSFORMATION_REQUEST_TIMEOUT)))
+      {
+        transformListener.lookupTransform(cameraFrame, frame, time, transform);
+        transformationCache[frame] = transform;
+        gotTransformation = true;
+      }
     }
     catch (tf::TransformException& e)
     {
       ROS_ERROR("TF Error: %s", e.what());
-      ROS_WARN("Ignoring the transformation to the target frame due to a TF error.");
+    }
 
+    if (!gotTransformation)
+    {
+      ROS_WARN("Could not get the transformation to the target frame from TF. "
+               "Using an identity transformation for this frame.");
       cameraNode[itmLink][itmTarget] = "";
       return;
     }
-
-    transformationCache[frame] = transform;
   }
 
   writePoseToNxLib(transform, NxLibItem()[itmLinks][TARGET_FRAME_LINK]);
