@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>ensenso_driver</name>
   <version>1.0.0</version>
   <description>Driver for Ensenso stereo cameras</description>
@@ -14,8 +14,8 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <run_depend>ensenso_camera</run_depend>
-  <run_depend>ensenso_camera_msgs</run_depend>
+  <exec_depend>ensenso_camera</exec_depend>
+  <exec_depend>ensenso_camera_msgs</exec_depend>
 
   <export>
     <metapackage/>

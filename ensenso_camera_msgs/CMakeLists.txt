@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(ensenso_camera_msgs)
 
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
   actionlib_msgs
   geometry_msgs
   sensor_msgs
@@ -37,7 +38,7 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS actionlib_msgs geometry_msgs sensor_msgs std_msgs stereo_msgs
+  CATKIN_DEPENDS message_runtime actionlib_msgs geometry_msgs sensor_msgs std_msgs stereo_msgs
 )
 
 include_directories(
