@@ -2,7 +2,7 @@
 <package format="2">
   <name>ensenso_camera</name>
   <version>1.0.0</version>
-  <description>Driver for Ensenso stereo cameras</description>
+  <description>Driver for Ensenso stereo cameras.</description>
 
   <license>BSD</license>
 
@@ -10,6 +10,7 @@
   <url type="repository">https://github.com/ensenso/ros_driver.git</url>
   <url type="bugtracker">https://github.com/ensenso/ros_driver/issues</url>
 
+  <author>Ensenso</author>
   <maintainer email="daniel.saier@ensenso.com">Daniel Saier</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
