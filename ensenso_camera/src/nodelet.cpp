@@ -63,11 +63,9 @@ void Nodelet::onInit()
   nhLocal.param<std::string>("file_camera_path", fileCameraPath, "");
   nhLocal.param("fixed", cameraIsFixed, false);
 
-  // We use the "map" frame by default. This makes it easy to view the camera
-  // data in RViz with a default configuration.
   if (!nhLocal.getParam("camera_frame", cameraFrame))
   {
-    cameraFrame = "map";
+    cameraFrame = "ensenso_optical_frame";
   }
   if (!nhLocal.getParam("target_frame", targetFrame))
   {
