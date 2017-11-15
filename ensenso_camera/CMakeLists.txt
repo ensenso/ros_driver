@@ -72,7 +72,7 @@ target_link_libraries(
   ${ENSENSO_LIBRARIES}
 )
 add_dependencies(ensenso_camera_nodelet ${catkin_EXPORTED_TARGETS})
-add_dependencies(ensenso_camera_nodelet ensenso_camera_msgs_EXPORTED_TARGETS})
+add_dependencies(ensenso_camera_nodelet ${ensenso_camera_msgs_EXPORTED_TARGETS})
 
 # Standalone node based on the nodelet.
 add_executable(

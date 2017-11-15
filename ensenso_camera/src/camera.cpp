@@ -1410,8 +1410,8 @@ void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, boo
 
   if (rectified)
   {
-    // For the rectified images all the transformations are the identity (because all if the distortions were already
-    // removed) except for the stereo camera matrix.
+    // For the rectified images all transformations are the identity (because all of the distortions were already
+    // removed), except for the stereo camera matrix.
 
     info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
     info->D.clear();
