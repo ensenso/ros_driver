@@ -32,6 +32,11 @@ add_action_files(
   SetParameter.action
 )
 
+add_service_files(
+  FILES
+  SetSettings.srv
+)
+
 generate_messages(
   DEPENDENCIES
   actionlib_msgs geometry_msgs sensor_msgs std_msgs stereo_msgs

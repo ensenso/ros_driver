@@ -109,6 +109,17 @@ Nodelet::~Nodelet()
   nxLibFinalize();
 }
 
+bool Nodelet::setSettingsCallback(ensenso_camera_msgs::SetSettings::Request &req,
+                          ensenso_camera_msgs::SetSettings::Response &res)
+{
+  NODELET_DEBUG("Loading camera settings...");
+  camera->loadSettings(req.file_name);
+  res.success = true;
+
+  return true;
+}
+
 }  // namespace ensenso_camera
+
 
 PLUGINLIB_EXPORT_CLASS(ensenso_camera::Nodelet, nodelet::Nodelet)
