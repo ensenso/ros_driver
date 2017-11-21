@@ -574,7 +574,12 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 
       sr::rgbd::toData(image_, rgbd_msg.data);
 
-      if (publishResults)
+        if (goal->include_results_in_response)
+        {
+            result.rgbd_image = rgbd_msg;
+        }
+
+        if (publishResults)
       {
         rgbdPublisher.publish(rgbd_msg);
       }
