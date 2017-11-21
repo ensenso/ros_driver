@@ -28,6 +28,9 @@
   <depend>roscpp</depend>
   <depend>tf</depend>
   <depend>visualization_msgs</depend>
+  <depend>rgbd</depend>
+  <depend>sr_foundation</depend>
+
   <exec_depend>rospy</exec_depend>
 
   <export>

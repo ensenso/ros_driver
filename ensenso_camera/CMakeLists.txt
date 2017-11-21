@@ -19,6 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
   roslint
   tf
   visualization_msgs
+  rgbd
+  sr_foundation
 )
 
 set(ROSLINT_CPP_OPTS "--filter=-build/c++11,-build/header_guard,-legal/copyright,-readability/todo")

@@ -7,6 +7,14 @@
 
 #include "nxLib.h"
 
+// RGBD
+#include <opencv2/core/core.hpp>
+#include <sr/rgbd/image.h>
+
+#include <sr/rgbd/serialization.h>
+
+#include <rgbd/RGBDImage.h>
+
 struct PointCloudROI
 {
   float minX = 0;
@@ -31,6 +39,12 @@ struct PointCloudROI
  * Convert the given binary NxLib node to a PCL point cloud.
  */
 pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
+                                                        PointCloudROI const* roi = 0);
+
+/**
+ * Convert the given binary NxLib node to an RGBD image.
+ */
+int rgbdFromNxLib(sr::rgbd::Image & _rgbd_image, NxLibItem const& node, std::string const& frame,
                                                         PointCloudROI const* roi = 0);
 
 /**
