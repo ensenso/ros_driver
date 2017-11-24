@@ -63,7 +63,7 @@ int rgbdFromNxLib(sr::rgbd::Image & _rgbd_image, NxLibItem const& node, std::str
 
   //Move raw data to rgbd image
   _rgbd_image.depth = cv::Mat( (unsigned int)height, (unsigned int)width, CV_32FC1, NAN);
-  _rgbd_image.timestamp = (timestamp - NXLIB_TIMESTAMP_OFFSET) * 1e6;
+  _rgbd_image.timestamp = (timestamp - NXLIB_TIMESTAMP_OFFSET) * 1e3; //rgbd uses microseconds
   _rgbd_image.frame_id = frame;
   _rgbd_image.P.setOpticalTranslation(0, 0);
   _rgbd_image.P.setOpticalCenter(cx, cy);

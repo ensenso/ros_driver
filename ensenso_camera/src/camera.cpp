@@ -124,6 +124,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
+    rgbd_msg = boost::make_shared<rgbd::RGBDImage>();
 
   accessTreeServer =
       make_unique<AccessTreeServer>(nh, "access_tree", boost::bind(&Camera::onAccessTree, this, _1));
@@ -572,16 +573,16 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     {
       int success = rgbdFromNxLib(image_, cameraNode, targetFrame, pointCloudROI);
 
-      sr::rgbd::toData(image_, rgbd_msg.data);
+      sr::rgbd::toData(image_, rgbd_msg->data);
 
         if (goal->include_results_in_response)
         {
-            result.rgbd_image = rgbd_msg;
+            result.rgbd_image = *rgbd_msg;
         }
 
         if (publishResults)
       {
-        rgbdPublisher.publish(rgbd_msg);
+        rgbdPublisher.publish(*rgbd_msg);
       }
     }
   }

@@ -153,7 +153,7 @@ private:
 
   //RGBD image
   sr::rgbd::Image image_;
-  rgbd::RGBDImage rgbd_msg;
+  rgbd::RGBDImagePtr rgbd_msg;
 
 
 public:
