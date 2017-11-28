@@ -262,8 +262,10 @@ void Camera::startServers() const
   calibrateWorkspaceServer->start();
 }
 
-void Camera::loadSettings(const std::string& jsonFile)
+bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParameters)
 {
+  if (jsonFile.empty()) return true;
+
   std::ifstream file(jsonFile);
   if (file.is_open() && file.rdbuf())
   {
@@ -272,50 +274,50 @@ void Camera::loadSettings(const std::string& jsonFile)
     std::string const& jsonSettings = buffer.str();
 
     NxLibItem tmpParameters = NxLibItem()["rosTemporaryParameters"];
-    bool validJson = false;
     try
     {
       tmpParameters.setJson(jsonSettings);
-      validJson = true;
     }
     catch (NxLibException&)
     {
       ROS_ERROR("The file '%s' does not contain valid JSON", jsonFile.c_str());
+      return false;
     }
 
-    if (validJson)
+    try
     {
-      try
+      if (tmpParameters[itmParameters].exists())
       {
-        if (tmpParameters[itmParameters].exists())
-        {
-          // The file contains the entire camera node.
-          cameraNode[itmParameters] << tmpParameters[itmParameters];
-        }
-        else
-        {
-          // The file contains only the parameter node.
-          cameraNode[itmParameters].setJson(jsonSettings, true);
-        }
-        tmpParameters.erase();
-
-        NxLibCommand synchronize(cmdSynchronize);
-        synchronize.parameters()[itmCameras] = serial;
-        synchronize.execute();
-
-        updateCameraInfo();
-        saveDefaultParameterSet();
+        // The file contains the entire camera node.
+        cameraNode[itmParameters] << tmpParameters[itmParameters];
       }
-      catch (NxLibException& e)
+      else
       {
-        LOG_NXLIB_EXCEPTION(e)
+        // The file contains only the parameter node.
+        cameraNode[itmParameters].setJson(jsonSettings, true);
       }
+      tmpParameters.erase();
+
+      NxLibCommand synchronize(cmdSynchronize);
+      synchronize.parameters()[itmCameras] = serial;
+      synchronize.execute();
+
+      updateCameraInfo();
+      if (saveAsDefaultParameters) saveDefaultParameterSet();
+    }
+    catch (NxLibException& e)
+    {
+      LOG_NXLIB_EXCEPTION(e)
+      return false;
     }
   }
   else
   {
     ROS_ERROR("Could not open the file '%s'", jsonFile.c_str());
+    return false;
   }
+
+  return true;
 }
 
 void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goal)
@@ -403,6 +405,12 @@ void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const&
   ensenso_camera_msgs::SetParameterResult result;
 
   loadParameterSet(goal->parameter_set);
+
+  result.parameter_file_applied = false;
+  if (!goal->parameter_file.empty())
+  {
+    result.parameter_file_applied = loadSettings(goal->parameter_file);
+  }
 
   bool projectorChanged = false;
   for (auto const& parameter : goal->parameters)

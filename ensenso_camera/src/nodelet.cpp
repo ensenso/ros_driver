@@ -97,7 +97,12 @@ void Nodelet::onInit()
   if (nhLocal.getParam("settings", settingsFile))
   {
     NODELET_DEBUG("Loading camera settings...");
-    camera->loadSettings(settingsFile);
+    if (!camera->loadSettings(settingsFile, true))
+    {
+      NODELET_ERROR("Failed to load the camera settings. Shutting down.");
+      nxLibFinalize();
+      exit(EXIT_FAILURE);
+    }
   }
 
   camera->startServers();

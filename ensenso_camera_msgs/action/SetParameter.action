@@ -1,13 +1,20 @@
 # The parameter set in which we write the values.
 string parameter_set
 
+# The path to a JSON file that should be written to the parameter tree.
+string parameter_file
+
 # The parameters that should be written.
+# If a JSON file is given above, the file gets loaded first, before writing these parameters.
 Parameter[] parameters
 
 ---
 
 # The actual values of the parameters after writing them.
 Parameter[] results
+
+# Whether the parameter file was applied successfully.
+bool parameter_file_applied
 
 # A potential NxLib exception that occured while executing the action.
 NxLibException error

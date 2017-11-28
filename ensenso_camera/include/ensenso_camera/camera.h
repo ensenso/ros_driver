@@ -168,8 +168,10 @@ public:
    * Load the camera settings from the given JSON file. The resulting
    * parameters will also be saved as the default values for new parameter
    * sets.
+   *
+   * Returns true if the settings could be applied successfully.
    */
-  void loadSettings(std::string const& jsonFile);
+  bool loadSettings(std::string const& jsonFile, bool saveAsDefaultParameters = false);
 
   /**
    * Callback for the `access_tree` action.
