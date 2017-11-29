@@ -410,6 +410,11 @@ void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const&
   if (!goal->parameter_file.empty())
   {
     result.parameter_file_applied = loadSettings(goal->parameter_file);
+    if (!result.parameter_file_applied)
+    {
+      server->setAborted(result);
+      return;
+    }
   }
 
   bool projectorChanged = false;
