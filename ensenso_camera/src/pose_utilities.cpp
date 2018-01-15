@@ -27,6 +27,11 @@ bool poseIsValid(const tf::Pose& pose)
 
 void writePoseToNxLib(tf::Pose const& pose, NxLibItem const& node)
 {
+  // Initialize the node to be empty. This is necessary, because there is a bug in some versions of the NxLib that
+  // overwrites the whole transformation node with an identity transformation as soon as a new node in /Links gets
+  // created.
+  node.setNull();
+
   if (poseIsValid(pose))
   {
     auto origin = pose.getOrigin();
