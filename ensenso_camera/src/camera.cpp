@@ -38,6 +38,11 @@ std::string const DEFAULT_PARAMETER_SET = "default";
  */
 std::string const TARGET_FRAME_LINK = "Workspace";
 
+// The ROS node gives back error codes from the NxLib. Additionally, we use the
+// following error codes to indicate errors from the ROS node itself.
+int const ERROR_CODE_UNKNOWN_EXCEPTION = 100;
+int const ERROR_CODE_TF = 101;
+
 #define LOG_NXLIB_EXCEPTION(EXCEPTION) \
   try \
   { \
@@ -78,6 +83,24 @@ std::string const TARGET_FRAME_LINK = "Workspace";
     ensenso_camera_msgs::ACTION_NAME##Result result; \
     result.error.code = e.getErrorCode(); \
     result.error.message = e.getErrorText(); \
+    server->setAborted(result); \
+    return; \
+  } /* NOLINT */ \
+  catch (tf::TransformException& e) \
+  { \
+    ROS_ERROR("TF Exception: %s", e.what()); \
+    ensenso_camera_msgs::ACTION_NAME##Result result; \
+    result.error.code = ERROR_CODE_TF; \
+    result.error.message = e.what(); \
+    server->setAborted(result); \
+    return; \
+  } /* NOLINT */ \
+  catch (std::exception& e) \
+  { \
+    ROS_ERROR("Unknown Exception: %s", e.what()); \
+    ensenso_camera_msgs::ACTION_NAME##Result result; \
+    result.error.code = ERROR_CODE_UNKNOWN_EXCEPTION; \
+    result.error.message = e.what(); \
     server->setAborted(result); \
     return; \
   }
@@ -1378,28 +1401,10 @@ void Camera::updateTransformations(ros::Time time, std::string frame, bool useCa
   }
   else
   {
-    bool gotTransformation = false;
-    try
-    {
-      if (transformListener.waitForTransform(cameraFrame, frame, time, ros::Duration(TRANSFORMATION_REQUEST_TIMEOUT)))
-      {
-        transformListener.lookupTransform(cameraFrame, frame, time, transform);
-        transformationCache[frame] = transform;
-        gotTransformation = true;
-      }
-    }
-    catch (tf::TransformException& e)
-    {
-      ROS_ERROR("TF Error: %s", e.what());
-    }
-
-    if (!gotTransformation)
-    {
-      ROS_WARN("Could not get the transformation to the target frame from TF. "
-               "Using an identity transformation for this frame.");
-      cameraNode[itmLink][itmTarget] = "";
-      return;
-    }
+    // TF exceptions will be caught outside and cancel the current action.
+    transformListener.waitForTransform(cameraFrame, frame, time, ros::Duration(TRANSFORMATION_REQUEST_TIMEOUT));
+    transformListener.lookupTransform(cameraFrame, frame, time, transform);
+    transformationCache[frame] = transform;
   }
 
   writePoseToNxLib(transform, NxLibItem()[itmLinks][TARGET_FRAME_LINK]);
