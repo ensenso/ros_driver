@@ -16,11 +16,12 @@ from visualization_msgs.msg import Marker
 def main():
     loop_rate = rospy.get_param("~rate", 2)
     parameter_set = rospy.get_param("~parameter_set", "locate_pattern")
+    timeout = rospy.get_param("~timeout", 60)
 
     set_parameter_client = actionlib.SimpleActionClient("set_parameter", SetParameterAction)
     locate_pattern_client = actionlib.SimpleActionClient("locate_pattern", LocatePatternAction)
     for client in [set_parameter_client, locate_pattern_client]:
-        if not client.wait_for_server(rospy.Duration(60)):
+        if not client.wait_for_server(rospy.Duration(timeout)):
             rospy.logerr("The camera node is not running!")
             sys.exit()
 

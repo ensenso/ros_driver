@@ -16,11 +16,12 @@ def main():
     parameter_set = rospy.get_param("~parameter_set", "image_stream")
     use_rectified_image = rospy.get_param("~rectified", False)
     use_right_image = rospy.get_param("~right", False)
+    timeout = rospy.get_param("~timeout", 60)
 
     set_parameter_client = actionlib.SimpleActionClient("set_parameter", SetParameterAction)
     request_data_client = actionlib.SimpleActionClient("request_data", RequestDataAction)
     for client in [set_parameter_client, request_data_client]:
-        if not client.wait_for_server(rospy.Duration(60)):
+        if not client.wait_for_server(rospy.Duration(timeout)):
             rospy.logerr("The camera node is not running!")
             sys.exit()
 
