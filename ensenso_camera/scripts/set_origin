@@ -13,7 +13,7 @@ def main():
     parameter_set = rospy.get_param("~parameter_set", "")
 
     calibrate_workspace_client = actionlib.SimpleActionClient("calibrate_workspace", CalibrateWorkspaceAction)
-    if not calibrate_workspace_client.wait_for_server(rospy.Duration(10)):
+    if not calibrate_workspace_client.wait_for_server(rospy.Duration(60)):
         rospy.logerr("The camera node is not running!")
         sys.exit()
 

@@ -20,7 +20,7 @@ def main():
     set_parameter_client = actionlib.SimpleActionClient("set_parameter", SetParameterAction)
     locate_pattern_client = actionlib.SimpleActionClient("locate_pattern", LocatePatternAction)
     for client in [set_parameter_client, locate_pattern_client]:
-        if not client.wait_for_server(rospy.Duration(10)):
+        if not client.wait_for_server(rospy.Duration(60)):
             rospy.logerr("The camera node is not running!")
             sys.exit()
 

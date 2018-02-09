@@ -22,7 +22,7 @@ def main():
     goal.publish_results = True
 
     request_data_client = actionlib.SimpleActionClient("request_data", RequestDataAction)
-    if not request_data_client.wait_for_server(rospy.Duration(10)):
+    if not request_data_client.wait_for_server(rospy.Duration(60)):
         rospy.logerr("The camera node is not running!")
         sys.exit()
 
