@@ -111,6 +111,7 @@ catkin_install_python(
   scripts/image_stream
   scripts/pattern_marker
   scripts/set_origin
+  scripts/request_data
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
