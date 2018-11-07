@@ -6,6 +6,10 @@
 #       the camera's whole parameter tree when they switch between different
 #       parameter sets.
 
+# A parameter set that gets loaded before executing the command.
+string parameter_set
+
+# The name of the NxLib command to execute.
 string command
 
 # The command parameters as a JSON string.

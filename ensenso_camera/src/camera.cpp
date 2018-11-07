@@ -347,19 +347,30 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
 {
   START_NXLIB_ACTION(AccessTree, accessTreeServer)
 
+  loadParameterSet(goal->parameter_set);
+
   NxLibItem item(goal->path);
 
+  bool treeChanged = false;
   if (goal->erase)
   {
     item.erase();
+    treeChanged = true;
   }
   else if (goal->set_null)
   {
     item.setNull();
+    treeChanged = true;
   }
   else if (!goal->json_value.empty())
   {
     item.setJson(goal->json_value);
+    treeChanged = true;
+  }
+
+  if (treeChanged)
+  {
+    saveParameterSet(goal->parameter_set);
   }
 
   ensenso_camera_msgs::AccessTreeResult result;
@@ -389,6 +400,8 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
 void Camera::onExecuteCommand(const ensenso_camera_msgs::ExecuteCommandGoalConstPtr& goal)
 {
   START_NXLIB_ACTION(ExecuteCommand, executeCommandServer)
+
+  loadParameterSet(goal->parameter_set);
 
   NxLibCommand command(goal->command);
   command.parameters().setJson(goal->parameters);
