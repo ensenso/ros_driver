@@ -1559,19 +1559,20 @@ ensenso_camera_msgs::ParameterPtr Camera::readParameter(std::string const& key) 
   {
     // The parameter is mapped to an NxLib node.
 
-    NxLibItem node = parameterNode(cameraNode, key);
+    ParameterMapping parameterMapping = parameterInformation.at(key);
+    NxLibItem node = parameterMapping.node(cameraNode);
 
     if (node.exists())
     {
-      switch (parameterType(key))
+      switch (parameterMapping.type)
       {
-        case boolType:
+        case ParameterType::Bool:
           message->bool_value = node.asBool();
           break;
-        case numberType:
+        case ParameterType::Number:
           message->float_value = node.asDouble();
           break;
-        case stringType:
+        case ParameterType::String:
           message->string_value = node.asString();
           break;
       }
@@ -1628,7 +1629,8 @@ void Camera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
   {
     // The parameter is mapped to an NxLib node.
 
-    NxLibItem node = parameterNode(cameraNode, parameter.key);
+    ParameterMapping parameterMapping = parameterInformation.at(parameter.key);
+    NxLibItem node = parameterMapping.node(cameraNode);
 
     if (!node.exists())
     {
@@ -1636,15 +1638,15 @@ void Camera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
       return;
     }
 
-    switch (parameterType(parameter.key))
+    switch (parameterMapping.type)
     {
-      case boolType:
+      case ParameterType::Bool:
         node.set<bool>(parameter.bool_value);
         break;
-      case numberType:
+      case ParameterType::Number:
         node.set<double>(parameter.float_value);
         break;
-      case stringType:
+      case ParameterType::String:
         node.set<std::string>(parameter.string_value);
     }
   }
