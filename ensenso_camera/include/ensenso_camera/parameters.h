@@ -51,6 +51,7 @@ struct ParameterMapping
  */
 std::map<std::string, ParameterMapping> const parameterInformation
 {
+  // Capture parameters.
   { ensenso_camera_msgs::Parameter::AUTO_EXPOSURE    , { ParameterType::Bool  , { itmCapture, itmAutoExposure     } } },
   { ensenso_camera_msgs::Parameter::AUTO_GAIN        , { ParameterType::Bool  , { itmCapture, itmAutoGain         } } },
   { ensenso_camera_msgs::Parameter::BINNING          , { ParameterType::Number, { itmCapture, itmBinning          } } },
@@ -64,7 +65,25 @@ std::map<std::string, ParameterMapping> const parameterInformation
   { ensenso_camera_msgs::Parameter::PROJECTOR        , { ParameterType::Bool  , { itmCapture, itmProjector        } } },
   { ensenso_camera_msgs::Parameter::TARGET_BRIGHTNESS, { ParameterType::Number, { itmCapture, itmTargetBrightness } } },
   { ensenso_camera_msgs::Parameter::TRIGGER_DELAY    , { ParameterType::Number, { itmCapture, itmTriggerDelay     } } },
-  { ensenso_camera_msgs::Parameter::TRIGGER_MODE     , { ParameterType::String, { itmCapture, itmTriggerMode      } } }
+  { ensenso_camera_msgs::Parameter::TRIGGER_MODE     , { ParameterType::String, { itmCapture, itmTriggerMode      } } },
+
+  // Matching parameters.
+  { ensenso_camera_msgs::Parameter::MATCHING_METHOD,
+    { ParameterType::String, { itmDisparityMap, itmStereoMatching, itmMethod } } },
+  { ensenso_camera_msgs::Parameter::MINIMUM_DISPARITY,
+    { ParameterType::Number, { itmDisparityMap, itmStereoMatching, itmMinimumDisparity } } },
+  { ensenso_camera_msgs::Parameter::NUMBER_OF_DISPARITIES,
+    { ParameterType::Number, { itmDisparityMap, itmStereoMatching, itmNumberOfDisparities } } },
+  { ensenso_camera_msgs::Parameter::MEASUREMENT_VOLUME_NEAR,
+    { ParameterType::Number, { itmDisparityMap, itmMeasurementVolume, itmNear, itmLeftBottom, "\2" } } },
+  { ensenso_camera_msgs::Parameter::MEASUREMENT_VOLUME_FAR,
+    { ParameterType::Number, { itmDisparityMap, itmMeasurementVolume, itmFar, itmLeftBottom, "\2" } } },
+  { ensenso_camera_msgs::Parameter::UNIQUENESS_RATIO,
+    { ParameterType::Number, { itmDisparityMap, itmPostProcessing, itmUniquenessRatio } } },
+  { ensenso_camera_msgs::Parameter::SCALING,
+    { ParameterType::Number, { itmDisparityMap, itmScaling } } },
+  { ensenso_camera_msgs::Parameter::PADDING,
+    { ParameterType::Bool  , { itmDisparityMap, itmStereoMatching, itmPadding } } },
 };
 
 inline bool parameterExists(std::string const& key)
