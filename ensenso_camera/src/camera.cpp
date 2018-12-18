@@ -147,6 +147,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
+  rgbd_msg = boost::make_shared<rgbd::RGBDImage>();
 
   accessTreeServer =
       make_unique<AccessTreeServer>(nh, "access_tree", boost::bind(&Camera::onAccessTree, this, _1));
@@ -179,6 +180,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
   disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
 
+  rgbdPublisher = nh.advertise<rgbd::RGBDImage>("rgbd", 1);
   pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
 
   statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
@@ -486,13 +488,14 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   }
 
   bool requestPointCloud = goal->request_point_cloud;
+  bool requestRGBD = goal->request_rgbd;
   if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_point_cloud &&
-      !goal->request_normals)
+      !goal->request_normals && !goal->request_rgbd)
   {
-    requestPointCloud = true;
+    requestRGBD = true;
   }
 
-  bool computePointCloud = requestPointCloud || goal->request_normals;
+  bool computePointCloud = requestRGBD || requestPointCloud || goal->request_normals;
   bool computeDisparityMap = goal->request_disparity_map || computePointCloud;
 
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
@@ -592,6 +595,8 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     pointCloudROI = &parameterSets.at(currentParameterSet).roi;
   }
 
+//-----------------------------------------------------------------------------
+
   if (computePointCloud)
   {
     updateTransformations(imageTimestamp, "", goal->use_cached_transformation);
@@ -608,9 +613,30 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
       {
         pcl::toROSMsg(*pointCloud, result.point_cloud);
       }
+
       if (publishResults)
       {
         pointCloudPublisher.publish(pointCloud);
+      }
+    }
+
+    PREEMPT_ACTION_IF_REQUESTED
+
+    //RGBD
+    if (requestRGBD && !goal->request_normals)
+    {
+      int success = rgbdFromNxLib(image_, cameraNode, targetFrame, pointCloudROI);
+
+      sr::rgbd::toData(image_, rgbd_msg->data);
+
+      if (goal->include_results_in_response)
+      {
+        result.rgbd_image = *rgbd_msg;
+      }
+
+      if (publishResults)
+      {
+        rgbdPublisher.publish(*rgbd_msg);
       }
     }
   }

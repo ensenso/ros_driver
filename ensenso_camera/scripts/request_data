@@ -15,10 +15,11 @@ def main():
     goal.parameter_set = rospy.get_param("~parameter_set", "")
 
     goal.request_raw_images = rospy.get_param("~raw_images", True)
-    goal.request_rectified_images = rospy.get_param("~rectified_images", True)
+    goal.request_rectified_images = rospy.get_param("~rectified_images", False)
     goal.request_disparity_map = rospy.get_param("~disparity_map", True)
-    goal.request_point_cloud = rospy.get_param("~point_cloud", True)
-    goal.request_normals = rospy.get_param("~normals", True)
+    goal.request_point_cloud = rospy.get_param("~point_cloud", False)
+    goal.request_rgbd = rospy.get_param("~rgbd", True)
+    goal.request_normals = rospy.get_param("~normals", False)
 
     goal.publish_results = True
 

@@ -129,6 +129,7 @@ private:
   image_transport::CameraPublisher rightRectifiedImagePublisher;
   image_transport::Publisher disparityMapPublisher;
 
+  ros::Publisher rgbdPublisher;
   ros::Publisher pointCloudPublisher;
 
   ros::Publisher statusPublisher;
@@ -149,6 +150,11 @@ private:
   // in progress.
   std::string handEyeCalibrationPatternBuffer;
   std::vector<tf::Pose> handEyeCalibrationRobotPoses;
+
+  //RGBD image
+  sr::rgbd::Image image_;
+  rgbd::RGBDImagePtr rgbd_msg;
+
 
 public:
   Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,

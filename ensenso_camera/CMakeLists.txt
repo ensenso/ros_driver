@@ -19,20 +19,22 @@ find_package(catkin REQUIRED COMPONENTS
   roslint
   tf
   visualization_msgs
+  rgbd
+  sr_foundation
 )
 
-set(ROSLINT_CPP_OPTS "--filter=-build/c++11,-build/header_guard,-legal/copyright,-readability/todo")
+#set(ROSLINT_CPP_OPTS "--filter=-build/c++11,-build/header_guard,-legal/copyright,-readability/todo")
 
-roslint_cpp()
-roslint_python(
-  scripts/image_stream
-  scripts/pattern_marker
-  scripts/request_data
-  scripts/set_origin
-)
-if(CATKIN_ENABLE_TESTING)
-  roslint_add_test()
-endif()
+#roslint_cpp()
+#roslint_python(
+#  scripts/image_stream
+#  scripts/pattern_marker
+#  scripts/request_data
+#  scripts/set_origin
+#)
+#if(CATKIN_ENABLE_TESTING)
+#  roslint_add_test()
+#endif()
 
 # Find the Ensenso SDK.
 if (NOT $ENV{ENSENSO_INSTALL} STREQUAL "")
@@ -109,6 +111,7 @@ catkin_install_python(
   scripts/image_stream
   scripts/pattern_marker
   scripts/set_origin
+  scripts/request_data
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

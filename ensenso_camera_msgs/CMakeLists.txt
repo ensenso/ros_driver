@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   stereo_msgs
+  rgbd
 )
 
 add_message_files(
@@ -32,13 +33,18 @@ add_action_files(
   SetParameter.action
 )
 
+add_service_files(
+  FILES
+  SetSettings.srv
+)
+
 generate_messages(
   DEPENDENCIES
-  actionlib_msgs geometry_msgs sensor_msgs std_msgs stereo_msgs
+  actionlib_msgs geometry_msgs sensor_msgs std_msgs stereo_msgs rgbd
 )
 
 catkin_package(
-  CATKIN_DEPENDS message_runtime actionlib_msgs geometry_msgs sensor_msgs std_msgs stereo_msgs
+  CATKIN_DEPENDS message_runtime actionlib_msgs geometry_msgs sensor_msgs std_msgs stereo_msgs rgbd
 )
 
 include_directories(
