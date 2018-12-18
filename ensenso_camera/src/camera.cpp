@@ -124,7 +124,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
-    rgbd_msg = boost::make_shared<rgbd::RGBDImage>();
+  rgbd_msg = boost::make_shared<rgbd::RGBDImage>();
 
   accessTreeServer =
       make_unique<AccessTreeServer>(nh, "access_tree", boost::bind(&Camera::onAccessTree, this, _1));
@@ -560,35 +560,6 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   }
 
 //-----------------------------------------------------------------------------
-//RGBD
-  if (computePointCloud)
-  {
-    updateTransformations(imageTimestamp, "", goal->use_cached_transformation);
-
-    NxLibCommand computePointMap(cmdComputePointMap);
-    computePointMap.parameters()[itmCameras] = serial;
-    computePointMap.execute();
-
-    if (requestRGBD && !goal->request_normals)
-    {
-      int success = rgbdFromNxLib(image_, cameraNode, targetFrame, pointCloudROI);
-
-      sr::rgbd::toData(image_, rgbd_msg->data);
-
-        if (goal->include_results_in_response)
-        {
-            result.rgbd_image = *rgbd_msg;
-        }
-
-        if (publishResults)
-      {
-        rgbdPublisher.publish(*rgbd_msg);
-      }
-    }
-  }
-
-  PREEMPT_ACTION_IF_REQUESTED
-//-----------------------------------------------------------------------------
 
   if (computePointCloud)
   {
@@ -606,9 +577,30 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
       {
         pcl::toROSMsg(*pointCloud, result.point_cloud);
       }
+
       if (publishResults)
       {
         pointCloudPublisher.publish(pointCloud);
+      }
+    }
+
+    PREEMPT_ACTION_IF_REQUESTED
+
+    //RGBD
+    if (requestRGBD && !goal->request_normals)
+    {
+      int success = rgbdFromNxLib(image_, cameraNode, targetFrame, pointCloudROI);
+
+      sr::rgbd::toData(image_, rgbd_msg->data);
+
+      if (goal->include_results_in_response)
+      {
+        result.rgbd_image = *rgbd_msg;
+      }
+
+      if (publishResults)
+      {
+        rgbdPublisher.publish(*rgbd_msg);
       }
     }
   }

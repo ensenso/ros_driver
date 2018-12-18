@@ -44,8 +44,10 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
 /**
  * Convert the given binary NxLib node to an RGBD image.
  */
-int rgbdFromNxLib(sr::rgbd::Image & _rgbd_image, NxLibItem const& node, std::string const& frame,
-                                                        PointCloudROI const* roi = 0);
+int rgbdFromNxLib(sr::rgbd::Image & _rgbd_image,
+                  NxLibItem const& node,
+                  std::string const& frame,
+                  PointCloudROI const* roi = 0);
 
 /**
  * Create a PCL point cloud with normals from the given NxLib nodes.
