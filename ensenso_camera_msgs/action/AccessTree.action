@@ -12,6 +12,11 @@
 #       the camera's whole parameter tree when they switch between different
 #       parameter sets.
 
+# A parameter set that gets loaded before accessing the tree. When the action
+# writes to the JSON tree, the changes will also be saved into this parameter
+# set.
+string parameter_set
+
 # The path to the JSON tree item.
 string path
 

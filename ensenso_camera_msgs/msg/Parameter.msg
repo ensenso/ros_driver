@@ -5,38 +5,59 @@
 # parameter (also see the value fields below).
 # See the NxLib documentation for information on what the different parameters do.
 
+# Capture Parameters
+
 # Bool
-string AUTO_EXPOSURE      = AutoExposure
+string AUTO_EXPOSURE           = AutoExposure
 # Bool
-string AUTO_GAIN          = AutoGain
+string AUTO_GAIN               = AutoGain
 # Float
-string BINNING            = Binning
+string BINNING                 = Binning
 # Float
-string EXPOSURE           = Exposure
+string EXPOSURE                = Exposure
 # Float
-string FLEX_VIEW          = FlexView
+string FLEX_VIEW               = FlexView
 # Bool
-string FRONT_LIGHT        = FrontLight
+string FRONT_LIGHT             = FrontLight
 # Float
-string GAIN               = Gain
+string GAIN                    = Gain
 # Bool
-string GAIN_BOOST         = GainBoost
+string GAIN_BOOST              = GainBoost
 # Bool
-string HARDWARE_GAMMA     = HardwareGamma
+string HARDWARE_GAMMA          = HardwareGamma
 # Float
-string MAX_GAIN           = MaxGain
+string MAX_GAIN                = MaxGain
 # Float
-string PIXEL_CLOCK        = PixelClock
+string PIXEL_CLOCK             = PixelClock
 # Bool
-string PROJECTOR          = Projector
+string PROJECTOR               = Projector
 # RegionOfInterest
-string REGION_OF_INTEREST = RegionOfInterest
+string REGION_OF_INTEREST      = RegionOfInterest
 # Float
-string TARGET_BRIGHTNESS  = TargetBrightness
+string TARGET_BRIGHTNESS       = TargetBrightness
 # Float
-string TRIGGER_DELAY      = TriggerDelay
+string TRIGGER_DELAY           = TriggerDelay
 # String
-string TRIGGER_MODE       = TriggerMode
+string TRIGGER_MODE            = TriggerMode
+
+# Matching Parameters
+
+# String
+string MATCHING_METHOD         = MatchingMethod
+# Float
+string MINIMUM_DISPARITY       = MinimumDisparity
+# Float
+string NUMBER_OF_DISPARITIES   = NumberOfDisparities
+# Float
+string MEASUREMENT_VOLUME_NEAR = MeasurementVolumeNear
+# Float
+string MEASUREMENT_VOLUME_FAR  = MeasurementVolumeFar
+# Float
+string UNIQUENESS_RATIO        = UniquenessRatio
+# Float
+string SCALING                 = Scaling
+# Bool
+string PADDING                 = Padding
 
 # The name of the parameter.
 string key
