@@ -147,7 +147,6 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
-  rgbd_msg = boost::make_shared<rgbd::RGBDImage>();
 
   accessTreeServer =
       make_unique<AccessTreeServer>(nh, "access_tree", boost::bind(&Camera::onAccessTree, this, _1));
@@ -508,6 +507,9 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     requestRGBD = true;
   }
 
+  bool registeredPointCloud = goal->registered_point_cloud;
+  std::string monoCamSerial = goal->monocular_camera_serial != "" ? goal->monocular_camera_serial : getLinkedCamera();
+
   bool computePointCloud = requestRGBD || requestPointCloud || goal->request_normals;
   bool computeDisparityMap = goal->request_disparity_map || computePointCloud;
 
@@ -614,13 +616,21 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   {
     updateTransformations(imageTimestamp, "", goal->use_cached_transformation);
 
-    NxLibCommand computePointMap(cmdComputePointMap);
-    computePointMap.parameters()[itmCameras] = serial;
-    computePointMap.execute();
+    NxLibCommand makePointMap(registeredPointCloud ? cmdRenderPointMap : cmdComputePointMap);
+    makePointMap.parameters()[itmCameras] = registeredPointCloud ? monoCamSerial : serial;
+    auto imgKey = registeredPointCloud ? itmRenderPointMap : itmPointMap;
+
+    if (registeredPointCloud)
+    {
+        makePointMap.parameters()[itmNear] = 1; // We don't clip points to close to the camera.
+        // We probably don't have a high end graphics card, so disable openGL.
+        cameraNode[itmParameters][itmRenderPointMap][itmUseOpenGL] = false;
+    }
+    makePointMap.execute();
 
     if (requestPointCloud && !goal->request_normals)
     {
-      auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI);
+      auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][imgKey], targetFrame, pointCloudROI);
 
       if (goal->include_results_in_response)
       {
@@ -638,18 +648,22 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     //RGBD
     if (requestRGBD && !goal->request_normals)
     {
-      int success = rgbdFromNxLib(image_, cameraNode, targetFrame, pointCloudROI);
+      auto rgbdImagePtr = rgbdFromNxLib(cameraNode[itmImages][imgKey],
+                                        cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera],
+                                        targetFrame,
+                                        pointCloudROI);
 
-      sr::rgbd::toData(image_, rgbd_msg->data);
+      rgbd::RGBDImage rosRgbdImage;
+      sr::rgbd::toData(*rgbdImagePtr, rosRgbdImage.data);
 
       if (goal->include_results_in_response)
       {
-        result.rgbd_image = *rgbd_msg;
+        result.rgbd_image = rosRgbdImage;
       }
 
       if (publishResults)
       {
-        rgbdPublisher.publish(*rgbd_msg);
+        rgbdPublisher.publish(rosRgbdImage);
       }
     }
   }
@@ -1680,4 +1694,18 @@ void Camera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
   {
     ROS_ERROR("Unknown parameter '%s'!", parameter.key.c_str());
   }
+}
+
+std::string Camera::getLinkedCamera() const
+{
+    NxLibItem cameras = NxLibItem()[itmCameras][itmBySerialNo];
+    for(int32_t i = 0; i < cameras.count(); i++)
+    {
+        if(cameras[i][itmLink][itmTarget] == serial)
+        {
+            return cameras[i][itmSerialNumber].asString();
+        }
+    }
+    ROS_WARN("No linked camera found!");
+    return "";
 }

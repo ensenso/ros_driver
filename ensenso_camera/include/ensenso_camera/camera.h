@@ -151,11 +151,6 @@ private:
   std::string handEyeCalibrationPatternBuffer;
   std::vector<tf::Pose> handEyeCalibrationRobotPoses;
 
-  //RGBD image
-  sr::rgbd::Image image_;
-  rgbd::RGBDImagePtr rgbd_msg;
-
-
 public:
   Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
          std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
@@ -328,4 +323,6 @@ private:
 
   ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const;
   void writeParameter(ensenso_camera_msgs::Parameter const& parameter);
+
+  std::string getLinkedCamera() const;
 };

@@ -47,30 +47,35 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
 
 
 //RGBD
-int rgbdFromNxLib(sr::rgbd::Image & _rgbd_image, NxLibItem const& node, std::string const& frame,
-                                                        PointCloudROI const* roi)
+boost::shared_ptr<sr::rgbd::Image> rgbdFromNxLib(NxLibItem const& node,
+                                                 NxLibItem const& configPars,
+                                                 std::string const& frame,
+                                                 PointCloudROI const* roi)
 {
   int width, height;
   double timestamp;
   std::vector<float> data;
-  double cx = node[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][2][0].asDouble();
-  double cy = node[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][2][1].asDouble();
-  double fx = node[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][0][0].asDouble();
-  double fy = node[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][1][1].asDouble();
 
-  node[itmImages][itmPointMap].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
-  node[itmImages][itmPointMap].getBinaryData(data, 0);
+  node.getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
+  node.getBinaryData(data, 0);
+
+  auto rgbd_image = boost::make_shared<sr::rgbd::Image>();
+
+  double cx = configPars[2][0].asDouble();
+  double cy = configPars[2][1].asDouble();
+  double fx = configPars[0][0].asDouble();
+  double fy = configPars[1][1].asDouble();
 
   //Move raw data to rgbd image
-  _rgbd_image.depth = cv::Mat( (unsigned int)height, (unsigned int)width, CV_32FC1, NAN);
-  _rgbd_image.timestamp = (timestamp - NXLIB_TIMESTAMP_OFFSET) * 1e3; //rgbd uses microseconds
-  _rgbd_image.frame_id = frame;
-  _rgbd_image.P.setOpticalTranslation(0, 0);
-  _rgbd_image.P.setOpticalCenter(cx, cy);
-  _rgbd_image.P.setFocalLengths(fx, fy);
+  rgbd_image->depth = cv::Mat( (unsigned int)height, (unsigned int)width, CV_32FC1, NAN);
+  rgbd_image->timestamp = (timestamp - NXLIB_TIMESTAMP_OFFSET) * 1e3; //rgbd uses microseconds
+  rgbd_image->frame_id = frame;
+  rgbd_image->P.setOpticalTranslation(0, 0);
+  rgbd_image->P.setOpticalCenter(cx, cy);
+  rgbd_image->P.setFocalLengths(fx, fy);
 
   float px, py, pz;
-  for(unsigned int i = 0; i < width * height; ++i)
+  for(int i = 0; i < width * height; ++i)
   {
       px = data[i * 3];
       if (!std::isnan(px))
@@ -78,18 +83,19 @@ int rgbdFromNxLib(sr::rgbd::Image & _rgbd_image, NxLibItem const& node, std::str
           px /= 1000.;
           py = data[i * 3 + 1] / 1000;
           pz = data[i * 3 + 2] / 1000;
-          sr::Vec2i pix = _rgbd_image.P.project3Dto2D(sr::Vec3(px, -py, -pz));
-          if (pix.x >= 0 && pix.y >= 0 && pix.x < _rgbd_image.depth.cols && pix.y < _rgbd_image.depth.rows)
+          sr::Vec2i pix = rgbd_image->P.project3Dto2D(sr::Vec3(px, -py, -pz));
+          if (pix.x >= 0 && pix.y >= 0 && pix.x < rgbd_image->depth.cols && pix.y < rgbd_image->depth.rows)
           {
-              _rgbd_image.depth.at<float>(pix.y, pix.x) = pz;
+              rgbd_image->depth.at<float>(pix.y, pix.x) = pz;
               if (roi != 0 && !roi->contains(px, py, pz))
               {
-                  _rgbd_image.depth.at<float>(pix.y, pix.x) = std::numeric_limits<float>::quiet_NaN();
+                  rgbd_image->depth.at<float>(pix.y, pix.x) = std::numeric_limits<float>::quiet_NaN();
               }
           }
       }
   }
-  return 1;
+
+  return rgbd_image;
 }
 
 
