@@ -17,6 +17,7 @@ add_message_files(
   NxLibException.msg
   Parameter.msg
   RegionOfInterest.msg
+  RenderParameters.msg
 )
 
 add_action_files(

@@ -9,6 +9,15 @@ bool request_disparity_map
 bool request_point_cloud
 bool request_normals
 
+# When this flag is enabled, the point cloud will be transformed to a
+# registered point cloud, using the transformation saved in the camera.
+# It is assumed that the render parameters Near/Far/UseOpenGL have been set
+# using the SetParameter action.
+bool registered_point_cloud
+# The parameters specifying how the point cloud should be rendered. If unset
+# the default parameters Near=1, Far=100000, use_opengl=False will be used.
+RenderParameters render_parameters
+
 # When this flag is enabled, the requested data will be published on the
 # corresponding topics (see the documentation of the camera node).
 # Automatically enabled, when publish_results and include_results_in_response

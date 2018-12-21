@@ -322,4 +322,9 @@ private:
 
   ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const;
   void writeParameter(ensenso_camera_msgs::Parameter const& parameter);
+
+  /**
+   * Obtain the directly linked camera, used by the renderPointCloud.
+   */
+  std::string getLinkedCamera() const;
 };

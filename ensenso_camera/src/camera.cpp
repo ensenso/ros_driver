@@ -16,6 +16,8 @@
 #include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
 
+#include <ensenso_camera_msgs/RenderParameters.h>
+
 /**
  * The interval at which we publish diagnostic messages containing the camera
  * status.
@@ -508,6 +510,13 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   bool computePointCloud = requestPointCloud || goal->request_normals;
   bool computeDisparityMap = goal->request_disparity_map || computePointCloud;
 
+  bool registeredPointCloud = goal->registered_point_cloud;
+  // RegisterParameters.
+  auto monoCamSerial = goal->monocular_camera_serial != "" ? goal->monocular_camera_serial : getLinkedCamera();
+  auto render_near = goal->render_parameters.near < goal->render_parameters.far ? goal->render_parameters.near : 1;
+  auto render_far = goal->render_parameters.near < goal->render_parameters.far ? goal->render_parameters.far : 10000;
+  auto use_opengl = goal->render_parameters.use_opengl;
+
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
   ros::Time imageTimestamp = capture();
 
@@ -609,13 +618,23 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   {
     updateTransformations(imageTimestamp, "", goal->use_cached_transformation);
 
-    NxLibCommand computePointMap(cmdComputePointMap);
-    computePointMap.parameters()[itmCameras] = serial;
-    computePointMap.execute();
+    NxLibCommand makePointMap(registeredPointCloud ? cmdRenderPointMap : cmdComputePointMap);
+    makePointMap.parameters()[itmCameras] = registeredPointCloud ? monoCamSerial : serial;
+    auto imgKey = registeredPointCloud ? itmRenderPointMap : itmPointMap;
+
+    if (registeredPointCloud)
+    {
+      makePointMap.parameters()[itmNear] = render_near;
+      makePointMap.parameters()[itmFar] = render_far;
+      NxLibItem root;
+      // TODO: It would be better to make the UseOpenGL available through SetParameter, but it's not a Camera parameter.
+      root[itmParameters][itmRenderPointMap][itmUseOpenGL] = use_opengl;
+    }
+    makePointMap.execute();
 
     if (requestPointCloud && !goal->request_normals)
     {
-      auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI);
+      auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][imgKey], targetFrame, pointCloudROI);
 
       if (goal->include_results_in_response)
       {
