@@ -6,13 +6,13 @@ string parameter_set
 bool request_raw_images
 bool request_rectified_images
 bool request_disparity_map
-bool request_point_cloud
+bool request_point_cloud = True
 bool request_normals
 bool request_rgbd
 
 # When this flag is enabled, the point cloud will be transformed to the
 # registered point cloud, using the transformation saved in the camera.
-bool registered_point_cloud
+bool registered_point_cloud = True
 # When registered_point_cloud is set, monocular_camera_serial definies the
 # serial number of the monocular camera to which the point cloud should be
 # registered to, if unset the linked camera of the node is used as reference.

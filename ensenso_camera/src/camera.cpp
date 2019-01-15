@@ -522,6 +522,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   }
 
   bool registeredPointCloud = goal->registered_point_cloud;
+
   std::string monoCamSerial = goal->monocular_camera_serial != "" ? goal->monocular_camera_serial : linkedMonoCamera.serial;
 
   bool computePointCloud = requestRGBD || requestPointCloud || goal->request_normals;
@@ -643,12 +644,13 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 	    	renderPointMap.parameters()[itmCamera] = linkedMonoCamera.serial;
 	    	renderPointMap.parameters()[itmNear] = 1;
 	        NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-	    	monoCameraNode[itmParameters][itmRenderPointMap][itmUseOpenGL] = false;
+	        NxLibItem rootNode = NxLibItem();
+	    	rootNode[itmParameters][itmRenderPointMap][itmUseOpenGL] = false;
 			renderPointMap.execute();
 
 		    if (requestPointCloud && !goal->request_normals)
 		    {
-		      auto pointCloud = pointCloudFromNxLib(monoCameraNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
+		      auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
 
 		      if (goal->include_results_in_response)
 		      {
@@ -1322,11 +1324,6 @@ ros::Time Camera::capture() const
     capture.parameters()[itmCameras] = linkedMonoCamera.serial;
     NxLibItem monoCamNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
     capture.execute();
-
-  	NxLibCommand saveImage(cmdSaveImage);
-  	saveImage.parameters()[itmFilename] = "/tmp/mono_bef.png";
-  	saveImage.parameters()[itmNode] = monoCamNode[itmImages][itmRaw].path;;
-	saveImage.execute();
   }
 
   NxLibItem imageNode = cameraNode[itmImages][itmRaw];
