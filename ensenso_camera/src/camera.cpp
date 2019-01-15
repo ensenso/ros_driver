@@ -177,10 +177,12 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rightRawImagePublisher = imageTransport.advertiseCamera("raw/right/image", 1);
   leftRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/left/image", 1);
   rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
+  linkedCameraImagePublisher = imageTransport.advertise("linked_camera/image", 1);
   disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
 
   rgbdPublisher = nh.advertise<rgbd::RGBDImage>("rgbd", 1);
   pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
+  registeredPointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("registered_point_cloud", 1);
 
   statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
   statusTimer = nh.createTimer(ros::Duration(STATUS_INTERVAL), &Camera::publishStatus, this);
@@ -558,6 +560,14 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
       // We only publish one of the images on the topic, even if FlexView is enabled.
       leftRawImagePublisher.publish(rawImages[0].first, leftCameraInfo);
       rightRawImagePublisher.publish(rawImages[0].second, rightCameraInfo);
+
+      //TODO: publish monocular image
+      //if(linkedMonoCamera.exists){
+      	//NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
+      	//auto rawImage = imagesFromNxLibNode(monoCameraNode[itmImages][itmRaw]);
+      	//linkedCameraImagePublisher.publish(rawImage);
+      //}
+
     }
   }
 
@@ -659,7 +669,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 
 		      if (publishResults)
 		      {
-		        pointCloudPublisher.publish(pointCloud);
+		        registeredPointCloudPublisher.publish(pointCloud);
 		      }
 		    }
 		}

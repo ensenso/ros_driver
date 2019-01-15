@@ -139,10 +139,12 @@ private:
   image_transport::CameraPublisher rightRawImagePublisher;
   image_transport::CameraPublisher leftRectifiedImagePublisher;
   image_transport::CameraPublisher rightRectifiedImagePublisher;
+  image_transport::Publisher linkedCameraImagePublisher;
   image_transport::Publisher disparityMapPublisher;
 
   ros::Publisher rgbdPublisher;
   ros::Publisher pointCloudPublisher;
+  ros::Publisher registeredPointCloudPublisher;
 
   ros::Publisher statusPublisher;
   ros::Timer statusTimer;
