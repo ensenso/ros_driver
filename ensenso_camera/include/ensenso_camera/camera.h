@@ -71,6 +71,15 @@ struct ParameterSet
   ParameterSet(std::string const& name, NxLibItem const& defaultParameters);
 };
 
+
+/**
+* Store information about the (possible) linked camera
+*/
+struct linkedCamera {
+  bool exists = false;
+  std::string serial = "";
+};
+
 /**
  * Indicates whether the projector and front light should be turned on or off
  * automatically.
@@ -96,6 +105,9 @@ private:
 
   // Whether the camera is fixed in the world or moves with a robot.
   bool fixed;
+
+  // Linked camera info
+  linkedCamera linkedMonoCamera;
 
   std::string cameraFrame;
   std::string targetFrame;
@@ -324,5 +336,8 @@ private:
   ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const;
   void writeParameter(ensenso_camera_msgs::Parameter const& parameter);
 
+  /**
+   * Obtain the directly linked camera, used by the renderPointCloud.
+   */
   std::string getLinkedCamera() const;
 };
