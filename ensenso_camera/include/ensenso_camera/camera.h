@@ -3,8 +3,13 @@
 #include <image_transport/image_transport.h>
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/image_encodings.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
+#include <cv_bridge/cv_bridge.h>
 
 #include <map>
 #include <memory>

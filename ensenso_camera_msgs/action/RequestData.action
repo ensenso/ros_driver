@@ -22,7 +22,7 @@ string monocular_camera_serial
 # corresponding topics (see the documentation of the camera node).
 # Automatically enabled, when publish_results and include_results_in_response
 # are both not given.
-bool publish_results
+bool publish_results = True
 # When this flag is enabled, the resulting data will be included in the result
 # of this action (see below).
 bool include_results_in_response
