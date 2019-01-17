@@ -502,6 +502,11 @@ void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const&
   FINISH_NXLIB_ACTION(SetParameter)
 }
 
+sensor_msgs::Image Camera::getLinkedCameraImageMessage(){return linkedCameraImageMessage;}
+
+sensor_msgs::PointCloud2 Camera::getLinkedCameraPointCloudMessage(){return linkedCameraPointCloudMessage;}
+
+
 void getCVMat(cv::Mat& cvMat, NxLibItem const& node){
 	int width, height, type, channels, bpe;
 			bool isFlt;
@@ -614,9 +619,10 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 		result
 	);
 	// publish the image
+  linkedCameraImageMessage = *cv_image.toImageMsg();
+  
 	linkedCameraImagePublisher.publish(cv_image.toImageMsg());
   }
-
 
   if (goal->request_raw_images)
   {
@@ -716,7 +722,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     // First, compute pointCloud in reference of Stereo Cam (used for SR grasp poses)
     NxLibCommand computePointMap(cmdComputePointMap);
     computePointMap.parameters()[itmCameras] = serial;   
-	computePointMap.execute();
+	  computePointMap.execute();
 
 	// Compute pointCloud in frame monocular frame
     if (registeredPointCloud)
@@ -734,7 +740,9 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 		    {
 		      auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
 
-		      if (goal->include_results_in_response)
+		      pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
+          //TODO: Change topics to registered_point_cloud
+		      /*if (goal->include_results_in_response)
 		      {
 		        pcl::toROSMsg(*pointCloud, result.point_cloud);
 		      }
@@ -742,7 +750,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 		      if (publishResults)
 		      {
 		        registeredPointCloudPublisher.publish(pointCloud);
-		      }
+		      }*/
 		    }
 		}
 		else

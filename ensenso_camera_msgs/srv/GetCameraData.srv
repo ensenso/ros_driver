@@ -1,0 +1,3 @@
+---
+sensor_msgs/Image color               # A synchronized color image.
+sensor_msgs/PointCloud2 point_cloud   # A synchronized point cloud.

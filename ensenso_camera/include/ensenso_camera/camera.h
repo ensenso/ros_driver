@@ -126,6 +126,8 @@ private:
   sensor_msgs::CameraInfoPtr rightCameraInfo;
   sensor_msgs::CameraInfoPtr leftRectifiedCameraInfo;
   sensor_msgs::CameraInfoPtr rightRectifiedCameraInfo;
+  sensor_msgs::Image linkedCameraImageMessage;
+  sensor_msgs::PointCloud2 linkedCameraPointCloudMessage;
 
   tf::TransformListener transformListener;
   tf::TransformBroadcaster transformBroadcaster;
@@ -231,6 +233,10 @@ public:
    * Callback for the `calibrate_workspace` action.
    */
   void onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceGoalConstPtr const& goal);
+
+  sensor_msgs::Image getLinkedCameraImageMessage();
+  
+  sensor_msgs::PointCloud2 getLinkedCameraPointCloudMessage();
 
 private:
   /**
