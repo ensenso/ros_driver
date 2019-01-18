@@ -183,7 +183,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
 
   rgbdPublisher = nh.advertise<rgbd::RGBDImage>("rgbd", 1);
   pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
-  registeredPointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("linked_camera/  registered_point_cloud", 1);
+  registeredPointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("linked_camera/registered_point_cloud", 1);
 
   statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
   statusTimer = nh.createTimer(ros::Duration(STATUS_INTERVAL), &Camera::publishStatus, this);
