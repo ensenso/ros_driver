@@ -594,10 +594,10 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
   
-  ROS_INFO("STARTED TO CAPTURE DATA AFTER %f", (startTime - std::clock())/ (double) CLOCKS_PER_SEC);
+  ROS_INFO("STARTED TO CAPTURE DATA AFTER %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
   std::clock_t captureStartTime = std::clock();
   ros::Time imageTimestamp = capture();
-  ROS_INFO("CAPTURE DATA TOOK %f", (captureStartTime - std::clock())/ (double) CLOCKS_PER_SEC);
+  ROS_INFO("CAPTURE DATA TOOK %f", (std::clock() - captureStartTime)/ (double) CLOCKS_PER_SEC);
 
 
   PREEMPT_ACTION_IF_REQUESTED
@@ -632,7 +632,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   	// publish the image
     linkedCameraImageMessage = *cv_image.toImageMsg();
   	linkedCameraImagePublisher.publish(cv_image.toImageMsg());
-    ROS_INFO("TIME UNTIL PUBLISH LINKED CAMERA IMAGE %f", (startTime - std::clock())/ (double) CLOCKS_PER_SEC);
+    ROS_INFO("TIME UNTIL PUBLISH LINKED CAMERA IMAGE %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
   }
 
   if (goal->request_raw_images)
@@ -672,9 +672,11 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   }
   else if (computeDisparityMap)
   {
+    std::clock_t disparityMapStartTime = std::clock();
     NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
     computeDisparityMap.parameters()[itmCameras] = serial;
     computeDisparityMap.execute();
+    ROS_INFO("DISPARITY MAP CALCULATION TOOK %f", (std::clock() - disparityMapStartTime )/ (double) CLOCKS_PER_SEC);
   }
 
   if (goal->request_rectified_images)
@@ -726,7 +728,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 
   if (computePointCloud)
   {
-    ROS_INFO("STARTING POINT CLOUDS CALCULATIONS AFTER %f", (startTime - std::clock())/ (double) CLOCKS_PER_SEC);
+    ROS_INFO("STARTING POINT CLOUDS CALCULATIONS AFTER %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
     std::clock_t pointCloudStartTime = std::clock();
     updateTransformations(imageTimestamp, "", goal->use_cached_transformation);
 
@@ -752,8 +754,8 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 		      auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
 
 		      pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
-          ROS_INFO("REGISTERED POINT CLOUD TOOK %f", (pointCloudStartTime - std::clock())/ (double) CLOCKS_PER_SEC);
-          ROS_INFO("REGISTERED POINT CLOUD SENT AFTER %f", (startTime - std::clock())/ (double) CLOCKS_PER_SEC);
+          ROS_INFO("REGISTERED POINT CLOUD TOOK %f", (std::clock() - pointCloudStartTime)/ (double) CLOCKS_PER_SEC);
+          ROS_INFO("REGISTERED POINT CLOUD SENT AFTER %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
           //TODO: Change topics to registered_point_cloud
 		      /*if (goal->include_results_in_response)
 		      {
@@ -834,7 +836,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   FINISH_NXLIB_ACTION(RequestData)
 
   std::clock_t endTime = std::clock();
-  double totalDuration = (startTime - endTime)/ (double) CLOCKS_PER_SEC;
+  double totalDuration = (endTime - startTime)/ (double) CLOCKS_PER_SEC;
 
   if(logTime)
     ROS_INFO("REQUEST_DATA TOOK %f", totalDuration);
