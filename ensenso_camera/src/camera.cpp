@@ -242,8 +242,8 @@ bool Camera::open()
 
   // If there is, then open it too
   if(serialLinkedCamera != ""){
-	linkedMonoCamera.exists = true;
-	linkedMonoCamera.serial = serialLinkedCamera;
+	  linkedMonoCamera.exists = true;
+	  linkedMonoCamera.serial = serialLinkedCamera;
     ROS_INFO("Linked camera detected with serial %s -> %s", serialLinkedCamera.c_str(), serial.c_str());
     NxLibCommand openMono(cmdOpen);
     openMono.parameters()[itmCameras] = serialLinkedCamera;
@@ -585,55 +585,37 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     requestRGBD = true;
   }
 
-  bool registeredPointCloud = goal->registered_point_cloud;
+  bool requestRegisteredPointCloud = goal->registered_point_cloud;
 
   std::string monoCamSerial = goal->monocular_camera_serial != "" ? goal->monocular_camera_serial : linkedMonoCamera.serial;
 
   bool computePointCloud = requestRGBD || requestPointCloud || goal->request_normals;
   bool computeDisparityMap = goal->request_disparity_map || computePointCloud;
+  
+  if(logTime)
+    ROS_INFO("STARTED TO CAPTURE DATA AFTER %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
+  
+  std::clock_t linkedCamCaptureStartTime = std::clock();
+  
+  if(linkedMonoCamera.exists && requestRegisteredPointCloud)
+    ros::Time linkedImageTimestamp = captureLinkedCameraImage();
+  
+  if(logTime)
+    ROS_INFO("CAPTURE AND PUBLISH LINKED CAM IMAGE TOOK %f", (std::clock() - linkedCamCaptureStartTime)/ (double) CLOCKS_PER_SEC);
 
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
   
-  ROS_INFO("STARTED TO CAPTURE DATA AFTER %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
   std::clock_t captureStartTime = std::clock();
   ros::Time imageTimestamp = capture();
-  ROS_INFO("CAPTURE DATA TOOK %f", (std::clock() - captureStartTime)/ (double) CLOCKS_PER_SEC);
+  
+  if(logTime)
+    ROS_INFO("CAPTURE STEREO DATA TOOK %f", (std::clock() - captureStartTime)/ (double) CLOCKS_PER_SEC);
 
 
   PREEMPT_ACTION_IF_REQUESTED
 
   feedback.images_acquired = true;
   requestDataServer->publishFeedback(feedback);
-
-  if(linkedMonoCamera.exists)
-  {
-  	// Get image in Opencv image format
-  	NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-  		
-  	int width, height;
-  	double timestamp;
-  	std::vector<float> data;
-  	cv::Mat result;
-
-  	monoCameraNode[itmImages][itmRaw].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
-  	getCVMat(result, monoCameraNode[itmImages][itmRaw]);
-
-  	// create a header
-  	std_msgs::Header header;
-  	header.frame_id = "monocular";
-  	header.stamp    = ros::Time::now();
-
-  	// prepare message
-  	cv_bridge::CvImage cv_image(
-  		header,
-  		sensor_msgs::image_encodings::BGR8,
-  		result
-  	);
-  	// publish the image
-    linkedCameraImageMessage = *cv_image.toImageMsg();
-  	linkedCameraImagePublisher.publish(cv_image.toImageMsg());
-    ROS_INFO("TIME UNTIL PUBLISH LINKED CAMERA IMAGE %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
-  }
 
   if (goal->request_raw_images)
   {
@@ -676,7 +658,9 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
     computeDisparityMap.parameters()[itmCameras] = serial;
     computeDisparityMap.execute();
-    ROS_INFO("DISPARITY MAP CALCULATION TOOK %f", (std::clock() - disparityMapStartTime )/ (double) CLOCKS_PER_SEC);
+    
+    if(logTime)
+      ROS_INFO("DISPARITY MAP CALCULATION TOOK %f", (std::clock() - disparityMapStartTime )/ (double) CLOCKS_PER_SEC);
   }
 
   if (goal->request_rectified_images)
@@ -726,47 +710,45 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     pointCloudROI = &parameterSets.at(currentParameterSet).roi;
   }
 
-  if (computePointCloud)
+  if (computePointCloud || requestRegisteredPointCloud)
   {
-    ROS_INFO("STARTING POINT CLOUDS CALCULATIONS AFTER %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
+    
+    if(logTime)
+      ROS_INFO("STARTING POINT CLOUDS CALCULATIONS AFTER %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
+    
     std::clock_t pointCloudStartTime = std::clock();
     updateTransformations(imageTimestamp, "", goal->use_cached_transformation);
 
-    // First, compute pointCloud in reference of Stereo Cam (used for SR grasp poses)
+    // First, compute pointCloud in reference of Stereo Cam
     NxLibCommand computePointMap(cmdComputePointMap);
     computePointMap.parameters()[itmCameras] = serial;   
 	  computePointMap.execute();
+    
+    if(logTime)
+      ROS_INFO("STEREO POINT TOOK %f", (std::clock() - pointCloudStartTime)/ (double) CLOCKS_PER_SEC);
 
-	// Compute pointCloud in frame monocular frame
-    if (registeredPointCloud)
+	 // Compute pointCloud in frame monocular frame
+    if (requestRegisteredPointCloud)
     {
     	if(linkedMonoCamera.exists){
-	    	NxLibCommand renderPointMap(cmdRenderPointMap);
+	    	std::clock_t linkedPointCloudStartTime = std::clock();
+        NxLibCommand renderPointMap(cmdRenderPointMap);
 	    	renderPointMap.parameters()[itmCamera] = linkedMonoCamera.serial;
 	    	renderPointMap.parameters()[itmNear] = 1;
-	        NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-	        NxLibItem rootNode = NxLibItem();
+	      NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
+	      NxLibItem rootNode = NxLibItem();
 	    	rootNode[itmParameters][itmRenderPointMap][itmUseOpenGL] = false;
-			renderPointMap.execute();
+			  renderPointMap.execute();
+		    
+        // Get point cloud in the correct format and publish it
+        auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
+		    pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
 
-		    if (requestPointCloud && !goal->request_normals)
-		    {
-		      auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
-
-		      pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
-          ROS_INFO("REGISTERED POINT CLOUD TOOK %f", (std::clock() - pointCloudStartTime)/ (double) CLOCKS_PER_SEC);
+        if(logTime)
+        {
+          ROS_INFO("REGISTERED POINT CLOUD TOOK %f", (std::clock() - linkedPointCloudStartTime)/ (double) CLOCKS_PER_SEC);
           ROS_INFO("REGISTERED POINT CLOUD SENT AFTER %f", (std::clock() - startTime)/ (double) CLOCKS_PER_SEC);
-          //TODO: Change topics to registered_point_cloud
-		      /*if (goal->include_results_in_response)
-		      {
-		        pcl::toROSMsg(*pointCloud, result.point_cloud);
-		      }
-
-		      if (publishResults)
-		      {
-		        registeredPointCloudPublisher.publish(pointCloud);
-		      }*/
-		    }
+        }
 		}
 		else
 			ROS_INFO("%s has no linked camera - no registered point cloud available", serial.c_str());
@@ -792,6 +774,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     //RGBD
     if (requestRGBD && !goal->request_normals)
     {
+      std::clock_t rgbdStartTime = std::clock();
       auto rgbdImagePtr = rgbdFromNxLib(cameraNode[itmImages][itmPointMap],
                                         cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera],
                                         targetFrame,
@@ -799,7 +782,10 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 
       rgbd::RGBDImage rosRgbdImage;
       sr::rgbd::toData(*rgbdImagePtr, rosRgbdImage.data);
-
+      
+      if(logTime)
+        ROS_INFO("RGBD TOOK %f", (std::clock() - rgbdStartTime)/ (double) CLOCKS_PER_SEC);
+      
       if (goal->include_results_in_response)
       {
         result.rgbd_image = rosRgbdImage;
@@ -840,9 +826,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 
   if(logTime)
     ROS_INFO("REQUEST_DATA TOOK %f", totalDuration);
-
-  ROS_INFO("ON REQUEST DATA FINISHED");
-
+  
 }
 
 void Camera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPtr const& goal)
@@ -1424,6 +1408,47 @@ void Camera::loadParameterSet(std::string name, ProjectorState projector)
   currentParameterSet = name;
 }
 
+ros::Time Camera::captureLinkedCameraImage() 
+{
+
+    // For the RGB image turn off the lights and projector
+    NxLibCommand capture(cmdCapture);
+    cameraNode[itmParameters][itmCapture][itmProjector] = false;
+    cameraNode[itmParameters][itmCapture][itmFrontLight] = false;
+    capture.parameters()[itmCameras] = linkedMonoCamera.serial;
+    capture.execute();
+
+    // Once image is captured publish it right away
+    NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
+      
+    int width, height;
+    double timestamp;
+    std::vector<float> data;
+    cv::Mat result;
+
+    monoCameraNode[itmImages][itmRaw].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
+    getCVMat(result, monoCameraNode[itmImages][itmRaw]);
+
+    // create a header
+    std_msgs::Header header;
+    header.frame_id = "monocular";
+    header.stamp    = ros::Time::now();
+
+    // prepare message
+    cv_bridge::CvImage cv_image(
+      header,
+      sensor_msgs::image_encodings::BGR8,
+      result
+    );
+
+    // publish the image
+    linkedCameraImageMessage = *cv_image.toImageMsg();
+    linkedCameraImagePublisher.publish(cv_image.toImageMsg());
+
+    return timestampFromNxLibNode( monoCameraNode[itmImages][itmRaw][0]);
+}
+
+
 ros::Time Camera::capture() const
 {
   ROS_DEBUG("Capturing an image...");
@@ -1431,14 +1456,6 @@ ros::Time Camera::capture() const
   NxLibCommand capture(cmdCapture);
   capture.parameters()[itmCameras] = serial;
   capture.execute();
-
-  if(linkedMonoCamera.exists){
-    cameraNode[itmParameters][itmCapture][itmProjector] = false;
-    cameraNode[itmParameters][itmCapture][itmFrontLight] = false;
-    capture.parameters()[itmCameras] = linkedMonoCamera.serial;
-    NxLibItem monoCamNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-    capture.execute();
-  }
 
   NxLibItem imageNode = cameraNode[itmImages][itmRaw];
   if (imageNode.isArray())

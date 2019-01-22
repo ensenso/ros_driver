@@ -286,6 +286,11 @@ private:
   ros::Time capture() const;
 
   /**
+   * Capture image of the linked camera. Return the corresponding timestamp of the captured image
+   */
+  ros::Time captureLinkedCameraImage();
+
+  /**
    * Try to collect patterns on the current images. For the command to be
    * successful, the patterns must be decodable and visible in both cameras.
    */
