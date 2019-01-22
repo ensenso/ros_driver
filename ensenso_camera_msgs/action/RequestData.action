@@ -6,13 +6,13 @@ string parameter_set
 bool request_raw_images
 bool request_rectified_images
 bool request_disparity_map
-bool request_point_cloud = True
+bool request_point_cloud
 bool request_normals
 bool request_rgbd
 
 # When this flag is enabled, the point cloud will be transformed to the
 # registered point cloud, using the transformation saved in the camera.
-bool registered_point_cloud = True
+bool registered_point_cloud
 # When registered_point_cloud is set, monocular_camera_serial definies the
 # serial number of the monocular camera to which the point cloud should be
 # registered to, if unset the linked camera of the node is used as reference.
@@ -22,7 +22,7 @@ string monocular_camera_serial
 # corresponding topics (see the documentation of the camera node).
 # Automatically enabled, when publish_results and include_results_in_response
 # are both not given.
-bool publish_results = True
+bool publish_results
 # When this flag is enabled, the resulting data will be included in the result
 # of this action (see below).
 bool include_results_in_response
@@ -38,6 +38,11 @@ bool use_cached_transformation
 # The resulting point cloud. Also contains the normals when they are requested.
 sensor_msgs/PointCloud2 point_cloud
 rgbd/RGBDImage rgbd_image
+
+# Registered point cloud, linked camera RGBD image and RGB image to be used if a monocular camera is present
+rgbd/RGBDImage linked_camera_rgbd_image
+sensor_msgs/Image linked_camera_rgb_image        # A synchronized color image.
+sensor_msgs/PointCloud2 registered_point_cloud   # A synchronized point cloud.
 
 # The disparity map as it is represented in the NxLib.
 sensor_msgs/Image disparity_map

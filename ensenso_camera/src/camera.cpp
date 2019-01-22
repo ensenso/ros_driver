@@ -178,7 +178,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rightRawImagePublisher = imageTransport.advertiseCamera("raw/right/image", 1);
   leftRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/left/image", 1);
   rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
-  linkedCameraImagePublisher = imageTransport.advertise("linked_camera/image", 1);
+  linkedCameraImagePublisher = imageTransport.advertiseCamera("linked_camera/image", 1);
   disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
 
   rgbdPublisher = nh.advertise<rgbd::RGBDImage>("rgbd", 1);
@@ -503,11 +503,6 @@ void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const&
   FINISH_NXLIB_ACTION(SetParameter)
 }
 
-sensor_msgs::Image Camera::getLinkedCameraImageMessage(){return linkedCameraImageMessage;}
-
-sensor_msgs::PointCloud2 Camera::getLinkedCameraPointCloudMessage(){return linkedCameraPointCloudMessage;}
-
-
 void getCVMat(cv::Mat& cvMat, NxLibItem const& node){
 	int width, height, type, channels, bpe;
 			bool isFlt;
@@ -559,6 +554,7 @@ void getCVMat(cv::Mat& cvMat, NxLibItem const& node){
 			assert(bytesCopied == height*((int) cvMat.step));
 }
 
+
 void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal)
 {
   bool logTime = true;
@@ -598,7 +594,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   std::clock_t linkedCamCaptureStartTime = std::clock();
   
   if(linkedMonoCamera.exists && requestRegisteredPointCloud)
-    ros::Time linkedImageTimestamp = captureLinkedCameraImage();
+    ros::Time linkedImageTimestamp = captureLinkedCameraImage(&result);
   
   if(logTime)
     ROS_INFO("CAPTURE AND PUBLISH LINKED CAM IMAGE TOOK %f", (std::clock() - linkedCamCaptureStartTime)/ (double) CLOCKS_PER_SEC);
@@ -742,7 +738,9 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 		    
         // Get point cloud in the correct format and publish it
         auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
-		    pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
+		    pcl::toROSMsg(*pointCloud, result.registered_point_cloud);
+
+        // Get rgbd image in rbg camera
 
         if(logTime)
         {
@@ -761,6 +759,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
       if (goal->include_results_in_response)
       {
         pcl::toROSMsg(*pointCloud, result.point_cloud);
+        pcl::toROSMsg(*pointCloud, pointCloudMessage);
       }
 
       if (publishResults)
@@ -1408,7 +1407,7 @@ void Camera::loadParameterSet(std::string name, ProjectorState projector)
   currentParameterSet = name;
 }
 
-ros::Time Camera::captureLinkedCameraImage() 
+ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result) 
 {
 
     // For the RGB image turn off the lights and projector
@@ -1424,10 +1423,10 @@ ros::Time Camera::captureLinkedCameraImage()
     int width, height;
     double timestamp;
     std::vector<float> data;
-    cv::Mat result;
+    cv::Mat linkedRgbImage;
 
     monoCameraNode[itmImages][itmRaw].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
-    getCVMat(result, monoCameraNode[itmImages][itmRaw]);
+    getCVMat(linkedRgbImage, monoCameraNode[itmImages][itmRaw]);
 
     // create a header
     std_msgs::Header header;
@@ -1438,14 +1437,14 @@ ros::Time Camera::captureLinkedCameraImage()
     cv_bridge::CvImage cv_image(
       header,
       sensor_msgs::image_encodings::BGR8,
-      result
+      linkedRgbImage
     );
 
     // publish the image
-    linkedCameraImageMessage = *cv_image.toImageMsg();
-    linkedCameraImagePublisher.publish(cv_image.toImageMsg());
+    result->linked_camera_rgb_image = *cv_image.toImageMsg();
+    //linkedCameraImagePublisher.publish(cv_image.toImageMsg());
 
-    return timestampFromNxLibNode( monoCameraNode[itmImages][itmRaw][0]);
+    return timestampFromNxLibNode(monoCameraNode[itmImages][itmRaw][0]);
 }
 
 

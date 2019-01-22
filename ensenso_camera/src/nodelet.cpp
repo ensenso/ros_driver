@@ -124,14 +124,6 @@ bool Nodelet::setSettingsCallback(ensenso_camera_msgs::SetSettings::Request &req
   return true;
 }
 
-bool Nodelet::loadDataCallback(ensenso_camera_msgs::GetCameraData::Request &req,
-                          ensenso_camera_msgs::GetCameraData::Response &res)
-{
-  res.color = camera->getLinkedCameraImageMessage();
-  res.point_cloud = camera->getLinkedCameraPointCloudMessage();
-  return true;
-}
-
 }  // namespace ensenso_camera
 
 

@@ -126,8 +126,7 @@ private:
   sensor_msgs::CameraInfoPtr rightCameraInfo;
   sensor_msgs::CameraInfoPtr leftRectifiedCameraInfo;
   sensor_msgs::CameraInfoPtr rightRectifiedCameraInfo;
-  sensor_msgs::Image linkedCameraImageMessage;
-  sensor_msgs::PointCloud2 linkedCameraPointCloudMessage;
+  sensor_msgs::PointCloud2 pointCloudMessage;
 
   tf::TransformListener transformListener;
   tf::TransformBroadcaster transformBroadcaster;
@@ -146,10 +145,11 @@ private:
   image_transport::CameraPublisher rightRawImagePublisher;
   image_transport::CameraPublisher leftRectifiedImagePublisher;
   image_transport::CameraPublisher rightRectifiedImagePublisher;
-  image_transport::Publisher linkedCameraImagePublisher;
+  image_transport::CameraPublisher linkedCameraImagePublisher;
   image_transport::Publisher disparityMapPublisher;
 
   ros::Publisher rgbdPublisher;
+  ros::Publisher linkedCameraRgbdPublisher;
   ros::Publisher pointCloudPublisher;
   ros::Publisher registeredPointCloudPublisher;
 
@@ -234,10 +234,6 @@ public:
    */
   void onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceGoalConstPtr const& goal);
 
-  sensor_msgs::Image getLinkedCameraImageMessage();
-  
-  sensor_msgs::PointCloud2 getLinkedCameraPointCloudMessage();
-
 private:
   /**
    * Check whether the camera is available for opening.
@@ -288,7 +284,7 @@ private:
   /**
    * Capture image of the linked camera. Return the corresponding timestamp of the captured image
    */
-  ros::Time captureLinkedCameraImage();
+  ros::Time captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result);
 
   /**
    * Try to collect patterns on the current images. For the command to be
