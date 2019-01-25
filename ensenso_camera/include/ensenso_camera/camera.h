@@ -292,7 +292,7 @@ private:
   /**
    * Capture image of the linked camera. Return the corresponding timestamp of the captured image
    */
-  ros::Time captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result);
+  ros::Time captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result, bool logTime);
 
   /**
    * Try to collect patterns on the current images. For the command to be

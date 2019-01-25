@@ -601,7 +601,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   auto linkedCamCaptureStartTime = std::chrono::high_resolution_clock::now();
   
   if(linkedMonoCamera.exists && requestRegisteredPointCloud)
-    ros::Time linkedImageTimestamp = captureLinkedCameraImage(&result);
+    ros::Time linkedImageTimestamp = captureLinkedCameraImage(&result, logTime);
   
   if(logTime)
     ROS_INFO("CAPTURE AND PUBLISH LINKED CAM IMAGE TOOK %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - linkedCamCaptureStartTime).count());
@@ -743,15 +743,19 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 	    	rootNode[itmParameters][itmRenderPointMap][itmUseOpenGL] = false;
 			  renderPointMap.execute();
 		    
+        auto publishLinkedPointCloudStartTime = std::chrono::high_resolution_clock::now();
         // Get point cloud in the correct format and publish it
         auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
 		    //pcl::toROSMsg(*pointCloud, result.registered_point_cloud);
         pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
+        auto publishLinkedPointCloudEndTime = std::chrono::high_resolution_clock::now();
 
         // Get rgbd image in rbg camera
 
         if(logTime)
         {
+          ROS_INFO("COMPUTE REGISTERED POINT CLOUD TOOK %f", std::chrono::duration<double>(publishLinkedPointCloudStartTime - linkedPointCloudStartTime).count());
+          ROS_INFO("PUBLISH REGISTERED POINT CLOUD TOOK %f", std::chrono::duration<double>(publishLinkedPointCloudEndTime - publishLinkedPointCloudStartTime).count());
           ROS_INFO("REGISTERED POINT CLOUD TOOK %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - linkedPointCloudStartTime).count());
           ROS_INFO("REGISTERED POINT CLOUD SENT AFTER %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - startTime).count());
         }
@@ -787,11 +791,14 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
                                         targetFrame,
                                         pointCloudROI);
 
+      auto publishRgbdStartTime = std::chrono::high_resolution_clock::now();
       rgbd::RGBDImage rosRgbdImage;
       sr::rgbd::toData(*rgbdImagePtr, rosRgbdImage.data);
       
-      if(logTime)
-        ROS_INFO("RGBD TOOK %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - rgbdStartTime).count());
+      if(logTime){
+        ROS_INFO("PUBLISH RGBD TOOK %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - publishRgbdStartTime).count());
+        ROS_INFO("CAPTURE RGBD TOOK %f", std::chrono::duration<double>(publishRgbdStartTime - rgbdStartTime).count());
+      }
       
       if (goal->include_results_in_response || (requestRegisteredPointCloud && linkedMonoCamera.exists))
       {
@@ -1415,8 +1422,10 @@ void Camera::loadParameterSet(std::string name, ProjectorState projector)
   currentParameterSet = name;
 }
 
-ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result) 
+ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result, bool logTime) 
 {
+
+    auto monoCaptureStartTime = std::chrono::high_resolution_clock::now();
 
     // For the RGB image turn off the lights and projector
     NxLibCommand capture(cmdCapture);
@@ -1425,6 +1434,7 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
     capture.parameters()[itmCameras] = linkedMonoCamera.serial;
     capture.execute();
 
+    auto monoPublishStartTime = std::chrono::high_resolution_clock::now();
     // Once image is captured publish it right away
     NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
       
@@ -1451,6 +1461,11 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
     // publish the image
     //result->linked_camera_rgb_image = *cv_image.toImageMsg();
     linkedCameraImageMessage = *cv_image.toImageMsg();
+
+    if(logTime){
+      ROS_INFO("CAPTURE MONOCULAR IMAGE TOOK %f", std::chrono::duration<double>(monoPublishStartTime- monoCaptureStartTime ).count());
+      ROS_INFO("PUBLISHING MONOCULAR IMAGE TOOK %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
+    }
     //linkedCameraImagePublisher.publish(cv_image.toImageMsg());
 
     return timestampFromNxLibNode(monoCameraNode[itmImages][itmRaw]);
