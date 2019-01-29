@@ -164,6 +164,8 @@ private:
   std::map<std::string, ParameterSet> parameterSets;
   std::string currentParameterSet;
 
+  NxLibItem rootNode;
+
   mutable std::map<std::string, tf::StampedTransform> transformationCache;
 
   // Information that we remember between the different steps of the hand eye
@@ -214,11 +216,15 @@ public:
    * Callback for the `set_parameter` action.
    */
   void onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal);
-
   /**
    * Callback for the `request_data` action.
    */
   void onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal);
+
+  void handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result, ensenso_camera_msgs::RequestDataFeedback& feedback);
+
+  void handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result);
+
   /**
    * Callback for the `locate_pattern` action.
    */
