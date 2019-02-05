@@ -250,6 +250,24 @@ bool Camera::open()
     NxLibCommand openMono(cmdOpen);
     openMono.parameters()[itmCameras] = serialLinkedCamera;
     openMono.execute();
+
+    linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
+  
+    // Load the initial guesses from the action goal.
+    geometry_msgs::TransformStamped static_transform;
+
+    static_transform.transform.translation.x = linkedMonoCamera.node[itmLink][itmTranslation][0].asDouble();
+    static_transform.transform.translation.y = linkedMonoCamera.node[itmLink][itmTranslation][1].asDouble();
+    static_transform.transform.translation.z = linkedMonoCamera.node[itmLink][itmTranslation][2].asDouble();
+    static_transform.transform.rotation.x = linkedMonoCamera.node[itmLink][itmRotation][itmAxis][0].asDouble();
+    static_transform.transform.rotation.y = linkedMonoCamera.node[itmLink][itmRotation][itmAxis][1].asDouble();
+    static_transform.transform.rotation.z = linkedMonoCamera.node[itmLink][itmRotation][itmAxis][2].asDouble();
+    static_transform.transform.rotation.w = linkedMonoCamera.node[itmLink][itmRotation][itmAngle].asDouble();
+    linkedMonoCamera.static_tf_broadcaster.sendTransform(static_transform);
+
+    //Publish static tf
+
+
   }
 
   }
@@ -729,8 +747,6 @@ void Camera::handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
         NxLibCommand renderPointMap(cmdRenderPointMap);
         renderPointMap.parameters()[itmCamera] = linkedMonoCamera.serial;
         renderPointMap.parameters()[itmNear] = 1;
-        NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-        NxLibItem rootNode = NxLibItem();
         rootNode[itmParameters][itmRenderPointMap][itmUseOpenGL] = false;
         renderPointMap.execute();
         
@@ -1530,16 +1546,14 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
     capture.execute();
 
     auto monoPublishStartTime = std::chrono::high_resolution_clock::now();
-    // Once image is captured publish it right away
-    NxLibItem monoCameraNode = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-      
+    // Once image is captured publish it right away     
     int width, height;
     double timestamp;
     std::vector<float> data;
     cv::Mat linkedRgbImage;
 
-    monoCameraNode[itmImages][itmRaw].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
-    getCVMat(linkedRgbImage, monoCameraNode[itmImages][itmRaw]);
+    linkedMonoCamera.node[itmImages][itmRaw].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
+    getCVMat(linkedRgbImage, linkedMonoCamera.node[itmImages][itmRaw]);
 
     // create a header
     std_msgs::Header header;
@@ -1563,7 +1577,7 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
     }
     //linkedCameraImagePublisher.publish(cv_image.toImageMsg());
 
-    return timestampFromNxLibNode(monoCameraNode[itmImages][itmRaw]);
+    return timestampFromNxLibNode(linkedMonoCamera.node[itmImages][itmRaw]);
 }
 
 ros::Time Camera::capture() const
