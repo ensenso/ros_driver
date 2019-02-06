@@ -6,8 +6,8 @@
 #include <sensor_msgs/image_encodings.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <tf2_ros/static_transform_broadcaster.h>
-#include <geometry_msgs/Transform.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
@@ -86,7 +86,6 @@ struct linkedCamera {
   bool exists = false;
   std::string serial = "";
   NxLibItem node;
-  static tf2_ros::StaticTransformBroadcaster static_tf_broadcaster;
 };
 
 /**
@@ -136,6 +135,7 @@ private:
 
   tf::TransformListener transformListener;
   tf::TransformBroadcaster transformBroadcaster;
+  tf2_ros::StaticTransformBroadcaster static_tf_broadcaster;
 
   std::unique_ptr<AccessTreeServer> accessTreeServer;
   std::unique_ptr<ExecuteCommandServer> executeCommandServer;

@@ -251,11 +251,14 @@ bool Camera::open()
     openMono.parameters()[itmCameras] = serialLinkedCamera;
     openMono.execute();
 
+    //Get monocular cam node
     linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
   
-    // Load the initial guesses from the action goal.
+    //Publish static tf
     geometry_msgs::TransformStamped static_transform;
-
+    static_transform.header.stamp = ros::Time::now();
+    static_transform.header.frame_id = cameraFrame;
+    static_transform.child_frame_id = "monocular_camera";
     static_transform.transform.translation.x = linkedMonoCamera.node[itmLink][itmTranslation][0].asDouble();
     static_transform.transform.translation.y = linkedMonoCamera.node[itmLink][itmTranslation][1].asDouble();
     static_transform.transform.translation.z = linkedMonoCamera.node[itmLink][itmTranslation][2].asDouble();
@@ -263,9 +266,12 @@ bool Camera::open()
     static_transform.transform.rotation.y = linkedMonoCamera.node[itmLink][itmRotation][itmAxis][1].asDouble();
     static_transform.transform.rotation.z = linkedMonoCamera.node[itmLink][itmRotation][itmAxis][2].asDouble();
     static_transform.transform.rotation.w = linkedMonoCamera.node[itmLink][itmRotation][itmAngle].asDouble();
-    linkedMonoCamera.static_tf_broadcaster.sendTransform(static_transform);
+    static_tf_broadcaster.sendTransform(static_transform);
+    ros::spinOnce();
+    ros::Rate r(10);
+    r.sleep();
 
-    //Publish static tf
+    
 
 
   }
@@ -860,6 +866,7 @@ void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstP
   
     //Then disparityMap
     cameraNode[itmParameters][itmDisparityMap][itmStereoMatching][itmMethod] = "SgmAligned";
+    cameraNode[itmParameters][itmDisparityMap][itmScaling] = 0.4;
     auto disparityMapStartTime = std::chrono::high_resolution_clock::now();
     NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
     computeDisparityMap.parameters()[itmCameras] = serial;
