@@ -256,23 +256,14 @@ bool Camera::open()
   
     //Publish static tf
     geometry_msgs::TransformStamped static_transform;
+    tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
     static_transform.header.stamp = ros::Time::now();
     static_transform.header.frame_id = cameraFrame;
     static_transform.child_frame_id = "monocular_camera";
-    static_transform.transform.translation.x = linkedMonoCamera.node[itmLink][itmTranslation][0].asDouble();
-    static_transform.transform.translation.y = linkedMonoCamera.node[itmLink][itmTranslation][1].asDouble();
-    static_transform.transform.translation.z = linkedMonoCamera.node[itmLink][itmTranslation][2].asDouble();
-    static_transform.transform.rotation.x = linkedMonoCamera.node[itmLink][itmRotation][itmAxis][0].asDouble();
-    static_transform.transform.rotation.y = linkedMonoCamera.node[itmLink][itmRotation][itmAxis][1].asDouble();
-    static_transform.transform.rotation.z = linkedMonoCamera.node[itmLink][itmRotation][itmAxis][2].asDouble();
-    static_transform.transform.rotation.w = linkedMonoCamera.node[itmLink][itmRotation][itmAngle].asDouble();
     static_tf_broadcaster.sendTransform(static_transform);
     ros::spinOnce();
     ros::Rate r(10);
     r.sleep();
-
-    
-
 
   }
 
