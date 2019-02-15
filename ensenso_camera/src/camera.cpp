@@ -865,6 +865,8 @@ void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstP
     
     if(goal->log_time)
       ROS_INFO("DISPARITY_MAP_CALCULATION %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - disparityMapStartTime ).count());
+
+    result.success = true;
   }
   
   if(goal->request_rgbd){
@@ -890,6 +892,8 @@ void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstP
       ROS_INFO("PUBLISH_RGBD %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - publishRgbdStartTime).count());
       ROS_INFO("CAPTURE_RGBD %f", std::chrono::duration<double>(publishRgbdStartTime - rgbdStartTime).count());
     }
+    result.success = true;
+
   }
   
   if(goal->request_registered_point_cloud){
@@ -920,6 +924,8 @@ void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstP
         ROS_INFO("COMPUTE_REGISTERED_POINT_CLOUD %f", std::chrono::duration<double>(publishLinkedPointCloudStartTime - linkedPointCloudStartTime).count());
         ROS_INFO("PUBLISH_REGISTERED_POINT_CLOUD %f", std::chrono::duration<double>(publishLinkedPointCloudEndTime - publishLinkedPointCloudStartTime).count());
       }
+
+      result.success = true;
     }
   }
 
@@ -1568,6 +1574,7 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
     // publish the image
     //result->linked_camera_rgb_image = *cv_image.toImageMsg();
     linkedCameraImageMessage = *cv_image.toImageMsg();
+    result->success = true;
 
     if(logTime){
       ROS_INFO("CAPTURE_MONOCULAR_IMAGE %f", std::chrono::duration<double>(monoPublishStartTime- monoCaptureStartTime ).count());

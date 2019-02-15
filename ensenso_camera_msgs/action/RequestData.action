@@ -68,6 +68,11 @@ sensor_msgs/CameraInfo right_rectified_camera_info
 # A potential NxLib exception that occured while executing the action.
 NxLibException error
 
+# Return value indicating if the call was successful 
+bool success
+
+
+
 ---
 
 # Set to true as soon as the images were captured.
