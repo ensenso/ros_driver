@@ -525,13 +525,6 @@ void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const&
   FINISH_NXLIB_ACTION(SetParameter)
 }
 
-
-sensor_msgs::Image Camera::getLinkedCameraImageMessage(){return linkedCameraImageMessage;}
-
-sensor_msgs::PointCloud2 Camera::getLinkedCameraPointCloudMessage(){return linkedCameraPointCloudMessage;}
-
-sensor_msgs::PointCloud2 Camera::getPointCloudMessage(){return pointCloudMessage;}
-
 void getCVMat(cv::Mat& cvMat, NxLibItem const& node){
 	int width, height, type, channels, bpe;
 			bool isFlt;
@@ -751,7 +744,6 @@ void Camera::handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
         // Get point cloud in the correct format and publish it
         auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
         //pcl::toROSMsg(*pointCloud, result.registered_point_cloud);
-        pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
         auto publishLinkedPointCloudEndTime = std::chrono::high_resolution_clock::now();
 
         // Get rgbd image in rbg camera
@@ -769,7 +761,6 @@ void Camera::handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     if (requestPointCloud && !goal->request_normals)
     {
       auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI);
-      pcl::toROSMsg(*pointCloud, pointCloudMessage);
 
       if (goal->include_results_in_response)
       {
@@ -857,7 +848,7 @@ void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstP
   
     //Then disparityMap
     cameraNode[itmParameters][itmDisparityMap][itmStereoMatching][itmMethod] = "SgmAligned";
-    cameraNode[itmParameters][itmDisparityMap][itmScaling] = 0.4;
+    // cameraNode[itmParameters][itmDisparityMap][itmScaling] = 0.4;
     auto disparityMapStartTime = std::chrono::high_resolution_clock::now();
     NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
     computeDisparityMap.parameters()[itmCameras] = serial;
@@ -870,6 +861,11 @@ void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstP
   }
   
   if(goal->request_rgbd){
+
+    // First, compute pointCloud in reference of Stereo Cam
+    NxLibCommand computePointMap(cmdComputePointMap);
+    computePointMap.parameters()[itmCameras] = serial;   
+    computePointMap.execute();
 
     PointCloudROI const* pointCloudROI = 0;
     if (parameterSets.at(currentParameterSet).useROI)
@@ -914,7 +910,6 @@ void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstP
 
       // Get point cloud in the correct format and publish it
       auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
-      pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
       pcl::toROSMsg(*pointCloud, result.registered_point_cloud);
       auto publishLinkedPointCloudEndTime = std::chrono::high_resolution_clock::now();
 
@@ -1574,7 +1569,6 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
 
     // publish the image
     result->linked_camera_rgb_image = *cv_image.toImageMsg();
-    linkedCameraImageMessage = *cv_image.toImageMsg();
     result->success = true;
 
     if(logTime){

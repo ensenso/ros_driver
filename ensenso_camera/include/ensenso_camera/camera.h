@@ -246,12 +246,6 @@ public:
    */
   void onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceGoalConstPtr const& goal);
 
-  sensor_msgs::Image getLinkedCameraImageMessage();
-
-  sensor_msgs::PointCloud2 getLinkedCameraPointCloudMessage();
-
-  sensor_msgs::PointCloud2 getPointCloudMessage();
-
 private:
   /**
    * Check whether the camera is available for opening.

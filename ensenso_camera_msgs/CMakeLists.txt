@@ -36,7 +36,6 @@ add_action_files(
 add_service_files(
   FILES
   SetSettings.srv
-  GetCameraData.srv
 )
 
 generate_messages(
