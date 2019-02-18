@@ -915,6 +915,7 @@ void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstP
       // Get point cloud in the correct format and publish it
       auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
       pcl::toROSMsg(*pointCloud, linkedCameraPointCloudMessage);
+      pcl::toROSMsg(*pointCloud, result.registered_point_cloud);
       auto publishLinkedPointCloudEndTime = std::chrono::high_resolution_clock::now();
 
       // Get rgbd image in rbg camera
@@ -1572,12 +1573,12 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
     );
 
     // publish the image
-    //result->linked_camera_rgb_image = *cv_image.toImageMsg();
+    result->linked_camera_rgb_image = *cv_image.toImageMsg();
     linkedCameraImageMessage = *cv_image.toImageMsg();
     result->success = true;
 
     if(logTime){
-      ROS_INFO("CAPTURE_MONOCULAR_IMAGE %f", std::chrono::duration<double>(monoPublishStartTime- monoCaptureStartTime ).count());
+      ROS_INFO("CAPTURE_MONOCULAR_IMAGE %f", std::chrono::duration<double>(monoPublishStartTime-monoCaptureStartTime ).count());
       ROS_INFO("PUBLISHING_MONOCULAR_IMAGE %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
     }
     //linkedCameraImagePublisher.publish(cv_image.toImageMsg());
