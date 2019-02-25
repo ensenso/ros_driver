@@ -602,8 +602,6 @@ void Camera::handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   bool computePointCloud = requestRGBD || requestPointCloud || goal->request_normals;
   bool computeDisparityMap = goal->request_disparity_map || computePointCloud;
 
-  auto linkedCamCaptureStartTime = std::chrono::high_resolution_clock::now();
-  
   if(linkedMonoCamera.exists && requestRegisteredPointCloud)
     ros::Time linkedImageTimestamp = captureLinkedCameraImage(&result, goal->log_time);
 
@@ -659,6 +657,7 @@ void Camera::handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   else if (computeDisparityMap)
   {
     cameraNode[itmParameters][itmDisparityMap][itmStereoMatching][itmMethod] = "SgmAligned";
+    
     auto disparityMapStartTime = std::chrono::high_resolution_clock::now();
     NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
     computeDisparityMap.parameters()[itmCameras] = serial;
@@ -830,7 +829,7 @@ void Camera::handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 }
 
 
-void Camera::handleFizyrOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result){
+void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result){
 
   START_NXLIB_ACTION(RequestData, requestDataServer)
 
@@ -941,8 +940,8 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   ensenso_camera_msgs::RequestDataFeedback feedback;
  
   // After loading goal, branch in two options: either is a Fizyr request or not
-  if(goal->is_fizyr_request)
-    handleFizyrOnRequestData(goal, result);
+  if(goal->linked_camera_request)
+    handleLinkedCameraRequestData(goal, result);
 
   else
     handleOnRequestData(goal, result, feedback);

@@ -10,7 +10,7 @@ bool request_point_cloud
 bool request_normals
 bool request_rgbd
 
-bool is_fizyr_request
+bool linked_camera_request
 bool request_linked_camera_rgb_image
 bool request_registered_point_cloud
 
