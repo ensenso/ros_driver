@@ -118,6 +118,7 @@ private:
   linkedCamera linkedMonoCamera;
 
   std::string cameraFrame;
+  std::string linkedCameraFrame;
   std::string targetFrame;
   std::string robotFrame;
   std::string wristFrame;
@@ -183,7 +184,7 @@ private:
 public:
   Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
          std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
-         std::string const& wristFrame);
+         std::string const& wristFrame, std::string const& linkedCameraFrame);
 
   bool open();
   void close();

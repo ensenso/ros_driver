@@ -31,7 +31,7 @@ void Nodelet::onInit()
     NxLibItem()[itmParameters][itmThreads] = threads;
   }
 
-  std::string serial, fileCameraPath, cameraFrame, targetFrame, robotFrame, wristFrame;
+  std::string serial, fileCameraPath, cameraFrame, targetFrame, robotFrame, wristFrame, linkedCameraFrame;
   bool cameraIsFixed;
 
   if (!nhLocal.getParam("serial", serial))
@@ -67,6 +67,10 @@ void Nodelet::onInit()
   {
     cameraFrame = "ensenso_optical_frame";
   }
+  if (!nhLocal.getParam("linked_camera_frame", linkedCameraFrame))
+  {
+    linkedCameraFrame = "linked_camera_frame";
+  }
   if (!nhLocal.getParam("target_frame", targetFrame))
   {
     targetFrame = cameraFrame;
@@ -85,7 +89,7 @@ void Nodelet::onInit()
 
   NODELET_DEBUG("Opening the camera '%s'...", serial.c_str());
   camera = make_unique<Camera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
-                               wristFrame);
+                               wristFrame, linkedCameraFrame);
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");

@@ -133,7 +133,7 @@ ParameterSet::ParameterSet(const std::string &name, const NxLibItem &defaultPara
 
 Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
                std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
-               std::string const& wristFrame)
+               std::string const& wristFrame, std::string const& linkedCameraFrame)
   : serial(serial)
   , fileCameraPath(fileCameraPath)
   , fixed(fixed)
@@ -141,6 +141,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   , targetFrame(targetFrame)
   , robotFrame(robotFrame)
   , wristFrame(wristFrame)
+  , linkedCameraFrame(linkedCameraFrame)
 {
   isFileCamera = !fileCameraPath.empty();
 
@@ -259,7 +260,7 @@ bool Camera::open()
     tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
     static_transform.header.stamp = ros::Time::now();
     static_transform.header.frame_id = cameraFrame;
-    static_transform.child_frame_id = "monocular_camera";
+    static_transform.child_frame_id = linkedCameraFrame;
     static_tf_broadcaster.sendTransform(static_transform);
     ros::spinOnce();
     ros::Rate r(10);
