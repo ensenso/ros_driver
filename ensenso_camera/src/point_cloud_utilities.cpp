@@ -24,28 +24,26 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
   cloud->header.stamp = (timestamp - NXLIB_TIMESTAMP_OFFSET) * 1e6;
   cloud->header.frame_id = frame;
 
-  
-  //cloud->width = width;
-  //cloud->height = height;
+  cloud->width = width;
+  cloud->height = height;
   cloud->is_dense = false;
-  //cloud->points.resize(width * height);
+  cloud->points.resize(width * height);
   for (int i = 0; i < width * height; i++)
   {
     // Do not add NaN points to the point cloud to save transfer time
     if (!std::isnan(data[i * 3]))
     {
-      pcl::PointXYZ newPoint;
-      newPoint.x = data[i * 3] / 1000.0f;
-      newPoint.y = data[3 * i + 1] / 1000.0f;
-      newPoint.z = data[3 * i + 2] / 1000.0f;
 
-      if (roi != 0 && !roi->contains(newPoint.x, newPoint.y, newPoint.z))
+      cloud->points[i].x = data[i * 3] / 1000.0f;
+      cloud->points[i].y = data[3 * i + 1] / 1000.0f;
+      cloud->points[i].z = data[3 * i + 2] / 1000.0f;
+
+      if (roi != 0 && !roi->contains(cloud->points[i].x, cloud->points[i].y, cloud->points[i].z))
       {
-        continue;
+        cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
+        cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
+        cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
       }
-
-      cloud->push_back(newPoint);
-
     }
   }
   return cloud;

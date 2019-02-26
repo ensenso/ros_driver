@@ -793,7 +793,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       ROS_INFO("CAPTURE_STEREO_DATA %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - captureStartTime).count());
   
     //Then disparityMap
-    cameraNode[itmParameters][itmDisparityMap][itmStereoMatching][itmMethod] = "SgmAligned";
+    //cameraNode[itmParameters][itmDisparityMap][itmStereoMatching][itmMethod] = "SgmAligned";
     // cameraNode[itmParameters][itmDisparityMap][itmScaling] = 0.4;
     auto disparityMapStartTime = std::chrono::high_resolution_clock::now();
     NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
@@ -812,6 +812,8 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     NxLibCommand computePointMap(cmdComputePointMap);
     computePointMap.parameters()[itmCameras] = serial;   
     computePointMap.execute();
+
+
 
     PointCloudROI const* pointCloudROI = 0;
     if (parameterSets.at(currentParameterSet).useROI)
