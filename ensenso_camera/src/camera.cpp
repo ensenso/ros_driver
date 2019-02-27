@@ -1508,7 +1508,7 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
 
     // create a header
     std_msgs::Header header;
-    header.frame_id = "monocular";
+    header.frame_id = linkedCameraFrame;
     header.stamp    = ros::Time::now();
 
     // prepare message
