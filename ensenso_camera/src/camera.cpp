@@ -790,7 +790,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     auto captureStartTime = std::chrono::high_resolution_clock::now();
     ros::Time imageTimestamp = capture();
     if(goal->log_time)
-      ROS_INFO("CAPTURE_STEREO_DATA %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - captureStartTime).count());
+      ROS_INFO("Capture stereo data %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - captureStartTime).count());
   
     //Then disparityMap
     //cameraNode[itmParameters][itmDisparityMap][itmStereoMatching][itmMethod] = "SgmAligned";
@@ -801,7 +801,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     computeDisparityMap.execute();
     
     if(goal->log_time)
-      ROS_INFO("DISPARITY_MAP_CALCULATION %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - disparityMapStartTime ).count());
+      ROS_INFO("Compute disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - disparityMapStartTime ).count());
 
     result.success = true;
   }
@@ -833,8 +833,8 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     result.rgbd_image = rosRgbdImage;
 
     if(goal->log_time){
-      ROS_INFO("PUBLISH_RGBD %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - publishRgbdStartTime).count());
-      ROS_INFO("CAPTURE_RGBD %f", std::chrono::duration<double>(publishRgbdStartTime - rgbdStartTime).count());
+      ROS_INFO("Compute rgbd image %.3f", std::chrono::duration<double>(publishRgbdStartTime - rgbdStartTime).count());
+      ROS_INFO("Set action result %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - publishRgbdStartTime).count());
     }
     result.success = true;
 
@@ -865,8 +865,8 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
 
       if(goal->log_time)
       {
-        ROS_INFO("COMPUTE_REGISTERED_POINT_CLOUD %f", std::chrono::duration<double>(publishLinkedPointCloudStartTime - linkedPointCloudStartTime).count());
-        ROS_INFO("PUBLISH_REGISTERED_POINT_CLOUD %f", std::chrono::duration<double>(publishLinkedPointCloudEndTime - publishLinkedPointCloudStartTime).count());
+        ROS_INFO("Compute registered point cloud %.3f", std::chrono::duration<double>(publishLinkedPointCloudStartTime - linkedPointCloudStartTime).count());
+        ROS_INFO("Set action result %.3f", std::chrono::duration<double>(publishLinkedPointCloudEndTime - publishLinkedPointCloudStartTime).count());
       }
 
       result.success = true;
@@ -882,9 +882,6 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
 void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal)
 {
 
-  if(goal->log_time)
-    ROS_INFO("ON_REQUEST_DATA _STARTED");
-  
   auto startTime = std::chrono::high_resolution_clock::now();
 
   ensenso_camera_msgs::RequestDataResult result;
@@ -901,7 +898,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   std::chrono::duration<double> totalDuration = (endTime - startTime);
   
   if(goal->log_time)
-    ROS_INFO("REQUEST_DATA TOOK %f", totalDuration.count());
+    ROS_INFO("Ensenso request data %.3f", totalDuration.count());
   
 }
 
@@ -1523,8 +1520,8 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
     result->success = true;
 
     if(logTime){
-      ROS_INFO("CAPTURE_MONOCULAR_IMAGE %f", std::chrono::duration<double>(monoPublishStartTime-monoCaptureStartTime ).count());
-      ROS_INFO("PUBLISHING_MONOCULAR_IMAGE %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
+      ROS_INFO("Capture linked cam image %f", std::chrono::duration<double>(monoPublishStartTime-monoCaptureStartTime ).count());
+      ROS_INFO("Set action result %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
     }
     //linkedCameraImagePublisher.publish(cv_image.toImageMsg());
 
