@@ -898,7 +898,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   std::chrono::duration<double> totalDuration = (endTime - startTime);
   
   if(goal->log_time)
-    ROS_INFO("Ensenso request data %.3f", totalDuration.count());
+    ROS_INFO("Total time Ensenso data request %.3f", totalDuration.count());
   
 }
 
