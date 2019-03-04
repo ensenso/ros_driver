@@ -44,7 +44,6 @@ sensor_msgs/PointCloud2 point_cloud
 rgbd/RGBDImage rgbd_image
 
 # Registered point cloud, linked camera RGBD image and RGB image to be used if a monocular camera is present
-rgbd/RGBDImage linked_camera_rgbd_image
 sensor_msgs/Image linked_camera_rgb_image        # A synchronized color image.
 sensor_msgs/PointCloud2 registered_point_cloud   # A synchronized point cloud.
 
@@ -70,8 +69,6 @@ NxLibException error
 
 # Return value indicating if the call was successful 
 bool success
-
-
 
 ---
 
