@@ -179,12 +179,10 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rightRawImagePublisher = imageTransport.advertiseCamera("raw/right/image", 1);
   leftRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/left/image", 1);
   rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
-  linkedCameraImagePublisher = imageTransport.advertiseCamera("linked_camera/image", 1);
   disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
 
   rgbdPublisher = nh.advertise<rgbd::RGBDImage>("rgbd", 1);
   pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
-  registeredPointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("linked_camera/registered_point_cloud", 1);
 
   statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
   statusTimer = nh.createTimer(ros::Duration(STATUS_INTERVAL), &Camera::publishStatus, this);
@@ -243,10 +241,11 @@ bool Camera::open()
   // Check if current camera has linked camera to be opened too
   std::string serialLinkedCamera = getLinkedCamera();
 
-  // If there is, then open it too
+  // If there is a monocular camera, then open it too
   if(serialLinkedCamera != ""){
 	  linkedMonoCamera.exists = true;
 	  linkedMonoCamera.serial = serialLinkedCamera;
+    linkedMonoCamera.cameraFrame = linkedCameraFrame;
     ROS_INFO("Linked camera detected with serial %s -> %s", serialLinkedCamera.c_str(), serial.c_str());
     NxLibCommand openMono(cmdOpen);
     openMono.parameters()[itmCameras] = serialLinkedCamera;
@@ -1523,7 +1522,6 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
       ROS_INFO("Capture linked cam image %f", std::chrono::duration<double>(monoPublishStartTime-monoCaptureStartTime ).count());
       ROS_INFO("Set action result %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
     }
-    //linkedCameraImagePublisher.publish(cv_image.toImageMsg());
 
     return timestampFromNxLibNode(linkedMonoCamera.node[itmImages][itmRaw]);
 }

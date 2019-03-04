@@ -1,4 +1,0 @@
----
-sensor_msgs/Image linked_camera_rgb               # A synchronized color image.
-sensor_msgs/PointCloud2  point_cloud   # A synchronized point cloud.
-sensor_msgs/PointCloud2 registered_point_cloud   # A synchronized point cloud.

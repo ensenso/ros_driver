@@ -7,7 +7,7 @@
 #include "ensenso_camera/camera.h"
 
 #include "ensenso_camera_msgs/SetSettings.h"
-#include <ros/ros.h>
+
 
 namespace ensenso_camera
 {

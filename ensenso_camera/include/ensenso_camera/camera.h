@@ -6,8 +6,8 @@
 #include <sensor_msgs/image_encodings.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
-#include <geometry_msgs/TransformStamped.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
@@ -80,12 +80,13 @@ struct ParameterSet
 
 
 /**
-* Store information about the (possible) linked camera
+* Struct to store information about linked camera
 */
 struct linkedCamera {
   bool exists = false;
   std::string serial = "";
   NxLibItem node;
+  std::string cameraFrame;
 };
 
 /**
@@ -114,7 +115,7 @@ private:
   // Whether the camera is fixed in the world or moves with a robot.
   bool fixed;
 
-  // Linked camera info
+  // Linked camera
   linkedCamera linkedMonoCamera;
 
   std::string cameraFrame;
@@ -152,13 +153,10 @@ private:
   image_transport::CameraPublisher rightRawImagePublisher;
   image_transport::CameraPublisher leftRectifiedImagePublisher;
   image_transport::CameraPublisher rightRectifiedImagePublisher;
-  image_transport::CameraPublisher linkedCameraImagePublisher;
   image_transport::Publisher disparityMapPublisher;
 
   ros::Publisher rgbdPublisher;
-  ros::Publisher linkedCameraRgbdPublisher;
   ros::Publisher pointCloudPublisher;
-  ros::Publisher registeredPointCloudPublisher;
 
   ros::Publisher statusPublisher;
   ros::Timer statusTimer;
@@ -169,6 +167,7 @@ private:
   std::map<std::string, ParameterSet> parameterSets;
   std::string currentParameterSet;
 
+  // Item to retrieve info from root node
   NxLibItem rootNode;
 
   mutable std::map<std::string, tf::StampedTransform> transformationCache;
@@ -208,6 +207,7 @@ public:
    * Callback for the `access_tree` action.
    */
   void onAccessTree(ensenso_camera_msgs::AccessTreeGoalConstPtr const& goal);
+  
   /**
    * Callback for the `execute_command` action.
    */
@@ -217,17 +217,25 @@ public:
    * Callback for the `get_parameter` action.
    */
   void onGetParameter(ensenso_camera_msgs::GetParameterGoalConstPtr const& goal);
+  
   /**
    * Callback for the `set_parameter` action.
    */
   void onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal);
+  
   /**
    * Callback for the `request_data` action.
    */
   void onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal);
 
+  /**
+   * Callback for the default request_data action
+   */
   void handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result, ensenso_camera_msgs::RequestDataFeedback& feedback);
 
+  /**
+   * Callback for the linked camera request data
+   */
   void handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result);
 
   /**
@@ -295,7 +303,7 @@ private:
   ros::Time capture() const;
 
   /**
-   * Capture image of the linked camera. Return the corresponding timestamp of the captured image
+   * Capture image of the linked camera. Returns the corresponding timestamp of the captured image
    */
   ros::Time captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result, bool logTime);
 
