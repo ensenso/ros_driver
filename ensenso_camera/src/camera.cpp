@@ -474,9 +474,6 @@ void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const&
 {
   START_NXLIB_ACTION(SetParameter, setParameterServer)
 
-
-  std::cout << "Parameters file @ " << goal->parameter_file << std::endl;
-
   ensenso_camera_msgs::SetParameterResult result;
 
   loadParameterSet(goal->parameter_set);
@@ -523,58 +520,6 @@ void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const&
 
   FINISH_NXLIB_ACTION(SetParameter)
 }
-
-void getCVMat(cv::Mat& cvMat, NxLibItem const& node){
-	int width, height, type, channels, bpe;
-			bool isFlt;
-			node.getBinaryDataInfo(&width, &height, &channels, &bpe, &isFlt, 0);
-			if (isFlt) {
-				switch (channels) {
-					case 1: type = (bpe == 4) ? CV_32FC1 : CV_64FC1; break;
-					case 2: type = (bpe == 4) ? CV_32FC2 : CV_64FC2; break;
-					case 3: type = (bpe == 4) ? CV_32FC3 : CV_64FC3; break;
-					case 4: type = (bpe == 4) ? CV_32FC4 : CV_64FC4; break;
-				}
-			} else {
-				switch (channels) {
-					case 1:
-						switch (bpe) {
-							case 1: type = CV_8UC1; break;
-							case 2: type = CV_16SC1; break;
-							case 4: type = CV_32SC1; break;
-						}
-						break;
-					case 2:
-						switch (bpe) {
-							case 1: type = CV_8UC2; break;
-							case 2: type = CV_16SC2; break;
-							case 4: type = CV_32SC2; break;
-						}
-						break;
-					case 3:
-						switch (bpe) {
-							case 1: type = CV_8UC3; break;
-							case 2: type = CV_16SC3; break;
-							case 4: type = CV_32SC3; break;
-						}
-						break;
-					case 4:
-						switch (bpe) {
-							case 1: type = CV_8UC4; break;
-							case 2: type = CV_16SC4; break;
-							case 4: type = CV_32SC4; break;
-						}
-						break;
-				}
-			}
-			cvMat.create(height, width, type);
-			int bytesCopied = 0;
-			double timestamp;
-			int returnCode;
-			node.getBinaryData(&returnCode, cvMat.ptr(), height*((int) cvMat.step), &bytesCopied, &timestamp);
-			assert(bytesCopied == height*((int) cvMat.step));
-}
-
 
 void Camera::handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result, ensenso_camera_msgs::RequestDataFeedback& feedback){
 
@@ -1500,7 +1445,7 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
     cv::Mat linkedRgbImage;
 
     linkedMonoCamera.node[itmImages][itmRaw].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
-    getCVMat(linkedRgbImage, linkedMonoCamera.node[itmImages][itmRaw]);
+    imageFromNxLibNodeToOpencvMat(linkedRgbImage, linkedMonoCamera.node[itmImages][itmRaw]);
 
     // create a header
     std_msgs::Header header;
