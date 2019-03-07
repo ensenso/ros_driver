@@ -3,8 +3,15 @@
 #include <image_transport/image_transport.h>
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/image_encodings.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
+#include <cv_bridge/cv_bridge.h>
 
 #include <map>
 #include <memory>
@@ -71,6 +78,17 @@ struct ParameterSet
   ParameterSet(std::string const& name, NxLibItem const& defaultParameters);
 };
 
+
+/**
+* Struct to store information about linked camera
+*/
+struct linkedCamera {
+  bool exists = false;
+  std::string serial = "";
+  NxLibItem node;
+  std::string cameraFrame;
+};
+
 /**
  * Indicates whether the projector and front light should be turned on or off
  * automatically.
@@ -97,7 +115,11 @@ private:
   // Whether the camera is fixed in the world or moves with a robot.
   bool fixed;
 
+  // Linked camera
+  linkedCamera linkedMonoCamera;
+
   std::string cameraFrame;
+  std::string linkedCameraFrame;
   std::string targetFrame;
   std::string robotFrame;
   std::string wristFrame;
@@ -109,9 +131,13 @@ private:
   sensor_msgs::CameraInfoPtr rightCameraInfo;
   sensor_msgs::CameraInfoPtr leftRectifiedCameraInfo;
   sensor_msgs::CameraInfoPtr rightRectifiedCameraInfo;
+  sensor_msgs::PointCloud2 pointCloudMessage;
+  sensor_msgs::PointCloud2 linkedCameraPointCloudMessage;
+  sensor_msgs::Image linkedCameraImageMessage;
 
   tf::TransformListener transformListener;
   tf::TransformBroadcaster transformBroadcaster;
+  tf2_ros::StaticTransformBroadcaster static_tf_broadcaster;
 
   std::unique_ptr<AccessTreeServer> accessTreeServer;
   std::unique_ptr<ExecuteCommandServer> executeCommandServer;
@@ -141,6 +167,9 @@ private:
   std::map<std::string, ParameterSet> parameterSets;
   std::string currentParameterSet;
 
+  // Item to retrieve info from root node
+  NxLibItem rootNode;
+
   mutable std::map<std::string, tf::StampedTransform> transformationCache;
 
   // Information that we remember between the different steps of the hand eye
@@ -151,15 +180,10 @@ private:
   std::string handEyeCalibrationPatternBuffer;
   std::vector<tf::Pose> handEyeCalibrationRobotPoses;
 
-  //RGBD image
-  sr::rgbd::Image image_;
-  rgbd::RGBDImagePtr rgbd_msg;
-
-
 public:
   Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
          std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
-         std::string const& wristFrame);
+         std::string const& wristFrame, std::string const& linkedCameraFrame);
 
   bool open();
   void close();
@@ -183,6 +207,7 @@ public:
    * Callback for the `access_tree` action.
    */
   void onAccessTree(ensenso_camera_msgs::AccessTreeGoalConstPtr const& goal);
+  
   /**
    * Callback for the `execute_command` action.
    */
@@ -192,15 +217,27 @@ public:
    * Callback for the `get_parameter` action.
    */
   void onGetParameter(ensenso_camera_msgs::GetParameterGoalConstPtr const& goal);
+  
   /**
    * Callback for the `set_parameter` action.
    */
   void onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal);
-
+  
   /**
    * Callback for the `request_data` action.
    */
   void onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal);
+
+  /**
+   * Callback for the default request_data action
+   */
+  void handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result, ensenso_camera_msgs::RequestDataFeedback& feedback);
+
+  /**
+   * Callback for the linked camera request data
+   */
+  void handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal, ensenso_camera_msgs::RequestDataResult& result);
+
   /**
    * Callback for the `locate_pattern` action.
    */
@@ -266,6 +303,11 @@ private:
   ros::Time capture() const;
 
   /**
+   * Capture image of the linked camera. Returns the corresponding timestamp of the captured image
+   */
+  ros::Time captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result, bool logTime);
+
+  /**
    * Try to collect patterns on the current images. For the command to be
    * successful, the patterns must be decodable and visible in both cameras.
    */
@@ -328,4 +370,9 @@ private:
 
   ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const;
   void writeParameter(ensenso_camera_msgs::Parameter const& parameter);
+
+  /**
+   * Obtain the directly linked camera, used by the renderPointCloud.
+   */
+  std::string getLinkedCamera() const;
 };

@@ -10,6 +10,10 @@ bool request_point_cloud
 bool request_normals
 bool request_rgbd
 
+bool linked_camera_request
+bool request_linked_camera_rgb_image
+bool request_registered_point_cloud
+
 # When this flag is enabled, the requested data will be published on the
 # corresponding topics (see the documentation of the camera node).
 # Automatically enabled, when publish_results and include_results_in_response
@@ -25,11 +29,23 @@ bool include_results_in_response
 # move since the last data request.
 bool use_cached_transformation
 
+# When registered_point_cloud is set, monocular_camera_serial definies the
+# serial number of the monocular camera to which the point cloud should be
+# registered to, if unset the linked camera of the node is used as reference.
+string monocular_camera_serial
+
+# When we are interested in logging the time each step of the pipeline takes
+bool log_time
+
 ---
 
 # The resulting point cloud. Also contains the normals when they are requested.
 sensor_msgs/PointCloud2 point_cloud
 rgbd/RGBDImage rgbd_image
+
+# Registered point cloud, linked camera RGBD image and RGB image to be used if a monocular camera is present
+sensor_msgs/Image linked_camera_rgb_image        # A synchronized color image.
+sensor_msgs/PointCloud2 registered_point_cloud   # A synchronized point cloud.
 
 # The disparity map as it is represented in the NxLib.
 sensor_msgs/Image disparity_map
@@ -50,6 +66,9 @@ sensor_msgs/CameraInfo right_rectified_camera_info
 
 # A potential NxLib exception that occured while executing the action.
 NxLibException error
+
+# Return value indicating if the call was successful 
+bool success
 
 ---
 

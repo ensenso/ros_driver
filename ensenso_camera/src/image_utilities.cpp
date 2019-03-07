@@ -141,3 +141,56 @@ ros::Time timestampFromNxLibNode(const NxLibItem& node)
 
   return ros::Time(timestamp - NXLIB_TIMESTAMP_OFFSET);
 }
+
+void imageFromNxLibNodeToOpencvMat(cv::Mat& cvMat, NxLibItem const& node)
+{
+  int width, height, type, channels, bpe;
+  bool isFlt;
+  node.getBinaryDataInfo(&width, &height, &channels, &bpe, &isFlt, 0);
+
+  if (isFlt) {
+    switch (channels) {
+      case 1: type = (bpe == 4) ? CV_32FC1 : CV_64FC1; break;
+      case 2: type = (bpe == 4) ? CV_32FC2 : CV_64FC2; break;
+      case 3: type = (bpe == 4) ? CV_32FC3 : CV_64FC3; break;
+      case 4: type = (bpe == 4) ? CV_32FC4 : CV_64FC4; break;
+    }
+  } else {
+    switch (channels) {
+      case 1:
+        switch (bpe) {
+          case 1: type = CV_8UC1; break;
+          case 2: type = CV_16SC1; break;
+          case 4: type = CV_32SC1; break;
+        }
+        break;
+      case 2:
+        switch (bpe) {
+          case 1: type = CV_8UC2; break;
+          case 2: type = CV_16SC2; break;
+          case 4: type = CV_32SC2; break;
+        }
+        break;
+      case 3:
+        switch (bpe) {
+          case 1: type = CV_8UC3; break;
+          case 2: type = CV_16SC3; break;
+          case 4: type = CV_32SC3; break;
+        }
+        break;
+      case 4:
+        switch (bpe) {
+          case 1: type = CV_8UC4; break;
+          case 2: type = CV_16SC4; break;
+          case 4: type = CV_32SC4; break;
+        }
+        break;
+    }
+  }
+  cvMat.create(height, width, type);
+  int bytesCopied = 0;
+  double timestamp;
+  int returnCode;
+  node.getBinaryData(&returnCode, cvMat.ptr(), height*((int) cvMat.step), &bytesCopied, &timestamp);
+  assert(bytesCopied == height*((int) cvMat.step));
+}

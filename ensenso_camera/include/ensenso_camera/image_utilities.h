@@ -8,6 +8,9 @@
 
 #include "nxLib.h"
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
+
 /**
  * Convert the given binary NxLib node to a ROS image message.
  */
@@ -29,3 +32,8 @@ imagesFromNxLibNode(NxLibItem const& node, std::string const& frame);
  * Get the timestamp from an NxLib image node.
  */
 ros::Time timestampFromNxLibNode(NxLibItem const& node);
+
+/**
+ * Convert the given binary NxLib node to an opencv Mat.
+ */
+void imageFromNxLibNodeToOpencvMat(cv::Mat& cvMat, NxLibItem const& node);
