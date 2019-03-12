@@ -50,6 +50,7 @@ sensor_msgs/PointCloud2 registered_point_cloud   # A synchronized point cloud.
 # The disparity map as it is represented in the NxLib.
 sensor_msgs/Image disparity_map
 sensor_msgs/Image depth_map
+sensor_msgs/Image scaled_depth_map
 float32 depth_map_scale
 
 # The raw images of the left and right camera respectively. A single image if

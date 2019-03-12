@@ -428,6 +428,9 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
     }  // The item was not binary.
   }
 
+  if(goal->camera_serial)
+    result.serial_number = serial;
+
   accessTreeServer->setSucceeded(result);
 
   FINISH_NXLIB_ACTION(AccessTree)
@@ -743,31 +746,37 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     if(goal->log_time)
       ROS_INFO("Compute disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - disparityMapStartTime ).count());
 
-    auto setMapStartTime = std::chrono::high_resolution_clock::now();
-    cv::Mat depth_map;
-    imageFromNxLibNodeToOpencvMat(depth_map, cameraNode[itmImages][itmDisparityMap]);
-    double fx = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][0][0].asDouble();
-    double fy = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][1][1].asDouble();
+    if(!goal->request_rgbd)
+    {
+      auto setMapStartTime = std::chrono::high_resolution_clock::now();
+      
+      cv::Mat depthMap, floatDepthMap;
+      imageFromNxLibNodeToOpencvMat(depthMap, cameraNode[itmImages][itmDisparityMap]);
+      
+      double fx = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][0][0].asDouble();
+      depthMap.convertTo(floatDepthMap, CV_32FC1);
 
-    result.depth_map_scale = fx*cameraNode[itmCalibration][itmStereo][itmBaseline].asDouble();
+      result.depth_map_scale = fx*cameraNode[itmCalibration][itmStereo][itmBaseline].asDouble()*16.;
 
-    // create a header
-    std_msgs::Header header;
-    header.frame_id = linkedCameraFrame;
-    header.stamp    = ros::Time::now();
+      // create a header
+      std_msgs::Header header;
+      header.frame_id = linkedCameraFrame;
+      header.stamp    = ros::Time::now();
 
-    // prepare message
-    cv_bridge::CvImage cv_image(
-      header,
-      sensor_msgs::image_encodings::TYPE_16SC1,
-      depth_map
-    );
+      // prepare message
+      cv_bridge::CvImage cv_image(
+        header,
+        sensor_msgs::image_encodings::TYPE_32FC1,
+        floatDepthMap
+      );
 
-    // publish the image
-    result.depth_map = *cv_image.toImageMsg();
+      // publish the image
+      result.depth_map = *cv_image.toImageMsg();
     
-    if(goal->log_time)
-      ROS_INFO("Set disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - setMapStartTime ).count());
+      if(goal->log_time)
+        ROS_INFO("Set disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - setMapStartTime ).count());
+       }
+
 
     result.success = true;
   }

@@ -30,7 +30,13 @@ bool set_null
 # (only if the string is not empty).
 string json_value
 
+# Get the serial number of the camera subnode
+bool camera_serial
+
 ---
+
+# Camera serial number
+string serial_number
 
 # True if the tree item exists.
 bool exists
