@@ -746,17 +746,18 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     if(goal->log_time)
       ROS_INFO("Compute disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - disparityMapStartTime ).count());
 
-    if(!goal->request_rgbd)
+    if(goal->request_depth_map)
     {
       auto setMapStartTime = std::chrono::high_resolution_clock::now();
       
-      cv::Mat depthMap, floatDepthMap;
-      imageFromNxLibNodeToOpencvMat(depthMap, cameraNode[itmImages][itmDisparityMap]);
-      
-      double fx = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][0][0].asDouble();
-      depthMap.convertTo(floatDepthMap, CV_32FC1);
+      NxLibCommand computePointMap(cmdComputePointMap);
+      computePointMap.parameters()[itmCameras] = serial;   
+      computePointMap.execute();
+      cv::Mat depthPointMap;
 
-      result.depth_map_scale = fx*cameraNode[itmCalibration][itmStereo][itmBaseline].asDouble()*16.;
+      cv::Mat depthMap, floatDepthMap;
+      imageFromNxLibNodeToOpencvMat(depthMap, cameraNode[itmImages][itmPointMap]);
+      depthMap.convertTo(floatDepthMap, CV_32FC3);
 
       // create a header
       std_msgs::Header header;
@@ -766,7 +767,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       // prepare message
       cv_bridge::CvImage cv_image(
         header,
-        sensor_msgs::image_encodings::TYPE_32FC1,
+        sensor_msgs::image_encodings::TYPE_32FC3,
         floatDepthMap
       );
 

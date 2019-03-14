@@ -9,6 +9,7 @@ bool request_disparity_map
 bool request_point_cloud
 bool request_normals
 bool request_rgbd
+bool request_depth_map
 
 bool linked_camera_request
 bool request_linked_camera_rgb_image
@@ -50,8 +51,6 @@ sensor_msgs/PointCloud2 registered_point_cloud   # A synchronized point cloud.
 # The disparity map as it is represented in the NxLib.
 sensor_msgs/Image disparity_map
 sensor_msgs/Image depth_map
-sensor_msgs/Image scaled_depth_map
-float32 depth_map_scale
 
 # The raw images of the left and right camera respectively. A single image if
 # FlexView is disabled.
