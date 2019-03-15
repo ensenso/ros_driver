@@ -240,7 +240,7 @@ bool Camera::open()
   }
   if (!cameraIsAvailable())
   {
-    ROS_ERROR("The camera '%s' exists, but is not available. Check if it is already in use", serial.c_str());
+    ROS_ERROR("The camera '%s' is connected, but not available. Check if it is already in use", serial.c_str());
     return false;
   }
 
@@ -1351,25 +1351,25 @@ void Camera::publishStatus(ros::TimerEvent const& event) const
   {
     // No connection to camera
     cameraStatus.level = diagnostic_msgs::DiagnosticStatus::STALE;
-    cameraStatus.message = "Camera is not open and not available";
+    cameraStatus.message = "Camera is not connected";
   }
-  else if(!cam_is_open && cam_is_available)
+  else if (!cam_is_open && cam_is_available)
   {
     // Camera is available, but not open. Camera is in error
     cameraStatus.level = diagnostic_msgs::DiagnosticStatus::ERROR;
-    cameraStatus.message = "Camera is available, but not open";
+    cameraStatus.message = "Camera is connected, but not accesible by the driver";
   }
   else if (cam_is_open && !cam_is_available)
   {
     // Camera is open and not availble, all is ok
     cameraStatus.level = diagnostic_msgs::DiagnosticStatus::OK;
-    cameraStatus.message = "Camera is open";
+    cameraStatus.message = "Camera is ok";
   }
   else
   {
     // Camera is both open and available. This can never happen
     cameraStatus.level = diagnostic_msgs::DiagnosticStatus::ERROR;
-    cameraStatus.message = "Camera is both available and open";
+    cameraStatus.message = "Camera is in an unknown state (both available and in use)";
   }
 
   diagnostic_msgs::DiagnosticArray status;
