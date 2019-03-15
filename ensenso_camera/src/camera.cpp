@@ -29,6 +29,11 @@ double const STATUS_INTERVAL = 3.0;  // Seconds.
 double const TRANSFORMATION_REQUEST_TIMEOUT = 0.1;  // Seconds.
 
 /**
+ * The maximum time the driver tries to connect to the camera at startup
+ */
+double const CONNECT_TIMEOUT = 20.0; // Seconds
+
+/**
  * The name of the parameter set that is used when an action was not given a
  * parameter set explicitly.
  */
@@ -220,14 +225,22 @@ bool Camera::open()
     }
   }
 
+  ros::Rate loop_rate(0.5);
+  ros::Time t_start = ros::Time::now();
+  while(ros::ok() && (ros::Time::now() - t_start).toSec() < CONNECT_TIMEOUT )
+  {
+    if (cameraNode.exists() && cameraIsAvailable()) break;
+    ROS_WARN("Camera '%s' could not be found or is not available, retrying...", serial.c_str());
+    loop_rate.sleep();
+  }
   if (!cameraNode.exists())
   {
-    ROS_ERROR("The camera '%s' could not be found", serial.c_str());
+    ROS_ERROR("The camera '%s' could not be found. Check serial number, physical connection and daemon in ueyecameramanager", serial.c_str());
     return false;
   }
   if (!cameraIsAvailable())
   {
-    ROS_ERROR("The camera '%s' is already in use", serial.c_str());
+    ROS_ERROR("The camera '%s' is connected, but not available. Check if it is already in use", serial.c_str());
     return false;
   }
 
@@ -1330,13 +1343,33 @@ void Camera::publishStatus(ros::TimerEvent const& event) const
   diagnostic_msgs::DiagnosticStatus cameraStatus;
   cameraStatus.name = "Camera";
   cameraStatus.hardware_id = serial;
-  cameraStatus.level = diagnostic_msgs::DiagnosticStatus::OK;
-  cameraStatus.message = "OK";
 
-  if (!cameraIsOpen())
+  auto cam_is_available = cameraIsAvailable();
+  auto cam_is_open = cameraIsOpen();
+
+  if (!cam_is_open && !cam_is_available)
   {
+    // No connection to camera
+    cameraStatus.level = diagnostic_msgs::DiagnosticStatus::STALE;
+    cameraStatus.message = "Camera is not connected";
+  }
+  else if (!cam_is_open && cam_is_available)
+  {
+    // Camera is available, but not open. Camera is in error
     cameraStatus.level = diagnostic_msgs::DiagnosticStatus::ERROR;
-    cameraStatus.message = "Camera is no longer open";
+    cameraStatus.message = "Camera is connected, but not accesible by the driver";
+  }
+  else if (cam_is_open && !cam_is_available)
+  {
+    // Camera is open and not availble, all is ok
+    cameraStatus.level = diagnostic_msgs::DiagnosticStatus::OK;
+    cameraStatus.message = "Camera is ok";
+  }
+  else
+  {
+    // Camera is both open and available. This can never happen
+    cameraStatus.level = diagnostic_msgs::DiagnosticStatus::ERROR;
+    cameraStatus.message = "Camera is in an unknown state (both available and in use)";
   }
 
   diagnostic_msgs::DiagnosticArray status;
