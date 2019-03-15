@@ -220,14 +220,22 @@ bool Camera::open()
     }
   }
 
+  ros::Rate loop_rate(0.5);
+  ros::Time t_start = ros::Time::now();
+  while(ros::ok() && (ros::Time::now() - t_start).toSec() < 20.0 )
+  {
+    if (cameraNode.exists() && cameraIsAvailable()) break;
+    ROS_WARN("Camera '%s' could not be found or is not available, retrying...", serial.c_str());
+    loop_rate.sleep();
+  }
   if (!cameraNode.exists())
   {
-    ROS_ERROR("The camera '%s' could not be found", serial.c_str());
+    ROS_ERROR("The camera '%s' could not be found. Check serial number, physical connection and daemon in ueyecameramanager", serial.c_str());
     return false;
   }
   if (!cameraIsAvailable())
   {
-    ROS_ERROR("The camera '%s' is already in use", serial.c_str());
+    ROS_ERROR("The camera '%s' exists, but is not available. Check if it is already in use", serial.c_str());
     return false;
   }
 
@@ -1330,13 +1338,33 @@ void Camera::publishStatus(ros::TimerEvent const& event) const
   diagnostic_msgs::DiagnosticStatus cameraStatus;
   cameraStatus.name = "Camera";
   cameraStatus.hardware_id = serial;
-  cameraStatus.level = diagnostic_msgs::DiagnosticStatus::OK;
-  cameraStatus.message = "OK";
 
-  if (!cameraIsOpen())
+  auto cam_is_available = cameraIsAvailable();
+  auto cam_is_open = cameraIsOpen();
+
+  if (!cam_is_open && !cam_is_available)
   {
+    // No connection to camera
+    cameraStatus.level = diagnostic_msgs::DiagnosticStatus::STALE;
+    cameraStatus.message = "Camera is not open and not available";
+  }
+  else if(!cam_is_open && cam_is_available)
+  {
+    // Camera is available, but not open. Camera is in error
     cameraStatus.level = diagnostic_msgs::DiagnosticStatus::ERROR;
-    cameraStatus.message = "Camera is no longer open";
+    cameraStatus.message = "Camera is available, but not open";
+  }
+  else if (cam_is_open && !cam_is_available)
+  {
+    // Camera is open and not availble, all is ok
+    cameraStatus.level = diagnostic_msgs::DiagnosticStatus::OK;
+    cameraStatus.message = "Camera is open";
+  }
+  else
+  {
+    // Camera is both open and available. This can never happen
+    cameraStatus.level = diagnostic_msgs::DiagnosticStatus::ERROR;
+    cameraStatus.message = "Camera is both available and open";
   }
 
   diagnostic_msgs::DiagnosticArray status;
