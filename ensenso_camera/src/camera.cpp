@@ -29,6 +29,11 @@ double const STATUS_INTERVAL = 3.0;  // Seconds.
 double const TRANSFORMATION_REQUEST_TIMEOUT = 0.1;  // Seconds.
 
 /**
+ * The maximum time the driver tries to connect to the camera at startup
+ */
+double const CONNECT_TIMEOUT = 20.0; // Seconds
+
+/**
  * The name of the parameter set that is used when an action was not given a
  * parameter set explicitly.
  */
@@ -222,7 +227,7 @@ bool Camera::open()
 
   ros::Rate loop_rate(0.5);
   ros::Time t_start = ros::Time::now();
-  while(ros::ok() && (ros::Time::now() - t_start).toSec() < 20.0 )
+  while(ros::ok() && (ros::Time::now() - t_start).toSec() < CONNECT_TIMEOUT )
   {
     if (cameraNode.exists() && cameraIsAvailable()) break;
     ROS_WARN("Camera '%s' could not be found or is not available, retrying...", serial.c_str());
