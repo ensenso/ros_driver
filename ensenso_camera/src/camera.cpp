@@ -771,7 +771,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
         floatDepthMap
       );
 
-      // publish the image
+      // Set depth map of action result (3 channel image with 3D Coordinates(x,y,z)): image size is the same as disparity map
       result.depth_map = *cv_image.toImageMsg();
     
       if(goal->log_time)
