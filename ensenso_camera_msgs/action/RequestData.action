@@ -50,6 +50,9 @@ sensor_msgs/PointCloud2 registered_point_cloud   # A synchronized point cloud.
 
 # The disparity map as it is represented in the NxLib.
 sensor_msgs/Image disparity_map
+
+# The depth map is a 3 channel image with 3D Coordinates (x,y,z). 
+# Image dimensions (width, height) are the same as disparity map
 sensor_msgs/Image depth_map
 
 # The raw images of the left and right camera respectively. A single image if
