@@ -441,6 +441,9 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
     }  // The item was not binary.
   }
 
+  if(goal->camera_serial)
+    result.serial_number = serial;
+
   accessTreeServer->setSucceeded(result);
 
   FINISH_NXLIB_ACTION(AccessTree)
@@ -753,9 +756,41 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     NxLibCommand computeDisparityMap(cmdComputeDisparityMap);
     computeDisparityMap.parameters()[itmCameras] = serial;
     computeDisparityMap.execute();
-    
     if(goal->log_time)
       ROS_INFO("Compute disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - disparityMapStartTime ).count());
+
+    if(goal->request_depth_map)
+    {
+      auto setMapStartTime = std::chrono::high_resolution_clock::now();
+      
+      NxLibCommand computePointMap(cmdComputePointMap);
+      computePointMap.parameters()[itmCameras] = serial;   
+      computePointMap.execute();
+      cv::Mat depthPointMap;
+
+      cv::Mat depthMap, floatDepthMap;
+      imageFromNxLibNodeToOpencvMat(depthMap, cameraNode[itmImages][itmPointMap]);
+      depthMap.convertTo(floatDepthMap, CV_32FC3);
+
+      // create a header
+      std_msgs::Header header;
+      header.frame_id = linkedCameraFrame;
+      header.stamp    = ros::Time::now();
+
+      // prepare message
+      cv_bridge::CvImage cv_image(
+        header,
+        sensor_msgs::image_encodings::TYPE_32FC3,
+        floatDepthMap
+      );
+
+      // Set depth map of action result (3 channel image with 3D Coordinates(x,y,z)): image size is the same as disparity map
+      result.depth_map = *cv_image.toImageMsg();
+    
+      if(goal->log_time)
+        ROS_INFO("Set disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - setMapStartTime ).count());
+       }
+
 
     result.success = true;
   }
@@ -763,6 +798,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
   if(goal->request_rgbd)
   {
 
+    auto rgbdStartTime = std::chrono::high_resolution_clock::now();
     // Get point cloud from disparity map
     NxLibCommand computePointMap(cmdComputePointMap);
     computePointMap.parameters()[itmCameras] = serial;   
@@ -774,7 +810,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       pointCloudROI = &parameterSets.at(currentParameterSet).roi;
     }
 
-    auto rgbdStartTime = std::chrono::high_resolution_clock::now();
+    
     auto rgbdImagePtr = rgbdFromNxLib(cameraNode[itmImages][itmPointMap],
                                       cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera],
                                       targetFrame,
