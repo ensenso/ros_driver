@@ -37,9 +37,9 @@ std::string imageEncoding(bool isFloat, int channels, int bytesPerElement)
         switch (bytesPerElement)
         {
           case 1:
-            return sensor_msgs::image_encodings::TYPE_8UC1;
+            return sensor_msgs::image_encodings::MONO8;
           case 2:
-            return sensor_msgs::image_encodings::TYPE_16UC1;
+            return sensor_msgs::image_encodings::MONO16;
           case 4:
             return sensor_msgs::image_encodings::TYPE_32SC1;
         }
