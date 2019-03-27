@@ -265,7 +265,7 @@ bool Camera::open()
 
     //Get monocular cam node
     linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-  
+    loadMonocularSettings();  
     //Publish static tf
     geometry_msgs::TransformStamped static_transform;
     tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
@@ -317,6 +317,19 @@ void Camera::close()
   catch (NxLibException&)
   {
   }
+}
+
+bool Camera::loadMonocularSettings()
+{
+
+  std::string paramFile = "/home/vanderlande_demos/mono_parameters/param.ini";
+
+  NxLibCommand loadMono(cmdLoadUEyeParameterSet);
+  loadMono.parameters()[itmCameras] = linkedMonoCamera.serial;
+  loadMono.parameters()[itmFilename] = paramFile;
+  loadMono.execute();
+  
+  return true;
 }
 
 void Camera::startServers() const
@@ -1527,6 +1540,8 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
       sensor_msgs::image_encodings::BGR8,
       linkedRgbImage
     );
+
+    cv::imwrite("/tmp/raw_rgb.png", linkedRgbImage);
 
     // publish the image
     result->linked_camera_rgb_image = *cv_image.toImageMsg();

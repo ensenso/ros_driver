@@ -187,7 +187,7 @@ public:
 
   bool open();
   void close();
-
+  bool loadMonocularSettings();
   /**
    * Start the action servers. The camera must already be open, otherwise
    * the actions might access parts of the NxLib that are not initialized yet.
