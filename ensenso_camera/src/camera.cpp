@@ -265,7 +265,6 @@ bool Camera::open()
 
     //Get monocular cam node
     linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-    loadMonocularSettings();  
     //Publish static tf
     geometry_msgs::TransformStamped static_transform;
     tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
@@ -319,11 +318,8 @@ void Camera::close()
   }
 }
 
-bool Camera::loadMonocularSettings()
+bool Camera::loadMonocularSettings(const std::string& paramFile)
 {
-
-  std::string paramFile = "/home/vanderlande_demos/mono_parameters/param.ini";
-
   NxLibCommand loadMono(cmdLoadUEyeParameterSet);
   loadMono.parameters()[itmCameras] = linkedMonoCamera.serial;
   loadMono.parameters()[itmFilename] = paramFile;
@@ -501,6 +497,7 @@ void Camera::onGetParameter(ensenso_camera_msgs::GetParameterGoalConstPtr const&
 
 void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal)
 {
+  ROS_INFO("oN SET PARAmETER");
   START_NXLIB_ACTION(SetParameter, setParameterServer)
 
   ensenso_camera_msgs::SetParameterResult result;

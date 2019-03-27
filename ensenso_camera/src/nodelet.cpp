@@ -109,6 +109,18 @@ void Nodelet::onInit()
     }
   }
 
+  std::string monocamSettingsFile;
+  if (nhLocal.getParam("monocular_camera_settings", monocamSettingsFile))
+  {
+    NODELET_DEBUG("Loading monocular camera settings...");
+    if (!camera->loadMonocularSettings(monocamSettingsFile))
+    {
+      NODELET_ERROR("Failed to load the monocular camera settings. Shutting down.");
+      nxLibFinalize();
+      exit(EXIT_FAILURE);
+    }
+  }
+
   camera->startServers();
 }
 
