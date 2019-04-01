@@ -30,10 +30,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
   cloud->points.resize(width * height);
   for (int i = 0; i < width * height; i++)
   {
-    // Do not add NaN points to the point cloud to save transfer time
-    if (!std::isnan(data[i * 3]))
-    {
-
       cloud->points[i].x = data[i * 3] / 1000.0f;
       cloud->points[i].y = data[3 * i + 1] / 1000.0f;
       cloud->points[i].z = data[3 * i + 2] / 1000.0f;
@@ -44,7 +40,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
         cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
         cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
       }
-    }
+    
   }
   return cloud;
 }
