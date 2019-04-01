@@ -497,7 +497,6 @@ void Camera::onGetParameter(ensenso_camera_msgs::GetParameterGoalConstPtr const&
 
 void Camera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal)
 {
-  ROS_INFO("oN SET PARAmETER");
   START_NXLIB_ACTION(SetParameter, setParameterServer)
 
   ensenso_camera_msgs::SetParameterResult result;
@@ -1537,8 +1536,6 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
       sensor_msgs::image_encodings::BGR8,
       linkedRgbImage
     );
-
-    cv::imwrite("/tmp/raw_rgb.png", linkedRgbImage);
 
     // publish the image
     result->linked_camera_rgb_image = *cv_image.toImageMsg();
