@@ -265,7 +265,6 @@ bool Camera::open()
 
     //Get monocular cam node
     linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
-  
     //Publish static tf
     geometry_msgs::TransformStamped static_transform;
     tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
@@ -317,6 +316,16 @@ void Camera::close()
   catch (NxLibException&)
   {
   }
+}
+
+bool Camera::loadMonocularSettings(const std::string& paramFile)
+{
+  NxLibCommand loadMono(cmdLoadUEyeParameterSet);
+  loadMono.parameters()[itmCameras] = linkedMonoCamera.serial;
+  loadMono.parameters()[itmFilename] = paramFile;
+  loadMono.execute();
+  
+  return true;
 }
 
 void Camera::startServers() const

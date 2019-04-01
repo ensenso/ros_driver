@@ -189,6 +189,11 @@ public:
   void close();
 
   /**
+  * Load the monocular camera settings from the given parameter file.
+  */
+  bool loadMonocularSettings(const std::string& paramFile);
+
+  /**
    * Start the action servers. The camera must already be open, otherwise
    * the actions might access parts of the NxLib that are not initialized yet.
    */
