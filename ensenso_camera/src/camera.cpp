@@ -571,6 +571,7 @@ void Camera::handleOnRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   
   ros::Time imageTimestamp = capture();
 
+  updateCameraInfo(true);
   PREEMPT_ACTION_IF_REQUESTED
 
   feedback.images_acquired = true;
@@ -757,6 +758,14 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     auto captureStartTime = std::chrono::high_resolution_clock::now();
     ros::Time imageTimestamp = capture();
     
+    // After capturing the image update the matrices with possible new calibration and copy that to result
+    updateCameraInfo(true);
+
+    leftCameraInfo->header.stamp = imageTimestamp;
+    rightCameraInfo->header.stamp = imageTimestamp;
+    result.left_camera_info = *leftCameraInfo;
+    result.right_camera_info = *rightCameraInfo;
+
     if(goal->log_time)
       ROS_INFO("Capture stereo data %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - captureStartTime).count());
   
@@ -1547,6 +1556,9 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
       ROS_INFO("Set action result %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
     }
 
+
+
+
     return timestampFromNxLibNode(linkedMonoCamera.node[itmImages][itmRaw]);
 }
 
@@ -1748,7 +1760,7 @@ void Camera::updateTransformations(tf::Pose const& targetFrameTransformation) co
   writePoseToNxLib(targetFrameTransformation, NxLibItem()[itmLinks][TARGET_FRAME_LINK]);
 }
 
-void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool rectified) const
+void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool dynamic_calibration, bool rectified) const
 {
   info->header.frame_id = cameraFrame;
 
@@ -1756,7 +1768,10 @@ void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, boo
   info->height = cameraNode[itmSensor][itmSize][1].asInt();
 
   NxLibItem monoCalibrationNode = cameraNode[itmCalibration][itmMonocular][right ? itmRight : itmLeft];
-  NxLibItem stereoCalibrationNode = cameraNode[itmCalibration][itmStereo][right ? itmRight : itmLeft];
+
+  NxLibItem stereoCalibrationNode = dynamic_calibration ?  cameraNode[itmCalibration][itmDynamic][itmStereo][right ? itmRight : itmLeft] :
+                                                           cameraNode[itmCalibration][itmStereo][right ? itmRight : itmLeft];
+
 
   if (rectified)
   {
@@ -1786,6 +1801,7 @@ void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, boo
   }
   else
   {
+
     info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
     info->D.clear();
     for (int i = 0; i < 5; i++)
@@ -1833,12 +1849,12 @@ void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, boo
   }
 }
 
-void Camera::updateCameraInfo()
+void Camera::updateCameraInfo(bool use_dynamic_calibration)
 {
-  fillCameraInfoFromNxLib(leftCameraInfo, false);
-  fillCameraInfoFromNxLib(rightCameraInfo, true);
-  fillCameraInfoFromNxLib(leftRectifiedCameraInfo, false, true);
-  fillCameraInfoFromNxLib(rightRectifiedCameraInfo, true, true);
+  fillCameraInfoFromNxLib(leftCameraInfo,false, use_dynamic_calibration);
+  fillCameraInfoFromNxLib(rightCameraInfo, true, use_dynamic_calibration);
+  fillCameraInfoFromNxLib(leftRectifiedCameraInfo, false, use_dynamic_calibration, true);
+  fillCameraInfoFromNxLib(rightRectifiedCameraInfo, true, use_dynamic_calibration, true);
 }
 
 ensenso_camera_msgs::ParameterPtr Camera::readParameter(std::string const& key) const
