@@ -361,17 +361,21 @@ private:
    * Read the camera calibration from the NxLib and write it into a CameraInfo
    * message.
    *
-   * @param info  The CameraInfo message to which the calibration should be
-   *              written.
-   * @param right Whether to use the calibration from the right camera instead
-   *              of the left one.
+   * @param info                    The CameraInfo message to which the calibration should be
+   *                                written.
+   * @param right                   Whether to use the calibration from the right camera instead
+   *                                of the left one.
+   * @param use_dynamic_calibration Whether the calibration should be read
+   *                                from the dynamic calibration
    */
-  void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool rectified = false) const;
+  void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool use_dynamic_calibration, bool rectified = false) const;
   /**
    * Update the cached CameraInfo messages that will be published together
    * with the images.
+   * @param dynamic_calibration Whether the calibration should be read
+   *                            from the dynamic calibration
    */
-  void updateCameraInfo();
+  void updateCameraInfo(bool dynamic_calibration=false);
 
   ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const;
   void writeParameter(ensenso_camera_msgs::Parameter const& parameter);
