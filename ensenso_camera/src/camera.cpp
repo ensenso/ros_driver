@@ -1556,9 +1556,6 @@ ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResul
       ROS_INFO("Set action result %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
     }
 
-
-
-
     return timestampFromNxLibNode(linkedMonoCamera.node[itmImages][itmRaw]);
 }
 
