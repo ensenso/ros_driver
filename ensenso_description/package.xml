@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ensenso_description</name>
+  <version>1.0.0</version>
+  <description>Description package for Ensenso stereo cameras. This package consists of all current supported camera models.
+    The Xacro macros, which import the mesh files as stl, accept the following parameters:
+      - camera name
+      - parent frame and its transform regarding to the camera mounting frame
+      - collision margin to the camera
+  </description>
+
+  <license>BSD</license>
+
+  <url type="website">http://wiki.ros.org/ensenso_driver</url>
+  <url type="repository">https://github.com/ensenso/ros_driver.git</url>
+  <url type="bugtracker">https://github.com/ensenso/ros_driver/issues</url>
+
+  <author>Ensenso</author>
+  <maintainer email="yasin.guenduez@ensenso.com">yasin</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>xacro</exec_depend>
+</package>
