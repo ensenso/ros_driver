@@ -16,6 +16,7 @@ add_message_files(
   ImagePoint.msg
   NxLibException.msg
   Parameter.msg
+  Primitive.msg
   RegionOfInterest.msg
 )
 
@@ -25,6 +26,7 @@ add_action_files(
   CalibrateHandEye.action
   CalibrateWorkspace.action
   ExecuteCommand.action
+  FitPrimitive.action
   GetParameter.action
   LocatePattern.action
   ProjectPattern.action

@@ -1,0 +1,39 @@
+# In order to use this action, request_data action with atleast request_point_cloud=true or
+# request_normals=true must called beforehand
+
+# Array of primitives to fit.
+ensenso_camera_msgs/Primitive[] primitives
+
+# Specifies a scale factor between 0 and 1 by which the point clouds are downsampled before running the primitive search.
+float32 scaling
+
+# Specifies the tolerated failure probability for the RANSAC procedure.
+float64 failure_probability
+
+# Defines the ratio between inliers regarding to outliers. If inlier_fraction is given within primitives_to_fit, this parameter
+# will be ignored.
+float64 inlier_fraction
+
+# Specifies the distance for an inlier for the RANSAC procedure. If inlier_threshold is given within primitives_to_fit, this parameter
+# will be ignored.
+float64 inlier_threshold
+
+# Optional. Specifies the number of iterations to be taken by the RANSAC algorithm.
+# If the number of iterations is specified directly the inlier_fraction and failure_probability parameters will be ignored.
+int32 ransac_iterations
+
+# Optional. Bounding box, in which the primitives are searched.
+ensenso_camera_msgs/RegionOfInterest region_of_interest
+
+# Optional. Specifies the radius of the window in which normals will be computed. A setting of 7 will use 7 pixels in each direction around a point to compute its normal.
+int32 normal_radius
+
+---
+
+# Found Primitives in the point cloud
+ensenso_camera_msgs/Primitive[] primitives
+
+# A potential NxLib exception that occured while executing the action.
+NxLibException error
+
+---

@@ -15,6 +15,7 @@
 #include "ensenso_camera/image_utilities.h"
 #include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
+#include "ensenso_camera/conversion.h"
 
 /**
  * The interval at which we publish diagnostic messages containing the camera
@@ -155,6 +156,9 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   executeCommandServer =
       make_unique<ExecuteCommandServer>(nh, "execute_command", boost::bind(&Camera::onExecuteCommand, this, _1));
 
+  fitPrimitiveServer =
+      make_unique<FitPrimitiveServer>(nh, "fit_primitive", boost::bind(&Camera::onFitPrimitive, this, _1));
+
   getParameterServer =
       make_unique<GetParameterServer>(nh, "get_parameter", boost::bind(&Camera::onGetParameter, this, _1));
   setParameterServer =
@@ -273,6 +277,8 @@ void Camera::startServers() const
 {
   accessTreeServer->start();
   executeCommandServer->start();
+
+  fitPrimitiveServer->start();
 
   getParameterServer->start();
   setParameterServer->start();
@@ -414,6 +420,123 @@ void Camera::onExecuteCommand(const ensenso_camera_msgs::ExecuteCommandGoalConst
   executeCommandServer->setSucceeded(result);
 
   FINISH_NXLIB_ACTION(ExecuteCommand)
+}
+
+void Camera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr const& goal)
+{
+  START_NXLIB_ACTION(FitPrimitive, fitPrimitiveServer)
+
+  NxLibCommand fitPrimitives(cmdFitPrimitive);
+  NxLibItem const& primitives = fitPrimitives.parameters()[itmPrimitive];
+
+  int primitivesCount = 0;
+  for (auto const& primitive : goal->primitives)
+  {
+    if (primitive.type == ensenso_camera_msgs::Primitive::SPHERE)
+    {
+      primitives[primitivesCount][itmRadius][itmMin] = primitive.min_radius * ensenso_conversion::conversionFactor;
+      primitives[primitivesCount][itmRadius][itmMax] = primitive.max_radius * ensenso_conversion::conversionFactor;
+      primitives[primitivesCount][itmCount] = primitive.count;
+    }
+    else if (primitive.type == ensenso_camera_msgs::Primitive::CYLINDER)
+    {
+      primitives[primitivesCount][itmRadius][itmMin] = primitive.min_radius * ensenso_conversion::conversionFactor;
+      primitives[primitivesCount][itmRadius][itmMax] = primitive.min_radius * ensenso_conversion::conversionFactor;
+    }
+    else if (primitive.type == ensenso_camera_msgs::Primitive::PLANE)
+    {
+      primitives[primitivesCount][itmCount] = primitive.count;
+    }
+    primitives[primitivesCount][itmType] = primitive.type;
+    primitives[primitivesCount][itmInlierThreshold] = primitive.inlier_threshold * ensenso_conversion::conversionFactor;
+    primitives[primitivesCount][itmInlierFraction] = primitive.inlier_fraction_in;
+
+    primitivesCount++;
+  }
+
+  NxLibItem const& commandParameters = fitPrimitives.parameters();
+  if (goal->normal_radius)
+  {
+    commandParameters[itmNormal][itmRadius] = goal->normal_radius;
+  }
+
+  float const zeroThreshold = 10e-6;
+  if (!(std::abs(goal->region_of_interest.lower.x) < zeroThreshold &&
+        std::abs(goal->region_of_interest.lower.y) < zeroThreshold &&
+        std::abs(goal->region_of_interest.lower.z) < zeroThreshold))
+  {
+    commandParameters[itmBoundingBox][itmMin] << ensenso_conversion::toEnsensoPoint(goal->region_of_interest.lower);
+  }
+  if (!(std::abs(goal->region_of_interest.upper.x) < zeroThreshold &&
+        std::abs(goal->region_of_interest.upper.y) < zeroThreshold &&
+        std::abs(goal->region_of_interest.upper.z) < zeroThreshold))
+  {
+    commandParameters[itmBoundingBox][itmMax] << ensenso_conversion::toEnsensoPoint(goal->region_of_interest.upper);
+  }
+
+  if (goal->failure_probability != 0)
+  {
+    commandParameters[itmFailureProbability] = goal->failure_probability;
+  }
+
+  if (std::abs(goal->inlier_threshold) > zeroThreshold)
+  {
+    commandParameters[itmInlierThreshold] = goal->inlier_threshold * ensenso_conversion::conversionFactor;
+  }
+  if (std::abs(goal->inlier_fraction) > zeroThreshold)
+  {
+    commandParameters[itmInlierFraction] = goal->inlier_fraction;
+  }
+  if (std::abs(goal->scaling) > zeroThreshold)
+  {
+    commandParameters[itmScaling] = goal->scaling;
+  }
+  if (goal->ransac_iterations != 0)
+  {
+    commandParameters[itmScaling] = goal->ransac_iterations;
+  }
+
+  fitPrimitives.execute();
+
+  ensenso_camera_msgs::FitPrimitiveResult result;
+
+  NxLibItem const primitiveResults = fitPrimitives.result()[itmPrimitive];
+  if (primitiveResults.isArray())
+  {
+    result.primitives.reserve(primitiveResults.count());
+    for (int primitiveCount = 0; primitiveCount < primitiveResults.count(); primitiveCount++)
+    {
+      NxLibItem const& currentPrimitive = primitiveResults[primitiveCount];
+      ensenso_camera_msgs::Primitive primitive;
+
+      primitive.type = currentPrimitive[itmType].asString();
+      primitive.ransac_iterations = currentPrimitive[itmIterations].asInt();
+      primitive.inlier_count = currentPrimitive[itmInlierCount].asInt();
+      primitive.inlier_fraction_out = currentPrimitive[itmInlierFraction].asDouble();
+      primitive.score = currentPrimitive[itmScore].asDouble();
+      primitive.center = ensenso_conversion::toRosPoint(currentPrimitive[itmCenter]);
+
+      if (primitive.type == ensenso_camera_msgs::Primitive::PLANE)
+      {
+        primitive.axes.push_back(ensenso_conversion::toRosPoint(currentPrimitive[itmAxis][0]));
+        primitive.axes.push_back(ensenso_conversion::toRosPoint(currentPrimitive[itmAxis][1]));
+        primitive.normal = ensenso_conversion::toRosPoint(currentPrimitive[itmNormal], false);
+      }
+      else if (primitive.type == ensenso_camera_msgs::Primitive::SPHERE)
+      {
+        primitive.radius = currentPrimitive[itmRadius].asDouble() / ensenso_conversion::conversionFactor;
+      }
+      else if (primitive.type == ensenso_camera_msgs::Primitive::CYLINDER)
+      {
+        primitive.axis = ensenso_conversion::toRosPoint(currentPrimitive[itmAxis]);
+      }
+      result.primitives.emplace_back(primitive);
+    }
+  }
+
+  fitPrimitiveServer->setSucceeded(result);
+
+  FINISH_NXLIB_ACTION(FitPrimitive)
 }
 
 void Camera::onGetParameter(ensenso_camera_msgs::GetParameterGoalConstPtr const& goal)

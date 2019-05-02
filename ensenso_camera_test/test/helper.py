@@ -84,6 +84,16 @@ class ImagePoint:
         return self.distance_to(other) < tolerance
 
 
+class Point:
+    def __init__(self, x=0, y=0, z=0):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def dot_prod(self, other_point):
+        return self.x * other_point.x + self.y * other_point.y + self.z * other_point.z
+
+
 class RegionOfInterest:
     def __init__(self, lower, upper):
         self.lower = lower
