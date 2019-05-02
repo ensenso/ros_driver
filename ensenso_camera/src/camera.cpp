@@ -15,6 +15,7 @@
 #include "ensenso_camera/image_utilities.h"
 #include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
+#include "ensenso_camera/conversion.h"
 
 /**
  * The interval at which we publish diagnostic messages containing the camera
@@ -43,17 +44,20 @@ std::string const TARGET_FRAME_LINK = "Workspace";
 int const ERROR_CODE_UNKNOWN_EXCEPTION = 100;
 int const ERROR_CODE_TF = 101;
 
-#define LOG_NXLIB_EXCEPTION(EXCEPTION) \
-  try \
-  { \
-    if (EXCEPTION.getErrorCode() == NxLibExecutionFailed) \
-    { \
-      NxLibItem executionNode(EXCEPTION.getItemPath()); \
-      ROS_ERROR("%s: %s", executionNode[itmResult][itmErrorSymbol].asString().c_str(), \
-                executionNode[itmResult][itmErrorText].asString().c_str()); \
-    } /* NOLINT */ \
-  } catch (...) {} /* NOLINT */ \
-  ROS_DEBUG("Current NxLib tree: %s", NxLibItem().asJson(true).c_str()); \
+#define LOG_NXLIB_EXCEPTION(EXCEPTION)                                                                                 \
+  try                                                                                                                  \
+  {                                                                                                                    \
+    if (EXCEPTION.getErrorCode() == NxLibExecutionFailed)                                                              \
+    {                                                                                                                  \
+      NxLibItem executionNode(EXCEPTION.getItemPath());                                                                \
+      ROS_ERROR("%s: %s", executionNode[itmResult][itmErrorSymbol].asString().c_str(),                                 \
+                executionNode[itmResult][itmErrorText].asString().c_str());                                            \
+    } /* NOLINT */                                                                                                     \
+  }   /* NOLINT */                                                                                                     \
+  catch (...)                                                                                                          \
+  {                                                                                                                    \
+  } /* NOLINT */                                                                                                       \
+  ROS_DEBUG("Current NxLib tree: %s", NxLibItem().asJson(true).c_str());
 
 // The following macros are called at the beginning and end of each action
 // handler that uses the NxLib. In case of an NxLib exception they
@@ -62,54 +66,54 @@ int const ERROR_CODE_TF = 101;
 // This assumes that all of our actions have the property error that represents
 // an NxLibException.
 
-#define START_NXLIB_ACTION(ACTION_NAME, ACTION_SERVER) \
-  ROS_DEBUG("Received a " #ACTION_NAME " request."); \
-  auto& server = ACTION_SERVER; \
-  if (server->isPreemptRequested()) \
-  { \
-    server->setPreempted(); \
-    return; \
-  } /* NOLINT */ \
-  std::lock_guard<std::mutex> lock(nxLibMutex); \
-  try \
+#define START_NXLIB_ACTION(ACTION_NAME, ACTION_SERVER)                                                                 \
+  ROS_DEBUG("Received a " #ACTION_NAME " request.");                                                                   \
+  auto& server = ACTION_SERVER;                                                                                        \
+  if (server->isPreemptRequested())                                                                                    \
+  {                                                                                                                    \
+    server->setPreempted();                                                                                            \
+    return;                                                                                                            \
+  } /* NOLINT */                                                                                                       \
+  std::lock_guard<std::mutex> lock(nxLibMutex);                                                                        \
+  try                                                                                                                  \
   {
-#define FINISH_NXLIB_ACTION(ACTION_NAME) \
-  } /* NOLINT */ \
-  catch (NxLibException& e) \
-  { \
-    ROS_ERROR("NxLibException %d (%s) for item %s", e.getErrorCode(), e.getErrorText().c_str(), \
-              e.getItemPath().c_str()); \
-    LOG_NXLIB_EXCEPTION(e) \
-    ensenso_camera_msgs::ACTION_NAME##Result result; \
-    result.error.code = e.getErrorCode(); \
-    result.error.message = e.getErrorText(); \
-    server->setAborted(result); \
-    return; \
-  } /* NOLINT */ \
-  catch (tf::TransformException& e) \
-  { \
-    ROS_ERROR("TF Exception: %s", e.what()); \
-    ensenso_camera_msgs::ACTION_NAME##Result result; \
-    result.error.code = ERROR_CODE_TF; \
-    result.error.message = e.what(); \
-    server->setAborted(result); \
-    return; \
-  } /* NOLINT */ \
-  catch (std::exception& e) \
-  { \
-    ROS_ERROR("Unknown Exception: %s", e.what()); \
-    ensenso_camera_msgs::ACTION_NAME##Result result; \
-    result.error.code = ERROR_CODE_UNKNOWN_EXCEPTION; \
-    result.error.message = e.what(); \
-    server->setAborted(result); \
-    return; \
+#define FINISH_NXLIB_ACTION(ACTION_NAME)                                                                               \
+  } /* NOLINT */                                                                                                       \
+  catch (NxLibException & e)                                                                                           \
+  {                                                                                                                    \
+    ROS_ERROR("NxLibException %d (%s) for item %s", e.getErrorCode(), e.getErrorText().c_str(),                        \
+              e.getItemPath().c_str());                                                                                \
+    LOG_NXLIB_EXCEPTION(e)                                                                                             \
+    ensenso_camera_msgs::ACTION_NAME##Result result;                                                                   \
+    result.error.code = e.getErrorCode();                                                                              \
+    result.error.message = e.getErrorText();                                                                           \
+    server->setAborted(result);                                                                                        \
+    return;                                                                                                            \
+  } /* NOLINT */                                                                                                       \
+  catch (tf::TransformException & e)                                                                                   \
+  {                                                                                                                    \
+    ROS_ERROR("TF Exception: %s", e.what());                                                                           \
+    ensenso_camera_msgs::ACTION_NAME##Result result;                                                                   \
+    result.error.code = ERROR_CODE_TF;                                                                                 \
+    result.error.message = e.what();                                                                                   \
+    server->setAborted(result);                                                                                        \
+    return;                                                                                                            \
+  } /* NOLINT */                                                                                                       \
+  catch (std::exception & e)                                                                                           \
+  {                                                                                                                    \
+    ROS_ERROR("Unknown Exception: %s", e.what());                                                                      \
+    ensenso_camera_msgs::ACTION_NAME##Result result;                                                                   \
+    result.error.code = ERROR_CODE_UNKNOWN_EXCEPTION;                                                                  \
+    result.error.message = e.what();                                                                                   \
+    server->setAborted(result);                                                                                        \
+    return;                                                                                                            \
   }
 
-#define PREEMPT_ACTION_IF_REQUESTED \
-  if (server->isPreemptRequested()) \
-  { \
-    server->setPreempted(); \
-    return; \
+#define PREEMPT_ACTION_IF_REQUESTED                                                                                    \
+  if (server->isPreemptRequested())                                                                                    \
+  {                                                                                                                    \
+    server->setPreempted();                                                                                            \
+    return;                                                                                                            \
   }
 
 /**
@@ -117,12 +121,12 @@ int const ERROR_CODE_TF = 101;
  */
 bool checkNxLibVersion(int major, int minor)
 {
-    int nxLibMajor = NxLibItem()[itmVersion][itmMajor].asInt();
-    int nxLibMinor = NxLibItem()[itmVersion][itmMinor].asInt();
-    return (nxLibMajor > major) || (nxLibMajor == major && nxLibMinor >= minor);
+  int nxLibMajor = NxLibItem()[itmVersion][itmMajor].asInt();
+  int nxLibMinor = NxLibItem()[itmVersion][itmMinor].asInt();
+  return (nxLibMajor > major) || (nxLibMajor == major && nxLibMinor >= minor);
 }
 
-ParameterSet::ParameterSet(const std::string &name, const NxLibItem &defaultParameters)
+ParameterSet::ParameterSet(const std::string& name, const NxLibItem& defaultParameters)
 {
   // Create a new NxLib node where we will store the parameters for this set and
   // overwrite it with the default settings.
@@ -148,28 +152,27 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
 
-  accessTreeServer =
-      make_unique<AccessTreeServer>(nh, "access_tree", boost::bind(&Camera::onAccessTree, this, _1));
+  accessTreeServer = make_unique<AccessTreeServer>(nh, "access_tree", boost::bind(&Camera::onAccessTree, this, _1));
   executeCommandServer =
       make_unique<ExecuteCommandServer>(nh, "execute_command", boost::bind(&Camera::onExecuteCommand, this, _1));
+
+  fitPrimitiveServer =
+      make_unique<FitPrimitiveServer>(nh, "fit_primitive", boost::bind(&Camera::onFitPrimitive, this, _1));
 
   getParameterServer =
       make_unique<GetParameterServer>(nh, "get_parameter", boost::bind(&Camera::onGetParameter, this, _1));
   setParameterServer =
       make_unique<SetParameterServer>(nh, "set_parameter", boost::bind(&Camera::onSetParameter, this, _1));
 
-  requestDataServer =
-      make_unique<RequestDataServer>(nh, "request_data", boost::bind(&Camera::onRequestData, this, _1));
+  requestDataServer = make_unique<RequestDataServer>(nh, "request_data", boost::bind(&Camera::onRequestData, this, _1));
   locatePatternServer =
       make_unique<LocatePatternServer>(nh, "locate_pattern", boost::bind(&Camera::onLocatePattern, this, _1));
   projectPatternServer =
       make_unique<ProjectPatternServer>(nh, "project_pattern", boost::bind(&Camera::onProjectPattern, this, _1));
   calibrateHandEyeServer =
-      make_unique<CalibrateHandEyeServer>(nh, "calibrate_hand_eye",
-                                          boost::bind(&Camera::onCalibrateHandEye, this, _1));
-  calibrateWorkspaceServer =
-      make_unique<CalibrateWorkspaceServer>(nh, "calibrate_workspace",
-                                            boost::bind(&Camera::onCalibrateWorkspace, this, _1));
+      make_unique<CalibrateHandEyeServer>(nh, "calibrate_hand_eye", boost::bind(&Camera::onCalibrateHandEye, this, _1));
+  calibrateWorkspaceServer = make_unique<CalibrateWorkspaceServer>(
+      nh, "calibrate_workspace", boost::bind(&Camera::onCalibrateWorkspace, this, _1));
 
   image_transport::ImageTransport imageTransport(nh);
 
@@ -275,6 +278,8 @@ void Camera::startServers() const
   accessTreeServer->start();
   executeCommandServer->start();
 
+  fitPrimitiveServer->start();
+
   getParameterServer->start();
   setParameterServer->start();
 
@@ -287,7 +292,8 @@ void Camera::startServers() const
 
 bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParameters)
 {
-  if (jsonFile.empty()) return true;
+  if (jsonFile.empty())
+    return true;
 
   std::ifstream file(jsonFile);
   if (file.is_open() && file.rdbuf())
@@ -326,7 +332,8 @@ bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParamet
       synchronize.execute();
 
       updateCameraInfo();
-      if (saveAsDefaultParameters) saveDefaultParameterSet();
+      if (saveAsDefaultParameters)
+        saveDefaultParameterSet();
     }
     catch (NxLibException& e)
     {
@@ -413,6 +420,123 @@ void Camera::onExecuteCommand(const ensenso_camera_msgs::ExecuteCommandGoalConst
   executeCommandServer->setSucceeded(result);
 
   FINISH_NXLIB_ACTION(ExecuteCommand)
+}
+
+void Camera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr const& goal)
+{
+  START_NXLIB_ACTION(FitPrimitive, fitPrimitiveServer)
+
+  NxLibCommand fitPrimitives(cmdFitPrimitive);
+  NxLibItem const& primitives = fitPrimitives.parameters()[itmPrimitive];
+
+  int primitivesCount = 0;
+  for (auto const& primitive : goal->primitives)
+  {
+    if (primitive.type == ensenso_camera_msgs::Primitive::SPHERE)
+    {
+      primitives[primitivesCount][itmRadius][itmMin] = primitive.min_radius * ensenso_conversion::conversionFactor;
+      primitives[primitivesCount][itmRadius][itmMax] = primitive.max_radius * ensenso_conversion::conversionFactor;
+      primitives[primitivesCount][itmCount] = primitive.count;
+    }
+    else if (primitive.type == ensenso_camera_msgs::Primitive::CYLINDER)
+    {
+      primitives[primitivesCount][itmRadius][itmMin] = primitive.min_radius * ensenso_conversion::conversionFactor;
+      primitives[primitivesCount][itmRadius][itmMax] = primitive.min_radius * ensenso_conversion::conversionFactor;
+    }
+    else if (primitive.type == ensenso_camera_msgs::Primitive::PLANE)
+    {
+      primitives[primitivesCount][itmCount] = primitive.count;
+    }
+    primitives[primitivesCount][itmType] = primitive.type;
+    primitives[primitivesCount][itmInlierThreshold] = primitive.inlier_threshold * ensenso_conversion::conversionFactor;
+    primitives[primitivesCount][itmInlierFraction] = primitive.inlier_fraction_in;
+
+    primitivesCount++;
+  }
+
+  NxLibItem const& commandParameters = fitPrimitives.parameters();
+  if (goal->normal_radius)
+  {
+    commandParameters[itmNormal][itmRadius] = goal->normal_radius;
+  }
+
+  float const zeroThreshold = 10e-6;
+  if (!(std::abs(goal->region_of_interest.lower.x) < zeroThreshold &&
+        std::abs(goal->region_of_interest.lower.y) < zeroThreshold &&
+        std::abs(goal->region_of_interest.lower.z) < zeroThreshold))
+  {
+    commandParameters[itmBoundingBox][itmMin] << ensenso_conversion::toEnsensoPoint(goal->region_of_interest.lower);
+  }
+  if (!(std::abs(goal->region_of_interest.upper.x) < zeroThreshold &&
+        std::abs(goal->region_of_interest.upper.y) < zeroThreshold &&
+        std::abs(goal->region_of_interest.upper.z) < zeroThreshold))
+  {
+    commandParameters[itmBoundingBox][itmMax] << ensenso_conversion::toEnsensoPoint(goal->region_of_interest.upper);
+  }
+
+  if (goal->failure_probability != 0)
+  {
+    commandParameters[itmFailureProbability] = goal->failure_probability;
+  }
+
+  if (std::abs(goal->inlier_threshold) > zeroThreshold)
+  {
+    commandParameters[itmInlierThreshold] = goal->inlier_threshold * ensenso_conversion::conversionFactor;
+  }
+  if (std::abs(goal->inlier_fraction) > zeroThreshold)
+  {
+    commandParameters[itmInlierFraction] = goal->inlier_fraction;
+  }
+  if (std::abs(goal->scaling) > zeroThreshold)
+  {
+    commandParameters[itmScaling] = goal->scaling;
+  }
+  if (goal->ransac_iterations != 0)
+  {
+    commandParameters[itmScaling] = goal->ransac_iterations;
+  }
+
+  fitPrimitives.execute();
+
+  ensenso_camera_msgs::FitPrimitiveResult result;
+
+  NxLibItem const primitiveResults = fitPrimitives.result()[itmPrimitive];
+  if (primitiveResults.isArray())
+  {
+    result.primitives.reserve(primitiveResults.count());
+    for (int primitiveCount = 0; primitiveCount < primitiveResults.count(); primitiveCount++)
+    {
+      NxLibItem const& currentPrimitive = primitiveResults[primitiveCount];
+      ensenso_camera_msgs::Primitive primitive;
+
+      primitive.type = currentPrimitive[itmType].asString();
+      primitive.ransac_iterations = currentPrimitive[itmIterations].asInt();
+      primitive.inlier_count = currentPrimitive[itmInlierCount].asInt();
+      primitive.inlier_fraction_out = currentPrimitive[itmInlierFraction].asDouble();
+      primitive.score = currentPrimitive[itmScore].asDouble();
+      primitive.center = ensenso_conversion::toRosPoint(currentPrimitive[itmCenter]);
+
+      if (primitive.type == ensenso_camera_msgs::Primitive::PLANE)
+      {
+        primitive.axes.push_back(ensenso_conversion::toRosPoint(currentPrimitive[itmAxis][0]));
+        primitive.axes.push_back(ensenso_conversion::toRosPoint(currentPrimitive[itmAxis][1]));
+        primitive.normal = ensenso_conversion::toRosPoint(currentPrimitive[itmNormal], false);
+      }
+      else if (primitive.type == ensenso_camera_msgs::Primitive::SPHERE)
+      {
+        primitive.radius = currentPrimitive[itmRadius].asDouble() / ensenso_conversion::conversionFactor;
+      }
+      else if (primitive.type == ensenso_camera_msgs::Primitive::CYLINDER)
+      {
+        primitive.axis = ensenso_conversion::toRosPoint(currentPrimitive[itmAxis]);
+      }
+      result.primitives.emplace_back(primitive);
+    }
+  }
+
+  fitPrimitiveServer->setSucceeded(result);
+
+  FINISH_NXLIB_ACTION(FitPrimitive)
 }
 
 void Camera::onGetParameter(ensenso_camera_msgs::GetParameterGoalConstPtr const& goal)
@@ -535,7 +659,8 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     }
     if (publishResults)
     {
-      // We only publish one of the images on the topic, even if FlexView is enabled.
+      // We only publish one of the images on the topic, even if FlexView is
+      // enabled.
       leftRawImagePublisher.publish(rawImages[0].first, leftCameraInfo);
       rightRawImagePublisher.publish(rawImages[0].second, rightCameraInfo);
     }
@@ -543,8 +668,8 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  // If we need the disparity map, we do the rectification implicitly in cmdComputeDisparityMap. This is more
-  // efficient when using CUDA.
+  // If we need the disparity map, we do the rectification implicitly in
+  // cmdComputeDisparityMap. This is more efficient when using CUDA.
   if (goal->request_rectified_images && !computeDisparityMap)
   {
     NxLibCommand rectify(cmdRectifyImages);
@@ -577,7 +702,8 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     }
     if (publishResults)
     {
-      // We only publish one of the images on the topic, even if FlexView is enabled.
+      // We only publish one of the images on the topic, even if FlexView is
+      // enabled.
       leftRectifiedImagePublisher.publish(rectifiedImages[0].first, leftRectifiedCameraInfo);
       rightRectifiedImagePublisher.publish(rectifiedImages[0].second, rightRectifiedCameraInfo);
     }
@@ -674,7 +800,8 @@ void Camera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPtr cons
     PREEMPT_ACTION_IF_REQUESTED
 
     ros::Time timestamp = capture();
-    if (i == 0) imageTimestamp = timestamp;
+    if (i == 0)
+      imageTimestamp = timestamp;
 
     PREEMPT_ACTION_IF_REQUESTED
 
@@ -732,7 +859,8 @@ void Camera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPtr cons
   }
   else
   {
-    // Estimate the pose of a single pattern, averaging over the different shots.
+    // Estimate the pose of a single pattern, averaging over the different
+    // shots.
     tf::Stamped<tf::Pose> patternPose = estimatePatternPose(imageTimestamp, patternFrame);
 
     result.pattern_poses.resize(1);
@@ -748,7 +876,8 @@ void Camera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPtr cons
     }
     else
     {
-      ROS_WARN("Cannot publish the pattern pose in TF, because there are multiple patterns!");
+      ROS_WARN("Cannot publish the pattern pose in TF, because there are "
+               "multiple patterns!");
     }
   }
 
@@ -778,7 +907,8 @@ void Camera::onProjectPattern(ensenso_camera_msgs::ProjectPatternGoalConstPtr co
 
   if (!checkNxLibVersion(2, 1))
   {
-    // In old NxLib versions, the project pattern command does not take the grid spacing as a parameter.
+    // In old NxLib versions, the project pattern command does not take the grid
+    // spacing as a parameter.
     NxLibItem()[itmParameters][itmPattern][itmGridSpacing] = goal->grid_spacing * 1000;
   }
 
@@ -879,7 +1009,8 @@ void Camera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalConstPt
     }
     if (patterns.size() > 1)
     {
-      result.error_message = "Detected multiple calibration patterns during a hand eye calibration!";
+      result.error_message = "Detected multiple calibration patterns during a "
+                             "hand eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(result);
       return;
@@ -921,7 +1052,8 @@ void Camera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalConstPt
   {
     if (handEyeCalibrationRobotPoses.size() < 5)
     {
-      result.error_message = "You need collect at least 5 patterns before starting a hand eye calibration!";
+      result.error_message = "You need collect at least 5 patterns before "
+                             "starting a hand eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(result);
       return;
@@ -963,7 +1095,8 @@ void Camera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalConstPt
 
     if (robotPoses.size() != numberOfPatterns)
     {
-      result.error_message = "The number of pattern observations does not match the number of robot poses!";
+      result.error_message = "The number of pattern observations does not "
+                             "match the number of robot poses!";
       ROS_ERROR("%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(result);
       return;
@@ -993,8 +1126,7 @@ void Camera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalConstPt
 
     calibrateHandEye.execute(false);
 
-    auto getCalibrationResidual = [](NxLibItem const &node)
-    {
+    auto getCalibrationResidual = [](NxLibItem const& node) {  // NOLINT
       if (node[itmResidual].exists())
       {
         return node[itmResidual].asDouble();
@@ -1073,7 +1205,8 @@ void Camera::onCalibrateWorkspace(const ensenso_camera_msgs::CalibrateWorkspaceG
     PREEMPT_ACTION_IF_REQUESTED
 
     ros::Time timestamp = capture();
-    if (i == 0) imageTimestamp = timestamp;
+    if (i == 0)
+      imageTimestamp = timestamp;
 
     PREEMPT_ACTION_IF_REQUESTED
 
@@ -1373,8 +1506,8 @@ std::vector<tf::Stamped<tf::Pose>> Camera::estimatePatternPoses(ros::Time imageT
 
   for (int i = 0; i < numberOfPatterns; i++)
   {
-    result.push_back(poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose],
-                                   ros::Time::now(), targetFrame));
+    result.push_back(
+        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], ros::Time::now(), targetFrame));
   }
 
   return result;
@@ -1441,8 +1574,9 @@ void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, boo
 
   if (rectified)
   {
-    // For the rectified images all transformations are the identity (because all of the distortions were already
-    // removed), except for the stereo camera matrix.
+    // For the rectified images all transformations are the identity (because
+    // all of the distortions were already removed), except for the stereo
+    // camera matrix.
 
     info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
     info->D.clear();
@@ -1491,7 +1625,8 @@ void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, boo
 
   if (right)
   {
-    // Add the offset of the right camera relative to the left one to the projection matrix.
+    // Add the offset of the right camera relative to the left one to the
+    // projection matrix.
     double fx = stereoCalibrationNode[itmCamera][0][0].asDouble();
     double baseline = cameraNode[itmCalibration][itmStereo][itmBaseline].asDouble() / 1000.0;
     info->P[3] = -fx * baseline;
@@ -1611,7 +1746,8 @@ void Camera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
 
     if (!flexViewNode.exists())
     {
-      ROS_WARN("Writing the parameter FlexView, but the camera does not support it!");
+      ROS_WARN("Writing the parameter FlexView, but the camera does not "
+               "support it!");
       return;
     }
 

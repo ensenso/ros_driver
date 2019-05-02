@@ -1,0 +1,152 @@
+#!/usr/bin/env python
+import rospy
+import sys
+
+import numpy as np
+from tf import transformations
+
+import actionlib
+from actionlib_msgs.msg import GoalStatus
+from visualization_msgs.msg import Marker
+from visualization_msgs.msg import MarkerArray
+
+from ensenso_camera_msgs.msg import Primitive
+from ensenso_camera_msgs.msg import Parameter
+from ensenso_camera_msgs.msg import FitPrimitiveAction, FitPrimitiveGoal
+from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
+from ensenso_camera_msgs.msg import SetParameterAction, SetParameterGoal
+
+
+def main():
+    loop_rate = rospy.get_param("~rate", 1)
+    timeout = rospy.get_param("~timeout", 60)
+    parameter_set = rospy.get_param("~parameter_set", "fit_primitive")
+
+    # global fit_primitive parameters
+    scaling = rospy.get_param("~scaling", 0.25)
+    failure_probability = rospy.get_param("~failure_probability", 1e-6)
+    inlier_fraction = rospy.get_param("~inlier_fraction", 0.015)
+    inlier_threshold = rospy.get_param("~inlier_threshold", 0.001)
+    ransac_iterations = rospy.get_param("~ransac_iterations", 0)
+    normal_radius = rospy.get_param("~normal_radius", 7)
+
+    fit_primitive_client = actionlib.SimpleActionClient("fit_primitive", FitPrimitiveAction)
+    set_parameter_client = actionlib.SimpleActionClient("set_parameter", SetParameterAction)
+    request_data_client = actionlib.SimpleActionClient("request_data", RequestDataAction)
+    for client in [fit_primitive_client, request_data_client, set_parameter_client]:
+        if not client.wait_for_server(rospy.Duration(timeout)):
+            rospy.logerr("The camera node is not running!")
+            sys.exit()
+
+    marker_publisher = rospy.Publisher("primitive_markers", MarkerArray, queue_size=10)
+
+    set_parameter_client.send_goal(SetParameterGoal(parameter_set=parameter_set, parameters=[
+        Parameter(key=Parameter.PROJECTOR, bool_value=False),
+        Parameter(key=Parameter.FRONT_LIGHT, bool_value=True)
+    ]))
+    set_parameter_client.wait_for_result()
+
+    rate = rospy.Rate(loop_rate)
+    while not rospy.is_shutdown():
+        # In order to fit primitives, the point cloud has to be calculated first.
+        # Therefore the request_data action has to be called beforehand for obtaining the
+        # current point cloud.
+
+        request_data_client.send_goal(RequestDataGoal(request_point_cloud=True))
+        request_data_client.wait_for_result()
+
+        if request_data_client.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logwarn("Acquiring the point cloud was not successful.")
+        else:
+            # After successfully acquiring the point cloud, we can search and fit primitives.
+            # Global parameters
+            goal = FitPrimitiveGoal()
+            goal.scaling = scaling
+            goal.failure_probability = failure_probability
+            goal.inlier_threshold = inlier_threshold
+            goal.inlier_fraction = inlier_fraction
+            goal.ransac_iterations = ransac_iterations
+            goal.normal_radius = normal_radius
+
+            # Sample local input parameters for finding/fitting a plane
+            # They will overwrite the global parameters given above
+            primitive = Primitive()
+            primitive.type = Primitive.PLANE
+            primitive.inlier_threshold = 0.005
+            primitive.count = 3
+            primitive.inlier_fraction_in = 0.015
+
+            goal.primitives.append(primitive)
+
+            fit_primitive_client.send_goal(goal)
+            fit_primitive_client.wait_for_result()
+            if fit_primitive_client.get_state() != GoalStatus.SUCCEEDED:
+                rospy.logwarn("No primitive was not found.")
+            else:
+                result = fit_primitive_client.get_result()
+
+                if result.error.code != 0:
+                    rospy.logerr("Error occured during fit_primitive action!")
+                else:
+                    marker_array = MarkerArray()
+                    marker_id = 0
+                    for found_primitive in result.primitives:
+                        if found_primitive.type == Primitive.PLANE:
+
+                            # Build the marker for a plane
+                            marker = Marker()
+                            marker.header.frame_id = "ensenso_optical_frame"
+                            marker.header.stamp = rospy.Time.now()
+                            marker.ns = "fit_primitive"
+                            marker.id = marker_id
+                            marker.type = Marker.CUBE
+                            marker.action = Marker.ADD
+                            marker.lifetime = rospy.Duration(1)
+                            marker.color.a = 1.0
+                            marker.color.r = 1.0
+                            marker.color.g = 0.0
+                            marker.color.b = 0.0
+
+                            # Defining the marker scale
+                            plane_thickness = 0.002
+                            marker.scale.x = 0.1
+                            marker.scale.y = 0.1
+                            marker.scale.z = plane_thickness
+
+                            # Defining the marker position
+                            marker.pose.position.x = found_primitive.center.x
+                            marker.pose.position.y = found_primitive.center.y
+                            marker.pose.position.z = found_primitive.center.z
+
+                            # Defining the marker orientation from angle axis
+                            # Source: https://stackoverflow.com/questions/23166898/efficient-way-to-calculate-a-3x3-rotation-matrix-from-the-rotation-defined-by-tw
+                            z_camera = [0, 0, 1]
+                            normal_plane = [found_primitive.normal.x, found_primitive.normal.y,
+                                            found_primitive.normal.z]
+                            angle = np.arccos(np.dot(z_camera, normal_plane) / (
+                                    np.linalg.norm(z_camera) / np.linalg.norm(normal_plane)))
+                            axis = np.cross(z_camera, normal_plane) / np.linalg.norm(
+                                np.cross(z_camera, normal_plane))
+                            rot_matrix = transformations.rotation_matrix(angle=angle, direction=axis)
+                            quaternion = transformations.quaternion_from_matrix(rot_matrix)
+
+                            marker.pose.orientation.x = quaternion[0]
+                            marker.pose.orientation.y = quaternion[1]
+                            marker.pose.orientation.z = quaternion[2]
+                            marker.pose.orientation.w = quaternion[3]
+
+                            # Save the found primitive as marker in a marker array
+                            marker_array.markers.append(marker)
+                            marker_id += 1
+
+                    marker_publisher.publish(marker_array)
+
+    rate.sleep()
+
+
+if __name__ == "__main__":
+    try:
+        rospy.init_node("ensenso_camera_fit_primitive_marker")
+        main()
+    except rospy.ROSInterruptException:
+        pass

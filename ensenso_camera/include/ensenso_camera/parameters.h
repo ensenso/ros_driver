@@ -49,23 +49,22 @@ struct ParameterMapping
  * NxLib node. These are handled in the parameter reading and writing methods
  * of the camera class.
  */
-std::map<std::string, ParameterMapping> const parameterInformation
-{
+std::map<std::string, ParameterMapping> const parameterInformation{ //NOLINT
   // Capture parameters.
-  { ensenso_camera_msgs::Parameter::AUTO_EXPOSURE    , { ParameterType::Bool  , { itmCapture, itmAutoExposure     } } },
-  { ensenso_camera_msgs::Parameter::AUTO_GAIN        , { ParameterType::Bool  , { itmCapture, itmAutoGain         } } },
-  { ensenso_camera_msgs::Parameter::BINNING          , { ParameterType::Number, { itmCapture, itmBinning          } } },
-  { ensenso_camera_msgs::Parameter::EXPOSURE         , { ParameterType::Number, { itmCapture, itmExposure         } } },
-  { ensenso_camera_msgs::Parameter::FRONT_LIGHT      , { ParameterType::Bool  , { itmCapture, itmFrontLight       } } },
-  { ensenso_camera_msgs::Parameter::GAIN             , { ParameterType::Number, { itmCapture, itmGain             } } },
-  { ensenso_camera_msgs::Parameter::GAIN_BOOST       , { ParameterType::Bool  , { itmCapture, itmGainBoost        } } },
-  { ensenso_camera_msgs::Parameter::HARDWARE_GAMMA   , { ParameterType::Bool  , { itmCapture, itmHardwareGamma    } } },
-  { ensenso_camera_msgs::Parameter::MAX_GAIN         , { ParameterType::Number, { itmCapture, itmMaxGain          } } },
-  { ensenso_camera_msgs::Parameter::PIXEL_CLOCK      , { ParameterType::Number, { itmCapture, itmPixelClock       } } },
-  { ensenso_camera_msgs::Parameter::PROJECTOR        , { ParameterType::Bool  , { itmCapture, itmProjector        } } },
+  { ensenso_camera_msgs::Parameter::AUTO_EXPOSURE, { ParameterType::Bool, { itmCapture, itmAutoExposure } } },
+  { ensenso_camera_msgs::Parameter::AUTO_GAIN, { ParameterType::Bool, { itmCapture, itmAutoGain } } },
+  { ensenso_camera_msgs::Parameter::BINNING, { ParameterType::Number, { itmCapture, itmBinning } } },
+  { ensenso_camera_msgs::Parameter::EXPOSURE, { ParameterType::Number, { itmCapture, itmExposure } } },
+  { ensenso_camera_msgs::Parameter::FRONT_LIGHT, { ParameterType::Bool, { itmCapture, itmFrontLight } } },
+  { ensenso_camera_msgs::Parameter::GAIN, { ParameterType::Number, { itmCapture, itmGain } } },
+  { ensenso_camera_msgs::Parameter::GAIN_BOOST, { ParameterType::Bool, { itmCapture, itmGainBoost } } },
+  { ensenso_camera_msgs::Parameter::HARDWARE_GAMMA, { ParameterType::Bool, { itmCapture, itmHardwareGamma } } },
+  { ensenso_camera_msgs::Parameter::MAX_GAIN, { ParameterType::Number, { itmCapture, itmMaxGain } } },
+  { ensenso_camera_msgs::Parameter::PIXEL_CLOCK, { ParameterType::Number, { itmCapture, itmPixelClock } } },
+  { ensenso_camera_msgs::Parameter::PROJECTOR, { ParameterType::Bool, { itmCapture, itmProjector } } },
   { ensenso_camera_msgs::Parameter::TARGET_BRIGHTNESS, { ParameterType::Number, { itmCapture, itmTargetBrightness } } },
-  { ensenso_camera_msgs::Parameter::TRIGGER_DELAY    , { ParameterType::Number, { itmCapture, itmTriggerDelay     } } },
-  { ensenso_camera_msgs::Parameter::TRIGGER_MODE     , { ParameterType::String, { itmCapture, itmTriggerMode      } } },
+  { ensenso_camera_msgs::Parameter::TRIGGER_DELAY, { ParameterType::Number, { itmCapture, itmTriggerDelay } } },
+  { ensenso_camera_msgs::Parameter::TRIGGER_MODE, { ParameterType::String, { itmCapture, itmTriggerMode } } },
 
   // Matching parameters.
   { ensenso_camera_msgs::Parameter::MATCHING_METHOD,
@@ -80,10 +79,9 @@ std::map<std::string, ParameterMapping> const parameterInformation
     { ParameterType::Number, { itmDisparityMap, itmMeasurementVolume, itmFar, itmLeftBottom, "\2" } } },
   { ensenso_camera_msgs::Parameter::UNIQUENESS_RATIO,
     { ParameterType::Number, { itmDisparityMap, itmPostProcessing, itmUniquenessRatio } } },
-  { ensenso_camera_msgs::Parameter::SCALING,
-    { ParameterType::Number, { itmDisparityMap, itmScaling } } },
+  { ensenso_camera_msgs::Parameter::SCALING, { ParameterType::Number, { itmDisparityMap, itmScaling } } },
   { ensenso_camera_msgs::Parameter::PADDING,
-    { ParameterType::Bool  , { itmDisparityMap, itmStereoMatching, itmPadding } } },
+    { ParameterType::Bool, { itmDisparityMap, itmStereoMatching, itmPadding } } },
 };
 
 inline bool parameterExists(std::string const& key)

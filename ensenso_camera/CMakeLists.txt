@@ -25,6 +25,7 @@ set(ROSLINT_CPP_OPTS "--filter=-build/c++11,-build/header_guard,-legal/copyright
 
 roslint_cpp()
 roslint_python(
+  scripts/fit_primitive
   scripts/image_stream
   scripts/pattern_marker
   scripts/request_data

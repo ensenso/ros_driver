@@ -105,8 +105,8 @@ sensor_msgs::ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string cons
   return image;
 }
 
-std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>
-imagePairFromNxLibNode(const NxLibItem& node, std::string const& frame)
+std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr> imagePairFromNxLibNode(const NxLibItem& node,
+                                                                               std::string const& frame)
 {
   auto leftImage = imageFromNxLibNode(node[itmLeft], frame);
   auto rightImage = imageFromNxLibNode(node[itmRight], frame);
@@ -114,8 +114,8 @@ imagePairFromNxLibNode(const NxLibItem& node, std::string const& frame)
   return { leftImage, rightImage };
 }
 
-std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>>
-imagesFromNxLibNode(const NxLibItem& node, std::string const& frame)
+std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>> imagesFromNxLibNode(const NxLibItem& node,
+                                                                                         std::string const& frame)
 {
   std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>> result;
 

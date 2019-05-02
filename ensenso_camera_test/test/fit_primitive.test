@@ -1,0 +1,7 @@
+<launch>
+  <include file="$(find ensenso_camera)/launch/file_camera.launch">
+    <arg name="serial" value="ros_test"/>
+    <arg name="path" value="$(find ensenso_camera_test)/data/fit_primitive/camera.zip"/>
+  </include>
+  <test pkg="ensenso_camera_test" type="fit_primitive.py" test-name="test_fit_primitive" cwd="node"></test>
+</launch>

@@ -16,6 +16,7 @@
 #include <ensenso_camera_msgs/CalibrateHandEyeAction.h>
 #include <ensenso_camera_msgs/CalibrateWorkspaceAction.h>
 #include <ensenso_camera_msgs/ExecuteCommandAction.h>
+#include <ensenso_camera_msgs/FitPrimitiveAction.h>
 #include <ensenso_camera_msgs/GetParameterAction.h>
 #include <ensenso_camera_msgs/LocatePatternAction.h>
 #include <ensenso_camera_msgs/ProjectPatternAction.h>
@@ -32,6 +33,7 @@ using AccessTreeServer = QueuedActionServer<ensenso_camera_msgs::AccessTreeActio
 using CalibrateHandEyeServer = QueuedActionServer<ensenso_camera_msgs::CalibrateHandEyeAction>;
 using CalibrateWorkspaceServer = QueuedActionServer<ensenso_camera_msgs::CalibrateWorkspaceAction>;
 using ExecuteCommandServer = QueuedActionServer<ensenso_camera_msgs::ExecuteCommandAction>;
+using FitPrimitiveServer = QueuedActionServer<ensenso_camera_msgs::FitPrimitiveAction>;
 using GetParameterServer = QueuedActionServer<ensenso_camera_msgs::GetParameterAction>;
 using LocatePatternServer = QueuedActionServer<ensenso_camera_msgs::LocatePatternAction>;
 using ProjectPatternServer = QueuedActionServer<ensenso_camera_msgs::ProjectPatternAction>;
@@ -122,6 +124,7 @@ private:
   std::unique_ptr<ProjectPatternServer> projectPatternServer;
   std::unique_ptr<CalibrateHandEyeServer> calibrateHandEyeServer;
   std::unique_ptr<CalibrateWorkspaceServer> calibrateWorkspaceServer;
+  std::unique_ptr<FitPrimitiveServer> fitPrimitiveServer;
 
   image_transport::CameraPublisher leftRawImagePublisher;
   image_transport::CameraPublisher rightRawImagePublisher;
@@ -211,6 +214,10 @@ public:
    * Callback for the `calibrate_workspace` action.
    */
   void onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceGoalConstPtr const& goal);
+  /**
+   * Callback for the `fit_primitive` action.
+   */
+  void onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr const& goal);
 
 private:
   /**
@@ -276,8 +283,7 @@ private:
    * average their positions to increase the accuracy of the pose estimation.
    */
   tf::Stamped<tf::Pose> estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
-                                            std::string const& targetFrame = "",
-                                            bool latestPatternOnly = false) const;
+                                            std::string const& targetFrame = "", bool latestPatternOnly = false) const;
 
   /**
    * Estimate the pose of each pattern in the pattern buffer.
