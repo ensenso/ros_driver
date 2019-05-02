@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<robot name="ensenso_camera" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(find ensenso_support)/ensenso.xacro" />
+
+
+  <!-- origin -->
+  <link name="world"/>
+
+  <xacro:ensenso_X400_Series camera="X400" parent="world" margin="0.02">
+    <origin xyz="0 0 1.0" rpy="0 0 0" />
+  </xacro:ensenso_X400_Series>
+</robot>
+
+<!-- example usage with: roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_support`/ensenso_X400_Series.xacro gui:=true -->

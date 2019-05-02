@@ -1,0 +1,262 @@
+<?xml version="1.0"?>
+<robot name="ensenso_camera" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<material name="Ensenso/Blue">
+  <color rgba="0.1 0.1 1.0 1.0"/>
+</material>
+
+  <xacro:macro name="ensenso_N_Series" params="camera parent *origin margin">
+
+    <joint name="${parent}_${camera}_joint" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}" />
+      <child link="${camera}_mounting_frame" />
+    </joint>
+
+    <link name="${camera}_mounting_frame">
+      <visual>
+        <origin rpy="1.571 0 3.141" xyz="-0.0875 0.0 -0.0"/>
+        <geometry>
+          <mesh filename="package://ensenso_support/stl_meshes/N30-602-16.stl"/>
+        </geometry>
+        <material name="Ensenso/Blue"/>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="-0.01 0.028 0.025"/>
+        <geometry>
+          <box size="${margin+0.20} ${margin+0.056} ${margin+0.05}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Projector -->
+    <joint name="${camera}_projector_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_projector_frame"/>
+      <origin xyz="0 0.05 0.026" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_projector_frame"/>
+
+    <!-- Left lens -->
+    <joint name="${camera}_optical_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_left_lens_frame"/>
+      <origin xyz="-0.05 0.05 0.026" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_left_lens_frame"/>
+
+    <!-- Right lens -->
+    <joint name="${camera}_right_lens_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_right_lens_frame"/>
+      <origin xyz="0.05 0.05 0.026" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_right_lens_frame"/>
+
+  </xacro:macro>
+
+
+  <xacro:macro name="ensenso_X200_Series" params="camera parent *origin margin">
+
+    <joint name="${parent}_${camera}_joint" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}" />
+      <child link="${camera}_mounting_frame" />
+    </joint>
+
+    <link name="${camera}_mounting_frame">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://ensenso_support/stl_meshes/X3x-5CP-200.stl"/>
+        </geometry>
+        <material name="Ensenso/Blue"/>
+      </visual>
+      <collision>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.033 0.033"/>
+        <geometry>
+          <box size="${margin+0.24350} ${margin+0.08} ${margin+0.066}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Projector -->
+    <joint name="${camera}_projector_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_projector_frame"/>
+      <origin xyz="0 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_projector_frame"/>
+
+    <!-- Left lens -->
+    <joint name="${camera}_optical_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_left_lens_frame"/>
+      <origin xyz="-0.1000 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_left_lens_frame"/>
+
+    <!-- Right lens -->
+    <joint name="${camera}_right_lens_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_right_lens_frame"/>
+      <origin xyz="0.1000 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_right_lens_frame"/>
+
+  </xacro:macro>
+
+
+  <xacro:macro name="ensenso_X400_Series" params="camera parent *origin margin">
+
+    <joint name="${parent}_${camera}_joint" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}" />
+      <child link="${camera}_mounting_frame" />
+    </joint>
+
+    <link name="${camera}_mounting_frame">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://ensenso_support/stl_meshes/X3x-5CP-400.stl"/>
+        </geometry>
+        <material name="Ensenso/Blue"/>
+      </visual>
+      <collision>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.033 0.033"/>
+        <geometry>
+          <box size="${margin+0.4515} ${margin+0.08} ${margin+0.066}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Projector -->
+    <joint name="${camera}_projector_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_projector_frame"/>
+      <origin xyz="0 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_projector_frame"/>
+
+    <!-- Left lens -->
+    <joint name="${camera}_optical_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_left_lens_frame"/>
+      <origin xyz="-0.2 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_left_lens_frame"/>
+
+    <!-- Right lens -->
+    <joint name="${camera}_right_lens_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_right_lens_frame"/>
+      <origin xyz="0.2 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_right_lens_frame"/>
+
+  </xacro:macro>
+
+
+  <xacro:macro name="ensenso_X200_xFA_Series" params="camera parent *origin margin">
+
+    <joint name="${parent}_${camera}_joint" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}" />
+      <child link="${camera}_mounting_frame" />
+    </joint>
+
+    <link name="${camera}_mounting_frame">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://ensenso_support/stl_meshes/X3x-xFA-200.stl"/>
+        </geometry>
+        <material name="Ensenso/Blue"/>
+      </visual>
+      <collision>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.027 0.033"/>
+        <geometry>
+          <box size="${margin+0.2870} ${margin+0.09} ${margin+0.066}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Projector -->
+    <joint name="${camera}_projector_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_projector_frame"/>
+      <origin xyz="0 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_projector_frame"/>
+
+    <!-- Left lens -->
+    <joint name="${camera}_optical_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_left_lens_frame"/>
+      <origin xyz="-0.1000 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_left_lens_frame"/>
+
+    <!-- Right lens -->
+    <joint name="${camera}_right_lens_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_right_lens_frame"/>
+      <origin xyz="0.1000 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_right_lens_frame"/>
+
+  </xacro:macro>
+
+
+  <xacro:macro name="ensenso_X400_xFA_Series" params="camera parent *origin margin">
+
+    <joint name="${parent}_${camera}_joint" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}" />
+      <child link="${camera}_mounting_frame" />
+    </joint>
+
+    <link name="${camera}_mounting_frame">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://ensenso_support/stl_meshes/X3x-xFA-400.stl"/>
+        </geometry>
+        <material name="Ensenso/Blue"/>
+      </visual>
+      <collision>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.027 0.033"/>
+        <geometry>
+          <box size="${margin+0.4950} ${margin+0.09} ${margin+0.066}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Projector -->
+    <joint name="${camera}_projector_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_projector_frame"/>
+      <origin xyz="0 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_projector_frame"/>
+
+    <!-- Left lens -->
+    <joint name="${camera}_optical_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_left_lens_frame"/>
+      <origin xyz="-0.2 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_left_lens_frame"/>
+
+    <!-- Right lens -->
+    <joint name="${camera}_right_lens_joint" type="fixed">
+      <parent link="${camera}_mounting_frame"/>
+      <child link="${camera}_right_lens_frame"/>
+      <origin xyz="0.2 0.066 0.033" rpy="-1.570796 0 0"/>
+    </joint>
+    <link name="${camera}_right_lens_frame"/>
+
+  </xacro:macro>
+
+</robot>
