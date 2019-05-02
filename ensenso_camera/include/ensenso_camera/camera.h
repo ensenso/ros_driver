@@ -276,8 +276,7 @@ private:
    * average their positions to increase the accuracy of the pose estimation.
    */
   tf::Stamped<tf::Pose> estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
-                                            std::string const& targetFrame = "",
-                                            bool latestPatternOnly = false) const;
+                                            std::string const& targetFrame = "", bool latestPatternOnly = false) const;
 
   /**
    * Estimate the pose of each pattern in the pattern buffer.

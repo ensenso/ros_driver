@@ -22,8 +22,8 @@ sensor_msgs::ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string cons
  * left and right child nodes (as it is the case when FlexView is disabled or
  * not supported by a camera).
  */
-std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>>
-imagesFromNxLibNode(NxLibItem const& node, std::string const& frame);
+std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>> imagesFromNxLibNode(NxLibItem const& node,
+                                                                                         std::string const& frame);
 
 /**
  * Get the timestamp from an NxLib image node.

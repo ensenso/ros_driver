@@ -8,7 +8,6 @@
 
 namespace ensenso_camera
 {
-
 class Nodelet : public nodelet::Nodelet
 {
 private:
