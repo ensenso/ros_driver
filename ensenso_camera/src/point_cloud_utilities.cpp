@@ -9,7 +9,7 @@
 double const NXLIB_TIMESTAMP_OFFSET = 11644473600;
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
-                                                        PointCloudROI const* roi)
+                                                        PointCloudROI const* roi, bool const replace_nan)
 {
   int width, height;
   double timestamp;
@@ -28,17 +28,33 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
   cloud->height = height;
   cloud->is_dense = false;
   cloud->points.resize(width * height);
+
+  auto nan_constant = replace_nan ? -1000.0 : std::numeric_limits<float>::quiet_NaN();
+
   for (int i = 0; i < width * height; i++)
   {
-      cloud->points[i].x = data[i * 3] / 1000.0f;
-      cloud->points[i].y = data[3 * i + 1] / 1000.0f;
-      cloud->points[i].z = data[3 * i + 2] / 1000.0f;
+      // NAN should be replaced by -1000 as reques
+      float nan_constant = -1000.0;
+
+      if(replace_nan && std::isnan(data[i * 3]))
+      {
+          cloud->points[i].x = nan_constant;
+          cloud->points[i].y = nan_constant;
+          cloud->points[i].z = nan_constant;
+      }
+
+      else
+      {
+        cloud->points[i].x = data[i * 3] / 1000.0f;
+        cloud->points[i].y = data[3 * i + 1] / 1000.0f;
+        cloud->points[i].z = data[3 * i + 2] / 1000.0f;
+      }
 
       if (roi != 0 && !roi->contains(cloud->points[i].x, cloud->points[i].y, cloud->points[i].z))
       {
-        cloud->points[i].x = std::numeric_limits<float>::quiet_NaN();
-        cloud->points[i].y = std::numeric_limits<float>::quiet_NaN();
-        cloud->points[i].z = std::numeric_limits<float>::quiet_NaN();
+          cloud->points[i].x = nan_constant;
+          cloud->points[i].y = nan_constant;
+          cloud->points[i].z = nan_constant;
       }
     
   }

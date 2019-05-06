@@ -39,7 +39,7 @@ struct PointCloudROI
  * Convert the given binary NxLib node to a PCL point cloud.
  */
 pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
-                                                        PointCloudROI const* roi = 0);
+                                                        PointCloudROI const* roi = 0, bool const replace_nan = false);
 
 /**
  * Convert the given binary NxLib node to an RGBD image.
