@@ -6,6 +6,7 @@ string parameter_set
 bool request_raw_images
 bool request_rectified_images
 bool request_disparity_map
+bool request_depth_image
 bool request_point_cloud
 bool request_normals
 
@@ -31,6 +32,9 @@ sensor_msgs/PointCloud2 point_cloud
 
 # The disparity map as it is represented in the NxLib.
 sensor_msgs/Image disparity_map
+
+# The rectified depth image
+sensor_msgs/Image depth_image
 
 # The raw images of the left and right camera respectively. A single image if
 # FlexView is disabled.

@@ -131,6 +131,7 @@ private:
   image_transport::CameraPublisher leftRectifiedImagePublisher;
   image_transport::CameraPublisher rightRectifiedImagePublisher;
   image_transport::Publisher disparityMapPublisher;
+  image_transport::CameraPublisher depthImagePublisher;
 
   ros::Publisher pointCloudPublisher;
 

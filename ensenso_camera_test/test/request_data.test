@@ -30,5 +30,8 @@
 	<test pkg="rostest" type="hztest" test-name="point_cloud_test">
       <param name="topic" value="point_cloud"/>
 	</test>
+	<test pkg="rostest" type="hztest" test-name="depth_image_test">
+      <param name="topic" value="depth/image"/>
+    </test>
   </group>
 </launch>

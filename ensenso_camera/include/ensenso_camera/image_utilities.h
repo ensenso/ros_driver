@@ -29,3 +29,10 @@ std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>> imagesFromN
  * Get the timestamp from an NxLib image node.
  */
 ros::Time timestampFromNxLibNode(NxLibItem const& node);
+
+/**
+ * Get the z-channel from the calculated point cloud and transform it
+ * into a sensor_msgs/Image depth image defined in REP 118 - depth images.
+ * The Image has a canonical format (z-values in Meters, float 1-channel image(TYPE_32FC1))
+ */
+sensor_msgs::ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame);
