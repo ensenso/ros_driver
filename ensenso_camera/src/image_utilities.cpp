@@ -1,3 +1,4 @@
+#include <cv_bridge/cv_bridge.h>
 #include "ensenso_camera/image_utilities.h"
 
 #include <string>
@@ -6,6 +7,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/image_encodings.h>
+
 
 double const NXLIB_TIMESTAMP_OFFSET = 11644473600;
 
@@ -140,4 +142,23 @@ ros::Time timestampFromNxLibNode(const NxLibItem& node)
   node.getBinaryDataInfo(0, 0, 0, 0, 0, &timestamp);
 
   return ros::Time(timestamp - NXLIB_TIMESTAMP_OFFSET);
+}
+
+sensor_msgs::ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame)
+{
+  double timestamp;
+  cv::Mat pointMap;
+  node.getBinaryData(pointMap, &timestamp);
+
+  cv::Mat depthImage;
+  cv::extractChannel(pointMap, depthImage, 2);
+
+  // convert cv mat to ros image
+  cv_bridge::CvImage out_msg;
+  out_msg.header.stamp.fromSec(timestamp - NXLIB_TIMESTAMP_OFFSET);
+  out_msg.header.frame_id = frame;
+  out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+  out_msg.image = depthImage;
+
+  return out_msg.toImageMsg();
 }

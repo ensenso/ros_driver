@@ -17,6 +17,7 @@ def main():
     goal.request_raw_images = rospy.get_param("~raw_images", True)
     goal.request_rectified_images = rospy.get_param("~rectified_images", True)
     goal.request_disparity_map = rospy.get_param("~disparity_map", True)
+    goal.request_depth_image = rospy.get_param("~depth_image", True)
     goal.request_point_cloud = rospy.get_param("~point_cloud", True)
     goal.request_normals = rospy.get_param("~normals", True)
 

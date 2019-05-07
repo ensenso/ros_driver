@@ -181,6 +181,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   leftRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/left/image", 1);
   rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
   disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
+  depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
 
   pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
 
@@ -622,9 +623,9 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
     publishResults = true;
   }
 
-  bool requestPointCloud = goal->request_point_cloud;
+  bool requestPointCloud = goal->request_point_cloud || goal->request_depth_image;
   if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_point_cloud &&
-      !goal->request_normals)
+      !goal->request_normals && !goal->request_depth_image)
   {
     requestPointCloud = true;
   }
@@ -750,6 +751,21 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
       if (publishResults)
       {
         pointCloudPublisher.publish(pointCloud);
+      }
+    }
+
+    if (goal->request_depth_image)
+    {
+      auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], cameraFrame);
+
+      if (goal->include_results_in_response)
+      {
+        result.depth_image = *depthImage;
+      }
+
+      if (publishResults)
+      {
+        depthImagePublisher.publish(depthImage, leftRectifiedCameraInfo);
       }
     }
   }
