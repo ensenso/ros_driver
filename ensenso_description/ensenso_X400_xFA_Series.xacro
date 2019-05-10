@@ -1,14 +1,29 @@
 <?xml version="1.0"?>
 <robot name="ensenso_camera" xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:include filename="$(find ensenso_support)/ensenso.xacro" />
+  <xacro:include filename="$(find ensenso_description)/ensenso.xacro" />
 
+  <!-- Parameters -->
+  <!-- Name of the camera -->
+  <xacro:property name="camera" value="X400_xFA"/>
 
-  <!-- origin -->
-  <link name="world"/>
+  <!-- Enlarges the bounding box in all directions -->
+  <xacro:property name="margin" value="0.03"/>
 
-  <xacro:ensenso_X400_xFA_Series camera="X400_xFA" parent="world" margin="0.02">
+  <!-- Lens objective properties -->
+  <xacro:property name="lens_length" value="0.05"/>
+  <xacro:property name="lens_radius" value="0.02"/>
+
+  <!-- Projector objective properties -->
+  <xacro:property name="projector_length" value="0.05"/>
+  <xacro:property name="projector_radius" value="0.02"/>
+
+  <!-- Tf Frame, that references to the cameras mounting frame -->
+  <xacro:property name="corresponding_frame_name" value="world"/>
+  <link name="${corresponding_frame_name}"/>
+
+  <xacro:ensenso_X400_xFA_Series camera="${camera}" parent="${corresponding_frame_name}" margin="${margin}" radius_lens_sensor="${lens_radius}" length_lens_sensor="${lens_length}" radius_lens_projector="${projector_radius}" length_lens_projector="${projector_length}">
     <origin xyz="0 0 1.0" rpy="0 0 0" />
   </xacro:ensenso_X400_xFA_Series>
 </robot>
 
-<!-- example usage with: roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_support`/ensenso_X400_xFA_Series.xacro gui:=true -->
+<!-- example usage with: roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_description`/ensenso_X400_xFA_Series.xacro gui:=true -->
