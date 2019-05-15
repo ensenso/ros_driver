@@ -129,6 +129,7 @@ private:
 
   sensor_msgs::CameraInfoPtr leftCameraInfo;
   sensor_msgs::CameraInfoPtr rightCameraInfo;
+  sensor_msgs::CameraInfoPtr linkedCameraInfo;
   sensor_msgs::CameraInfoPtr leftRectifiedCameraInfo;
   sensor_msgs::CameraInfoPtr rightRectifiedCameraInfo;
   sensor_msgs::PointCloud2 pointCloudMessage;
@@ -367,8 +368,21 @@ private:
    *                                of the left one.
    * @param use_dynamic_calibration Whether the calibration should be read
    *                                from the dynamic calibration
+   * @param rectified               If matrices concern rectified images (no distortion)
+   *                                
    */
   void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool use_dynamic_calibration, bool rectified = false) const;
+
+  /**
+   * Read the linked camera calibration from the NxLib and write it into a CameraInfo
+   * message.
+   *
+   * @param info                    The CameraInfo message to which the calibration should be
+   *                                written.
+   */
+  void fillLinkedCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info) const;
+
+
   /**
    * Update the cached CameraInfo messages that will be published together
    * with the images.

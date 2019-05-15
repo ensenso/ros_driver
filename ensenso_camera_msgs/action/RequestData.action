@@ -61,6 +61,7 @@ sensor_msgs/Image[] left_raw_images
 sensor_msgs/Image[] right_raw_images
 sensor_msgs/CameraInfo left_camera_info
 sensor_msgs/CameraInfo right_camera_info
+sensor_msgs/CameraInfo linked_camera_info
 
 # The rectified images of the left and right camera respectively. A single image
 # if FlexView is disabled.
