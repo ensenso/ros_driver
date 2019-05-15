@@ -368,19 +368,17 @@ private:
    *                                of the left one.
    * @param use_dynamic_calibration Whether the calibration should be read
    *                                from the dynamic calibration
+   * @param rectified               If matrices concern rectified images (no distortion)
+   *                                
    */
   void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool use_dynamic_calibration, bool rectified = false) const;
 
   /**
-   * Read the camera calibration from the NxLib and write it into a CameraInfo
+   * Read the linked camera calibration from the NxLib and write it into a CameraInfo
    * message.
    *
    * @param info                    The CameraInfo message to which the calibration should be
    *                                written.
-   * @param right                   Whether to use the calibration from the right camera instead
-   *                                of the left one.
-   * @param use_dynamic_calibration Whether the calibration should be read
-   *                                from the dynamic calibration
    */
   void fillLinkedCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info) const;
 

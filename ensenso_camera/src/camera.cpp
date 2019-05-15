@@ -749,9 +749,13 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
   if(goal->request_linked_camera_rgb_image)
   {
     ros::Time linkedImageTimestamp = captureLinkedCameraImage(&result, goal->log_time);
+
+    // Update camera info for the linked camera
     fillLinkedCameraInfoFromNxLib(linkedCameraInfo);
     result.linked_camera_info = *linkedCameraInfo;
+
   } 
+
   // Capture stereo images and compute disparity map 
   else if(goal->request_disparity_map)
   {
@@ -1852,14 +1856,15 @@ void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, boo
 void Camera::fillLinkedCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info) const
 {
 
-  NxLibItem monoCalibrationNode = linkedMonoCamera.node[itmCalibration];
+    // Initilize camera matrix
+    info->K.fill(0);
 
-    info->K.fill(0);  // The stereo camera matrix.
     for (int row = 0; row < 3; row++)
     {
       for (int column = 0; column < 3; column++)
       {
-        info->K[3 * row + column] = monoCalibrationNode[itmCamera][column][row].asDouble();
+        // Fill camera matrix with info from camera node
+        info->K[3 * row + column] = linkedMonoCamera.node[itmCalibration][itmCamera][column][row].asDouble();
       }
     }
 }
