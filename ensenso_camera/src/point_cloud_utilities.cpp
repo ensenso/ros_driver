@@ -33,8 +33,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
 
   for (int i = 0; i < width * height; i++)
   {
-      // NAN should be replaced by -1000 as reques
-      float nan_constant = -1000.0;
 
       if(replace_nan && std::isnan(data[i * 3]))
       {
