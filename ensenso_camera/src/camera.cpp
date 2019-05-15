@@ -152,6 +152,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
 
   leftCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
+  linkedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
 
@@ -748,7 +749,13 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
   if(goal->request_linked_camera_rgb_image)
   {
     ros::Time linkedImageTimestamp = captureLinkedCameraImage(&result, goal->log_time);
+
+    // Update camera info for the linked camera
+    fillLinkedCameraInfoFromNxLib(linkedCameraInfo);
+    result.linked_camera_info = *linkedCameraInfo;
+
   } 
+
   // Capture stereo images and compute disparity map 
   else if(goal->request_disparity_map)
   {
@@ -870,7 +877,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       }
 
       // Get point cloud in the correct format and publish it. This point cloud in the frame of the depth camera
-      auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI);
+      auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI, true);
       pcl::toROSMsg(*pointCloud, result.registered_point_cloud);
       auto publishLinkedPointCloudEndTime = std::chrono::high_resolution_clock::now();
 
@@ -1845,6 +1852,23 @@ void Camera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, boo
     info->roi.do_rectify = true;
   }
 }
+
+void Camera::fillLinkedCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info) const
+{
+
+    // Initilize camera matrix
+    info->K.fill(0);
+
+    for (int row = 0; row < 3; row++)
+    {
+      for (int column = 0; column < 3; column++)
+      {
+        // Fill camera matrix with info from camera node
+        info->K[3 * row + column] = linkedMonoCamera.node[itmCalibration][itmCamera][column][row].asDouble();
+      }
+    }
+}
+
 
 void Camera::updateCameraInfo(bool use_dynamic_calibration)
 {
