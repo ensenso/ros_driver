@@ -861,7 +861,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     if(linkedMonoCamera.exists)
     {
       auto linkedPointCloudStartTime = std::chrono::high_resolution_clock::now();
-      
+
       // Render part of the point cloud in the view of linked camera
       NxLibCommand renderPointMap(cmdRenderPointMap);
       renderPointMap.parameters()[itmCamera] = linkedMonoCamera.serial;
@@ -880,6 +880,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI, true);
       pcl::toROSMsg(*pointCloud, result.registered_point_cloud);
       auto publishLinkedPointCloudEndTime = std::chrono::high_resolution_clock::now();
+      result.disparity_map_scale_factor = (float) cameraNode[itmParameters][itmDisparityMap][itmScaling].asDouble();
 
       if(goal->log_time)
       {

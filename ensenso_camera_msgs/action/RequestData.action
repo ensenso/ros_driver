@@ -47,6 +47,7 @@ rgbd/RGBDImage rgbd_image
 # Registered point cloud, linked camera RGBD image and RGB image to be used if a monocular camera is present
 sensor_msgs/Image linked_camera_rgb_image        # A synchronized color image.
 sensor_msgs/PointCloud2 registered_point_cloud   # A synchronized point cloud.
+float32 disparity_map_scale_factor               # Scaling factor used for the disparity map
 
 # The disparity map as it is represented in the NxLib.
 sensor_msgs/Image disparity_map
