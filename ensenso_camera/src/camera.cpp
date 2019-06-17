@@ -880,7 +880,6 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmRenderPointMap], targetFrame, pointCloudROI, true);
       pcl::toROSMsg(*pointCloud, result.registered_point_cloud);
       auto publishLinkedPointCloudEndTime = std::chrono::high_resolution_clock::now();
-      result.disparity_map_scale_factor = (float) cameraNode[itmParameters][itmDisparityMap][itmScaling].asDouble();
 
       if(goal->log_time)
       {
@@ -891,6 +890,8 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       result.success = true;
     }
   }
+  
+  result.disparity_map_scale_factor = (float) cameraNode[itmParameters][itmDisparityMap][itmScaling].asDouble();
 
   requestDataServer->setSucceeded(result);
 
