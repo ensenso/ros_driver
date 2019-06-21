@@ -1,5 +1,6 @@
 # New features
 
+* Scaling factor of the disparity map is also sent as action result
 * Added boolean variable to replace the NaN values of a point cloud with a constant.
 * The camera intrinsics of the monocular camera are retrieved as result of the request_data action call.
 

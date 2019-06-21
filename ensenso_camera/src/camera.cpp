@@ -861,7 +861,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
     if(linkedMonoCamera.exists)
     {
       auto linkedPointCloudStartTime = std::chrono::high_resolution_clock::now();
-      
+
       // Render part of the point cloud in the view of linked camera
       NxLibCommand renderPointMap(cmdRenderPointMap);
       renderPointMap.parameters()[itmCamera] = linkedMonoCamera.serial;
@@ -890,6 +890,8 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       result.success = true;
     }
   }
+  
+  result.disparity_map_scale_factor = (float) cameraNode[itmParameters][itmDisparityMap][itmScaling].asDouble();
 
   requestDataServer->setSucceeded(result);
 
