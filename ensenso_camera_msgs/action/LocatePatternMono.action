@@ -23,19 +23,17 @@ string tf_frame
 
 ---
 
-# True when we found a pattern in both of the cameras.
+# True when we found a pattern in a mono camera image.
 bool found_pattern
 
 # The frame in which the pattern poses are given.
 string frame
 
 # The estimated pattern poses.
-geometry_msgs/PoseStamped[] pattern_poses
+geometry_msgs/PoseStamped[] mono_pattern_poses
 
-# Information about the patterns. When there is only one pattern visible and we
-# took multiple shots of it, the image points will be the ones from the last
-# image.
-ensenso_camera_msgs/StereoCalibrationPattern[] patterns
+# Information about the patterns taken from the mono camera.
+ensenso_camera_msgs/MonoCalibrationPattern[] mono_patterns
 
 # A potential NxLib exception that occured while executing the action.
 NxLibException error

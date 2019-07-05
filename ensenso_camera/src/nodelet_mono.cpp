@@ -1,4 +1,4 @@
-#include "ensenso_camera/nodelet.h"
+#include "ensenso_camera/nodelet_mono.h"
 
 #include <pluginlib/class_list_macros.h>
 #include <string>
@@ -9,7 +9,7 @@
 
 namespace ensenso_camera
 {
-void Nodelet::onInit()
+void NodeletMono::onInit()
 {
   ros::NodeHandle& nh = getNodeHandle();
   ros::NodeHandle& nhLocal = getPrivateNodeHandle();
@@ -31,7 +31,7 @@ void Nodelet::onInit()
     NxLibItem()[itmParameters][itmThreads] = threads;
   }
 
-  std::string serial, fileCameraPath, cameraFrame, targetFrame, linkFrame, robotFrame, wristFrame;
+  std::string serial, fileCameraPath, cameraFrame, targetFrame, linkFrame;
   bool cameraIsFixed;
 
   if (!nhLocal.getParam("serial", serial))
@@ -43,7 +43,33 @@ void Nodelet::onInit()
     {
       serial = std::to_string(intSerial);
     }
+
+    // For long serial numbers that exceed the range of an integer with 32-bits, we can only determine the serial number
+    // if it is passed as a numeric string. For this you have to append a "!" to the number so that it can be
+    // interpreted as a string.
+
+    NxLibItem cameraNode = NxLibItem()[itmCameras][itmBySerialNo][serial];
+    if (!cameraNode.exists())
+    {
+      NODELET_WARN("The serial of the camera has been too long and was interpreted as an 32-bit integer and exceeds "
+                   "its "
+                   "length. Please append a \"!\" to "
+                   "the number. E.g. \'_serial:=1234567\' to \'_serial:=1234567!\', so it can be "
+                   "interpreted as a numerical "
+                   "string.");
+      NODELET_ERROR("Could not find any camera. Shutting down.");
+      nxLibFinalize();
+      exit(EXIT_FAILURE);
+    }
   }
+
+  // Check if string contains the "!" and delete it.
+  std::size_t found = serial.find('!');
+  if (found != std::string::npos)
+  {
+    serial.erase(found);
+  }
+
   if (serial.empty())
   {
     // No serial specified. Try to use the first camera in the tree.
@@ -67,7 +93,7 @@ void Nodelet::onInit()
   if (fileCameraPath.empty())
   {
     std::string type = NxLibItem()[itmCameras][itmBySerialNo][serial][itmType].asString();
-    std::string const neededType = "Stereo";
+    std::string const neededType = "Monocular";
     if (type != neededType)
     {
       NODELET_ERROR("The camera to be opened is of the wrong type %s. It should be %s.", type.c_str(),
@@ -84,57 +110,21 @@ void Nodelet::onInit()
     cameraFrame = serial + "_optical_frame";
   }
 
-  nhLocal.param<std::string>("robot_frame", robotFrame, "");
-  nhLocal.param<std::string>("wrist_frame", wristFrame, "");
-  bool performingHandEyeCalibration = true;
-  if (robotFrame.empty() && wristFrame.empty())
-  {
-    performingHandEyeCalibration = false;
-  }
-
-  if (performingHandEyeCalibration)
-  {
-    if (cameraIsFixed)
-    {
-      // When we do fixed a hand eye calibration, the link between the robot base and the camera frame is calculated.
-      // Therefore the link_frame has to be the robot base.
-      if (robotFrame.empty())
-      {
-        robotFrame = cameraFrame;
-      }
-      linkFrame = robotFrame;
-    }
-    else
-    {
-      // When we do a moving hand eye calibration, the link between the robot wrist and the camera frame is
-      // calculated. Therefore the link_frame has to be the robot wrist.
-      if (wristFrame.empty())
-      {
-        wristFrame = cameraFrame;
-      }
-      linkFrame = wristFrame;
-    }
-  }
-
   nhLocal.getParam("target_frame", targetFrame);
-  if (!performingHandEyeCalibration)
+  nhLocal.getParam("link_frame", linkFrame);
+  if (targetFrame.empty() && linkFrame.empty())
   {
-    // If handeye calibration is about to be done, the link_frame is automatically set.
-    nhLocal.getParam("link_frame", linkFrame);
-  }
-
-  if (!targetFrame.empty() && linkFrame.empty())
-  {
-    linkFrame = targetFrame;
-  }
-  else if (targetFrame.empty() && linkFrame.empty())
-  {
+    // camera frame is also the global workspace
     targetFrame = cameraFrame;
     linkFrame = cameraFrame;
   }
+  if (!targetFrame.empty() && linkFrame.empty())
+  {
+    // There is no link in between link and target frame. So the global NxLib Trafo must be identity.
+    linkFrame = targetFrame;
+  }
 
-  camera = make_unique<StereoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
-                                     wristFrame, linkFrame);
+  camera = make_unique<MonoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, linkFrame);
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");
@@ -156,10 +146,9 @@ void Nodelet::onInit()
 
   camera->startServers();
   camera->initTfPublishTimer();
-  camera->initStatusTimer();
 }
 
-Nodelet::~Nodelet()
+NodeletMono::~NodeletMono()
 {
   camera->close();
   nxLibFinalize();
@@ -167,4 +156,4 @@ Nodelet::~Nodelet()
 
 }  // namespace ensenso_camera
 
-PLUGINLIB_EXPORT_CLASS(ensenso_camera::Nodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(ensenso_camera::NodeletMono, nodelet::Nodelet)

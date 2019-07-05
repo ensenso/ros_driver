@@ -55,7 +55,7 @@ geometry_msgs/Pose[] robot_poses
 # A list of pattern observations. By default the observations are automatically
 # memorized while they are captures, but you can override them with this
 # parameter.
-CalibrationPattern[] pattern_observations
+StereoCalibrationPattern[] pattern_observations
 
 # Optional for the step START_CALIBRATION:
 # If this flag is set, the resulting link will be written to the camera's EEPROM
@@ -79,7 +79,7 @@ geometry_msgs/Pose robot_pose
 # Information about the pattern that was found.
 # Note: In the CAPTURE_PATTERN step the estimated pattern pose in the camera
 #       frame is written to the pattern_pose field below.
-CalibrationPattern pattern
+StereoCalibrationPattern pattern
 
 # Only for the step START_CALIBRATION:
 float64 calibration_time    # How long the calibration took (in seconds).

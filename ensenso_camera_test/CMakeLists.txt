@@ -27,5 +27,9 @@ if(CATKIN_ENABLE_TESTING)
   add_rostest(test/texture_point_cloud.test)
   add_rostest(test/workspace_calibration.test)
 
+  # Mono camera tests
+  add_rostest(test/request_data_mono.test)
+  add_rostest(test/locate_pattern_mono.test)
+
   roslint_add_test()
 endif()
