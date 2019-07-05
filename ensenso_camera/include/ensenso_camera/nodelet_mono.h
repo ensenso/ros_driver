@@ -4,18 +4,18 @@
 
 #include <memory>
 
-#include "ensenso_camera/stereo_camera.h"
+#include "ensenso_camera/mono_camera.h"
 
 namespace ensenso_camera
 {
-class Nodelet : public nodelet::Nodelet
+class NodeletMono : public nodelet::Nodelet
 {
 private:
-  std::unique_ptr<StereoCamera> camera;
+  std::unique_ptr<MonoCamera> camera;
 
 public:
   void onInit() override;
-  ~Nodelet() override;
+  ~NodeletMono() override;
 };
 
 }  // namespace ensenso_camera

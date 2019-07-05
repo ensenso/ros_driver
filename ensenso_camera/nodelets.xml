@@ -1,5 +1,8 @@
 <library path="lib/libensenso_camera_nodelet">
   <class name="ensenso_camera/nodelet" type="ensenso_camera::Nodelet" base_class_type="nodelet::Nodelet">
-  <description>The Ensenso camera driver as a nodelet</description>
+    <description>The Ensenso camera driver as a nodelet</description>
+  </class>
+  <class name="ensenso_camera/nodelet_mono" type="ensenso_camera::NodeletMono" base_class_type="nodelet::Nodelet">
+    <description>The Ensenso camera driver as a nodelet for mono cameras</description>
   </class>
 </library>

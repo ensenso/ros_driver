@@ -12,7 +12,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
-  CalibrationPattern.msg
+  StereoCalibrationPattern.msg
+  MonoCalibrationPattern.msg
   ImagePoint.msg
   NxLibException.msg
   Parameter.msg
@@ -29,8 +30,10 @@ add_action_files(
   FitPrimitive.action
   GetParameter.action
   LocatePattern.action
+  LocatePatternMono.action
   ProjectPattern.action
   RequestData.action
+  RequestDataMono.action
   SetParameter.action
 )
 

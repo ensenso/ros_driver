@@ -5,7 +5,6 @@ import rostest
 import unittest
 
 import actionlib
-import numpy as np
 from actionlib_msgs.msg import GoalStatus
 from ensenso_camera_msgs.msg import FitPrimitiveAction, FitPrimitiveGoal, Primitive
 from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal

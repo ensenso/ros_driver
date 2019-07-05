@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+import rospy
+import sys
+
+import actionlib
+from actionlib_msgs.msg import GoalStatus
+from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
+from ensenso_camera_msgs.msg import RequestDataMonoAction, RequestDataMonoGoal
+
+
+def main():
+    loop_rate = rospy.get_param("~rate", 2)
+    stereo_serial = rospy.get_param("~stereo_serial", 160606)
+    rgb_serial = rospy.get_param("~rgb_serial", 4002895081)
+    stereo_namespace = rospy.get_param("~stereo_ns", "stereo_camera")
+    rgb_namespace = rospy.get_param("~rgb_ns", "rgb_camera")
+    timeout = rospy.get_param("~timeout", 60)
+
+    # The servers are scoped into the namespaces of the different cameras. Otherwise the topics would interfere.
+    request_data_client_stereo = actionlib.SimpleActionClient(stereo_namespace + "/request_data", RequestDataAction)
+    request_data_client_mono = actionlib.SimpleActionClient(rgb_namespace + "/request_data", RequestDataMonoAction)
+    for client in [request_data_client_stereo, request_data_client_mono]:
+        if not client.wait_for_server(rospy.Duration(timeout)):
+            rospy.logerr("The camera node is not running!")
+            sys.exit()
+
+    request_data_goal_stereo = RequestDataGoal()
+    request_data_goal_stereo.request_depth_image = True
+    request_data_goal_stereo.publish_results = True
+
+    request_data_goal_mono = RequestDataMonoGoal()
+    request_data_goal_mono.request_rectified_images = True
+    request_data_goal_mono.publish_results = True
+
+    rate = rospy.Rate(loop_rate)
+    while not rospy.is_shutdown():
+        request_data_client_stereo.send_goal(request_data_goal_stereo)
+        request_data_client_mono.send_goal(request_data_goal_mono)
+        request_data_client_stereo.wait_for_result()
+        request_data_client_mono.wait_for_result()
+
+        if request_data_client_stereo.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logwarn("Stereo request action was not successful.")
+            result = request_data_client_stereo.get_result()
+            message = result.error
+            rospy.logwarn(message)
+        if request_data_client_mono.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logwarn("Mono request action was not successful.")
+            result = request_data_client_mono.get_result()
+            message = result.error
+            rospy.logwarn(message)
+
+        # The data automatically get published!
+        rate.sleep()
+
+
+if __name__ == "__main__":
+    try:
+        rospy.init_node("ensenso_camera_image_stream")
+        main()
+    except rospy.ROSInterruptException:
+        pass

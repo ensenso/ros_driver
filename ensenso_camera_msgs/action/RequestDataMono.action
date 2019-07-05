@@ -2,13 +2,9 @@
 string parameter_set
 
 # Enable these flags for every type of data that you want to receive from the camera.
-# If none of the flags is given, the point cloud flag is automatically set.
+# If none of the flags is given, the request_rectified_images flag is automatically set.
 bool request_raw_images
 bool request_rectified_images
-bool request_disparity_map
-bool request_depth_image
-bool request_point_cloud
-bool request_normals
 
 # When this flag is enabled, the requested data will be published on the
 # corresponding topics (see the documentation of the camera node).
@@ -27,28 +23,13 @@ bool use_cached_transformation
 
 ---
 
-# The resulting point cloud. Also contains the normals when they are requested.
-sensor_msgs/PointCloud2 point_cloud
+# The raw images of the mono camera.
+sensor_msgs/Image[] raw_images
+sensor_msgs/CameraInfo camera_info
 
-# The disparity map as it is represented in the NxLib.
-sensor_msgs/Image disparity_map
-
-# The rectified depth image
-sensor_msgs/Image depth_image
-
-# The raw images of the left and right camera respectively. A single image if
-# FlexView is disabled.
-sensor_msgs/Image[] left_raw_images
-sensor_msgs/Image[] right_raw_images
-sensor_msgs/CameraInfo left_camera_info
-sensor_msgs/CameraInfo right_camera_info
-
-# The rectified images of the left and right camera respectively. A single image
-# if FlexView is disabled.
-sensor_msgs/Image[] left_rectified_images
-sensor_msgs/Image[] right_rectified_images
-sensor_msgs/CameraInfo left_rectified_camera_info
-sensor_msgs/CameraInfo right_rectified_camera_info
+# The undistorted (rectified) images of the mono camera.
+sensor_msgs/Image[] rectified_images
+sensor_msgs/CameraInfo rectified_camera_info
 
 # A potential NxLib exception that occurred while executing the action.
 NxLibException error

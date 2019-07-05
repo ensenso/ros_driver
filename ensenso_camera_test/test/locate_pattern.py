@@ -37,7 +37,6 @@ class TestLocatePattern(unittest.TestCase):
                 self.assertNotEqual(result.frame, "")
 
                 pattern = result.patterns[0]
-
                 self.assertEqual(pattern.thickness, 0.001)
                 self.assertEqual(pattern.grid_spacing, 0.01875)
                 self.assertEqual(pattern.grid_size_x, 7)
