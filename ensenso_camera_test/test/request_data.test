@@ -1,7 +1,7 @@
 <launch>
   <arg name="rate" value="1"/>
   <include file="$(find ensenso_camera)/launch/file_camera.launch">
-    <arg name="serial" value="ros_test"/>
+    <arg name="serial" value="req_cam"/>
     <arg name="path" value="$(find ensenso_camera_test)/data/camera.zip"/>
   </include>
   <node pkg="ensenso_camera" type="request_data" name="request_data">

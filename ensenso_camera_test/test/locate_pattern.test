@@ -1,6 +1,6 @@
 <launch>
   <include file="$(find ensenso_camera)/launch/file_camera.launch">
-    <arg name="serial" value="ros_test"/>
+    <arg name="serial" value="pat_cam"/>
     <arg name="path" value="$(find ensenso_camera_test)/data/locate_pattern/camera.zip"/>
   </include>
   <test pkg="ensenso_camera_test" type="locate_pattern.py" test-name="locate_pattern_test" cwd="node"></test>
