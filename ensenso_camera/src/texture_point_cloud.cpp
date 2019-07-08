@@ -1,8 +1,9 @@
+// Do not change the order of this block. Otherwise getBinaryData with CV::mat overload will not be recognized
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
+
 #include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
-
 #include <sensor_msgs/Image.h>
 
 #include <mutex>

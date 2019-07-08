@@ -1,5 +1,7 @@
 #include "ensenso_camera/point_cloud_utilities.h"
 
+#include <pcl/point_types.h>
+
 #include <limits>
 #include <string>
 #include <vector>

@@ -1,16 +1,16 @@
 #include "ensenso_camera/stereo_camera.h"
 
-#include <diagnostic_msgs/DiagnosticArray.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <sensor_msgs/distortion_models.h>
-#include "ensenso_camera/conversion.h"
-#include "pcl_ros/point_cloud.h"
-
 #include "ensenso_camera/helper.h"
 #include "ensenso_camera/image_utilities.h"
 #include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
 #include "ensenso_camera/nxLibHelpers.h"
+#include "ensenso_camera/conversion.h"
+
+#include <diagnostic_msgs/DiagnosticArray.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/distortion_models.h>
+#include <pcl_ros/point_cloud.h>
 
 StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed,
                            std::string cameraFrame, std::string targetFrame, std::string robotFrame,

@@ -1,8 +1,7 @@
 #include "ensenso_camera/mono_camera.h"
 
-#include <sensor_msgs/distortion_models.h>
-
 #include "ensenso_camera/pose_utilities.h"
+#include <sensor_msgs/distortion_models.h>
 
 MonoCamera::MonoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed,
                        std::string cameraFrame, std::string targetFrame, std::string linkFrame)
