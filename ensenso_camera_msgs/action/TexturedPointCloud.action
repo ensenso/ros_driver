@@ -1,0 +1,35 @@
+# The mono camera into which the point cloud data will be rendered (and colorized).
+string mono_serial
+
+# Specifies which surfaces (seen by the cameras in serials) should be included in the point cloud.
+# If the array is left empty, the point cloud of all opened stereo cameras within the same process
+# (nodelet manager) is used.
+string[] serials
+
+# Defines the distance of the near clipping plane from the view point of the mono camera
+float64 near_plane
+# Defines the distance of the far clipping plane from the view point of the mono camera
+float64 far_plane
+
+# Defines, if OpenGL is to be used for rendering. Default is true.
+bool use_openGL
+
+# When this flag is enabled, the requested data will be published on the
+# corresponding topics (see the documentation of the camera node).
+# Automatically enabled, when publish_results and include_results_in_response
+# are both not given.
+bool publish_results
+
+# When this flag is enabled, the resulting data will be included in the result
+# of this action (see below).
+bool include_results_in_response
+
+---
+
+# The resulting colorized point cloud.
+sensor_msgs/PointCloud2 point_cloud
+
+# A potential NxLib exception that occurred while executing the action.
+NxLibException error
+
+---

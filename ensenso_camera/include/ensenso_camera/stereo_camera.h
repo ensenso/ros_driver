@@ -5,6 +5,7 @@
 #include <ensenso_camera_msgs/RequestDataAction.h>
 #include <ensenso_camera_msgs/LocatePatternAction.h>
 #include <ensenso_camera_msgs/ProjectPatternAction.h>
+#include <ensenso_camera_msgs/TexturedPointCloudAction.h>
 
 using CalibrateHandEyeServer = QueuedActionServer<ensenso_camera_msgs::CalibrateHandEyeAction>;
 using CalibrateWorkspaceServer = QueuedActionServer<ensenso_camera_msgs::CalibrateWorkspaceAction>;
@@ -12,6 +13,7 @@ using FitPrimitiveServer = QueuedActionServer<ensenso_camera_msgs::FitPrimitiveA
 using RequestDataServer = QueuedActionServer<ensenso_camera_msgs::RequestDataAction>;
 using LocatePatternServer = QueuedActionServer<ensenso_camera_msgs::LocatePatternAction>;
 using ProjectPatternServer = QueuedActionServer<ensenso_camera_msgs::ProjectPatternAction>;
+using TexturedPointCloudServer = QueuedActionServer<ensenso_camera_msgs::TexturedPointCloudAction>;
 
 /**
  * Indicates whether the projector and front light should be turned on or off
@@ -41,6 +43,7 @@ private:
   std::unique_ptr<FitPrimitiveServer> fitPrimitiveServer;
   std::unique_ptr<LocatePatternServer> locatePatternServer;
   std::unique_ptr<ProjectPatternServer> projectPatternServer;
+  std::unique_ptr<TexturedPointCloudServer> texturedPointCloudServer;
 
   image_transport::CameraPublisher leftRawImagePublisher;
   image_transport::CameraPublisher rightRawImagePublisher;
@@ -49,7 +52,7 @@ private:
   image_transport::Publisher disparityMapPublisher;
   image_transport::CameraPublisher depthImagePublisher;
 
-  ros::Publisher pointCloudPublisher;
+  ros::Publisher pointCloudPublisher, pointCloudPublisherColor;
 
   // Information that we remember between the different steps of the hand eye
   // calibration.
@@ -60,7 +63,8 @@ private:
   std::vector<tf2::Transform> handEyeCalibrationRobotPoses;
 
 public:
-  StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame, std::string targetFrame, std::string robotFrame, std::string wristFrame, std::string  linkFrame);
+  StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
+               std::string targetFrame, std::string robotFrame, std::string wristFrame, std::string linkFrame);
 
   bool open() override;
 
@@ -98,6 +102,11 @@ public:
    * Callback for the `fit_primitive` action.
    */
   void onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr const& goal);
+
+  /**
+   * Callback for the `texture_point_cloud` action.
+   */
+  void onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudGoalConstPtr const& goal);
 
 private:
   /**

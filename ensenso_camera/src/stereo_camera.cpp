@@ -40,6 +40,8 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string f
       nh, "calibrate_hand_eye", boost::bind(&StereoCamera::onCalibrateHandEye, this, _1));
   calibrateWorkspaceServer = make_unique<CalibrateWorkspaceServer>(
       nh, "calibrate_workspace", boost::bind(&StereoCamera::onCalibrateWorkspace, this, _1));
+  texturedPointCloudServer = make_unique<TexturedPointCloudServer>(
+      nh, "texture_point_cloud", boost::bind(&StereoCamera::onTexturedPointCloud, this, _1));
 
   image_transport::ImageTransport imageTransport(nh);
   leftRawImagePublisher = imageTransport.advertiseCamera("raw/left/image", 1);
@@ -50,6 +52,7 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string f
   depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
 
   pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
+  pointCloudPublisherColor = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("point_cloud_color", 1);
 }
 
 bool StereoCamera::open()
@@ -70,6 +73,7 @@ void StereoCamera::startServers() const
   calibrateWorkspaceServer->start();
   locatePatternServer->start();
   projectPatternServer->start();
+  texturedPointCloudServer->start();
 }
 
 void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr const& goal)
@@ -355,9 +359,10 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       }
       else
       {
-        ROS_WARN("Depth images are not yet supported for linked and multi camera usage. Only request depth images when "
-                 "using "
-                 "one stereo camera only.");
+        ROS_WARN_ONCE("Depth images are not yet supported for linked and multi camera usage. Only request depth images "
+                      "when "
+                      "using "
+                      "one stereo camera only.");
       }
     }
   }
@@ -928,7 +933,7 @@ void StereoCamera::saveParameterSet(std::string name, bool projectorWasSet)
 
 void StereoCamera::loadParameterSet(std::string name, ProjectorState projector)
 {
-  Camera::loadParameterSet(name);
+  Camera::loadParameterSet(std::move(name));
 
   bool changedParameters = false;
   ParameterSet const& parameterSet = parameterSets.at(currentParameterSet);

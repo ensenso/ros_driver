@@ -5,7 +5,8 @@
 bool isValid(tf2::Transform const& pose)
 {
   auto origin = pose.getOrigin();
-  if(!isValid(origin)){
+  if (!isValid(origin))
+  {
     return false;
   }
 
@@ -24,6 +25,10 @@ bool isValid(tf2::Vector3 const& vector)
   return (!std::isnan(vector.x()) && !std::isnan(vector.y()) && !std::isnan(vector.z()));
 }
 
+bool isValid(geometry_msgs::Transform const& pose)
+{
+  return isValid(fromMsg(pose));
+}
 
 void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
 {
@@ -209,15 +214,16 @@ tf2::Transform getLatestTransform(tf2_ros::Buffer const& tfBuffer, std::string c
                                   std::string const& targetFrame)
 {
   tf2::Transform transform;
-  try{
+  try
+  {
     geometry_msgs::TransformStamped stTransform;
-    stTransform = tfBuffer.lookupTransform(cameraFrame, targetFrame,
-        ros::Time(0));
+    stTransform = tfBuffer.lookupTransform(cameraFrame, targetFrame, ros::Time(0));
 
     transform = fromMsg(stTransform.transform);
   }
-  catch (tf2::TransformException &ex) {
-    ROS_WARN("%s",ex.what());
+  catch (tf2::TransformException& ex)
+  {
+    ROS_WARN("%s", ex.what());
   }
   return transform;
 }
