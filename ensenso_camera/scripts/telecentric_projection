@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+import rospy
+import sys
+
+import actionlib
+from actionlib_msgs.msg import GoalStatus
+from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
+from ensenso_camera_msgs.msg import TelecentricProjectionAction, TelecentricProjectionGoal
+from geometry_msgs.msg import Transform
+from cv_bridge import CvBridge, CvBridgeException
+import numpy as np
+
+# debug purpose
+import tf2_ros
+import geometry_msgs.msg
+
+
+def main():
+    loop_rate = rospy.get_param("~rate", 2)
+    camera1_ns = rospy.get_param("~stereo1_ns", "/stereo_camera_one")
+    camera2_ns = rospy.get_param("~stereo2_ns", "/stereo_camera_two")
+    timeout = rospy.get_param("~timeout", 60)
+
+    # The servers are scoped into the namespaces of the different cameras. Otherwise the topics would interfere.
+    client_point_cloud_1 = actionlib.SimpleActionClient(camera1_ns + "/request_data", RequestDataAction)
+    client_point_cloud_2 = actionlib.SimpleActionClient(camera2_ns + "/request_data", RequestDataAction)
+
+    # Need one client to receive the rendered point cloud
+    client_telecentric_projection = actionlib.SimpleActionClient(camera1_ns + "/project_telecentric",
+                                                                 TelecentricProjectionAction)
+
+    for client in [client_point_cloud_1, client_point_cloud_2, client_telecentric_projection]:
+        if not client.wait_for_server(rospy.Duration(timeout)):
+            rospy.logerr("The camera node is not running!")
+            sys.exit()
+
+    rospy.loginfo("Node Running, sending goals.")
+
+    request_pointcloud = RequestDataGoal()
+    request_pointcloud.request_point_cloud = True
+    request_pointcloud.publish_results = False
+
+    # debug
+    br = tf2_ros.TransformBroadcaster()
+
+    rate = rospy.Rate(loop_rate)
+    while not rospy.is_shutdown():
+        # Request the point cloud for both cameras
+        client_point_cloud_1.send_goal(request_pointcloud)
+        client_point_cloud_1.wait_for_result()
+        if client_point_cloud_1.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logwarn("Stereo1 request action was not successful.")
+            result = client_point_cloud_1.get_result()
+            message = result.error.message
+            rospy.logwarn(message)
+            continue
+        client_point_cloud_2.send_goal(request_pointcloud)
+        client_point_cloud_2.wait_for_result()
+        if client_point_cloud_2.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logwarn("Stereo2 request action was not successful.")
+            result = client_point_cloud_2.get_result()
+            message = result.error.message
+            rospy.logwarn(message)
+            continue
+
+        # Now Render the point cloud data into a given tf frame
+
+        telecentric_goal = TelecentricProjectionGoal()
+        telecentric_goal.publish_results = True
+
+        results_in_response = True
+        if results_in_response:
+            telecentric_goal.include_results_in_response = True
+
+        useTrafo = True
+        if (useTrafo):
+            # That view looks on onto the Workspace
+            t = geometry_msgs.msg.TransformStamped()
+            t.header.stamp = rospy.Time.now()
+            t.header.frame_id = "Workspace"
+            t.child_frame_id = "RENDER_POSE"
+            customTrafo = Transform()
+            customTrafo.rotation.x = 0
+            customTrafo.rotation.y = -0.7071068
+            customTrafo.rotation.z = 0
+            customTrafo.rotation.w = 0.7071068
+            customTrafo.translation.x = 1
+            customTrafo.translation.y = 0
+            customTrafo.translation.z = 0
+            t.transform = customTrafo
+            br.sendTransform(t)
+            telecentric_goal.view_pose = customTrafo
+        else:
+            # If you use a frame, tf will look for the transform in the tfBuffer and will use it, if it exists.
+            telecentric_goal.render_frame = "160606_optical_frame"
+        telecentric_goal.use_openGL = True
+
+        # The orthographic rendered point cloud automatically gets published
+        client_telecentric_projection.send_goal(telecentric_goal)
+        client_telecentric_projection.wait_for_result()
+        if client_telecentric_projection.get_state() != GoalStatus.SUCCEEDED:
+            rospy.logwarn("Telecentric projection action was not successful.")
+            result = client_telecentric_projection.get_result()
+            message = result.error
+            rospy.loginfo(message)
+
+        # Uses the ros image in the action result and converts it to a numpy array
+        if results_in_response:
+            result = client_telecentric_projection.get_result()
+            ros_image = result.rendered_view
+            bridge = CvBridge()
+            cv_image = bridge.imgmsg_to_cv2(ros_image, "32FC1")
+            mono8_image = np.uint8(cv_image)
+
+        rate.sleep()
+
+
+if __name__ == "__main__":
+    try:
+        rospy.init_node("ensenso_telecentric_projection")
+        main()
+    except rospy.ROSInterruptException:
+        pass

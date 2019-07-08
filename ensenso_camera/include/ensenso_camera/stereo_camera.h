@@ -6,6 +6,7 @@
 #include <ensenso_camera_msgs/LocatePatternAction.h>
 #include <ensenso_camera_msgs/ProjectPatternAction.h>
 #include <ensenso_camera_msgs/TexturedPointCloudAction.h>
+#include <ensenso_camera_msgs/TelecentricProjectionAction.h>
 
 using CalibrateHandEyeServer = QueuedActionServer<ensenso_camera_msgs::CalibrateHandEyeAction>;
 using CalibrateWorkspaceServer = QueuedActionServer<ensenso_camera_msgs::CalibrateWorkspaceAction>;
@@ -14,6 +15,7 @@ using RequestDataServer = QueuedActionServer<ensenso_camera_msgs::RequestDataAct
 using LocatePatternServer = QueuedActionServer<ensenso_camera_msgs::LocatePatternAction>;
 using ProjectPatternServer = QueuedActionServer<ensenso_camera_msgs::ProjectPatternAction>;
 using TexturedPointCloudServer = QueuedActionServer<ensenso_camera_msgs::TexturedPointCloudAction>;
+using TelecentricProjectionServer = QueuedActionServer<ensenso_camera_msgs::TelecentricProjectionAction>;
 
 /**
  * Indicates whether the projector and front light should be turned on or off
@@ -44,6 +46,7 @@ private:
   std::unique_ptr<LocatePatternServer> locatePatternServer;
   std::unique_ptr<ProjectPatternServer> projectPatternServer;
   std::unique_ptr<TexturedPointCloudServer> texturedPointCloudServer;
+  std::unique_ptr<TelecentricProjectionServer> telecentricProjectionServer;
 
   image_transport::CameraPublisher leftRawImagePublisher;
   image_transport::CameraPublisher rightRawImagePublisher;
@@ -51,6 +54,7 @@ private:
   image_transport::CameraPublisher rightRectifiedImagePublisher;
   image_transport::Publisher disparityMapPublisher;
   image_transport::CameraPublisher depthImagePublisher;
+  image_transport::Publisher renderedViewPublisher;
 
   ros::Publisher pointCloudPublisher, pointCloudPublisherColor;
 
@@ -108,6 +112,10 @@ public:
    */
   void onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudGoalConstPtr const& goal);
 
+  /**
+   * Callback for the `project_telecentric` action.
+   */
+  void onTelecentricProjection(ensenso_camera_msgs::TelecentricProjectionGoalConstPtr const& goal);
 private:
   /**
    * Save the current settings to the parameter set with the given name.

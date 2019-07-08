@@ -36,6 +36,7 @@ add_action_files(
         RequestData.action
         RequestDataMono.action
         SetParameter.action
+        TelecentricProjection.action
 )
 
 generate_messages(

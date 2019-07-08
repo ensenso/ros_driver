@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
 
+find_package(OpenCV REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
         actionlib
         cv_bridge
