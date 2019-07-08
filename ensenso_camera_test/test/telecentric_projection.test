@@ -1,7 +1,7 @@
 <launch>
   <group>
     <include file="$(find ensenso_camera)/launch/file_camera.launch">
-      <arg name="serial" value="ros_test"/>
+      <arg name="serial" value="tele_cam"/>
       <arg name="path" value="$(find ensenso_camera_test)/data/telecentric_projection/camera.zip"/>
     </include>
     <test pkg="ensenso_camera_test" type="telecentric_projection.py" test-name="test_telecentric_projection" cwd="node"

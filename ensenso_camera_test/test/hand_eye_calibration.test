@@ -3,7 +3,7 @@
 	<param name="~camera_frame" value="robot_wrist"/>
 	<param name="~robot_frame" value="robot_base"/>
     <include file="$(find ensenso_camera)/launch/file_camera.launch">
-      <arg name="serial" value="ros_test"/>
+      <arg name="serial" value="hand_calib_cam"/>
       <arg name="path" value="$(find ensenso_camera_test)/data/hand_eye_calibration/camera.zip"/>
     </include>
     <test pkg="ensenso_camera_test" type="hand_eye_calibration.py" test-name="hand_eye_calibration_test" cwd="node"></test>
