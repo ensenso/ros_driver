@@ -142,7 +142,7 @@ class TestFitPrimitive(unittest.TestCase):
                 self.assertAlmostEqual(primitive.radius, cylinder.radius, delta=delta)
             elif primitive.type == get_plane_fit_primitive().type:
                 plane = PlaneTestValues()
-                self.assertAlmostEqual(primitive.normal.z, plane.normal.z, delta=delta)
+                self.assertAlmostEqual(abs(primitive.normal.z), abs(plane.normal.z), delta=delta)
                 self.assertAlmostEqual(primitive.center.z, plane.center.z, delta=delta)
 
     def get_result(self, goal):
