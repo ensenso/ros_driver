@@ -300,7 +300,6 @@ void Camera::updateGlobalLink(ros::Time time, std::string frame, bool useCachedT
     tf2::convert(transform.transform, tfTrafo);
     NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial].setNull();
     NxLibItem()[itmLinks].setNull();
-
     writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial]);
   }
 }
@@ -595,6 +594,7 @@ geometry_msgs::TransformStamped Camera::stampedLinkToCamera()
 
 tf2::Transform Camera::getCameraToLinkTransform()
 {
+  // The Nxlib will always give the transfrom from the Camera to the Link target in Camera Coordinates.
   tf2::Transform transform;
   try
   {

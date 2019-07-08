@@ -16,6 +16,7 @@
  * geometry_msgs/Pose to a TF pose.
  */
 bool isValid(tf2::Transform const& pose);
+bool isValid(geometry_msgs::Transform const& pose);
 bool isValid(tf2::Vector3 const& vector);
 
 /**
