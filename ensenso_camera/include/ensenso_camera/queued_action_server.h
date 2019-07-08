@@ -1,5 +1,11 @@
 #pragma once
 
+#include "ensenso_camera/helper.h"
+
+#include <actionlib/action_definition.h>
+#include <actionlib/server/action_server.h>
+#include <ros/ros.h>
+
 #include <chrono>
 #include <condition_variable>
 #include <memory>
@@ -7,12 +13,6 @@
 #include <queue>
 #include <string>
 #include <thread>
-
-#include <actionlib/action_definition.h>
-#include <actionlib/server/action_server.h>
-#include <ros/ros.h>
-
-#include "ensenso_camera/helper.h"
 
 /**
  * An action server that remembers a queue of goals that still have to be

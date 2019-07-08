@@ -1,10 +1,10 @@
 #pragma once
 
+#include "ensenso_camera/mono_camera.h"
+
 #include <nodelet/nodelet.h>
 
 #include <memory>
-
-#include "ensenso_camera/mono_camera.h"
 
 namespace ensenso_camera
 {

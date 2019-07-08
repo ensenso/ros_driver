@@ -1,5 +1,20 @@
 #pragma once
 
+#include "ensenso_camera_msgs/AccessTreeAction.h"
+#include "ensenso_camera_msgs/CalibrateHandEyeAction.h"
+#include "ensenso_camera_msgs/CalibrateWorkspaceAction.h"
+#include "ensenso_camera_msgs/ExecuteCommandAction.h"
+#include "ensenso_camera_msgs/FitPrimitiveAction.h"
+#include "ensenso_camera_msgs/GetParameterAction.h"
+#include "ensenso_camera_msgs/SetParameterAction.h"
+#include "ensenso_camera/calibration_pattern.h"
+#include "ensenso_camera/point_cloud_utilities.h"
+#include "ensenso_camera/queued_action_server.h"
+#include "ensenso_camera/image_utilities.h"
+
+#include "nxLib.h"
+
+#include <tf2/LinearMath/Transform.h>
 #include <image_transport/image_transport.h>
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -16,22 +31,6 @@
 #include <string>
 #include <vector>
 #include <fstream>
-
-#include <ensenso_camera_msgs/AccessTreeAction.h>
-#include <ensenso_camera_msgs/CalibrateHandEyeAction.h>
-#include <ensenso_camera_msgs/CalibrateWorkspaceAction.h>
-#include <ensenso_camera_msgs/ExecuteCommandAction.h>
-#include <ensenso_camera_msgs/FitPrimitiveAction.h>
-#include <ensenso_camera_msgs/GetParameterAction.h>
-#include <ensenso_camera_msgs/SetParameterAction.h>
-#include <tf2/LinearMath/Transform.h>
-
-#include "ensenso_camera/calibration_pattern.h"
-#include "ensenso_camera/point_cloud_utilities.h"
-#include "ensenso_camera/queued_action_server.h"
-#include "ensenso_camera/image_utilities.h"
-
-#include "nxLib.h"
 
 /**
  * The interval at which we publish diagnostic messages containing the camera

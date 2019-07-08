@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ensenso_camera_msgs/Parameter.h"
+
 #include <map>
 #include <string>
 #include <tuple>
@@ -7,8 +9,6 @@
 #include <vector>
 
 #include "nxLib.h"
-
-#include "ensenso_camera_msgs/Parameter.h"
 
 /**
  * Possible types of parameters that are mapped to nodes of the NxLib.

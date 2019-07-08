@@ -1,11 +1,10 @@
 #include "ensenso_camera/nodelet_mono.h"
 
-#include <pluginlib/class_list_macros.h>
-#include <string>
-
+#include "ensenso_camera/helper.h"
 #include "nxLib.h"
 
-#include "ensenso_camera/helper.h"
+#include <pluginlib/class_list_macros.h>
+#include <string>
 
 namespace ensenso_camera
 {

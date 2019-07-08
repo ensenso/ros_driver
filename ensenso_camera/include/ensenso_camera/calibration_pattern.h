@@ -1,15 +1,16 @@
 #pragma once
 
-#include <vector>
+#include "ensenso_camera_msgs/StereoCalibrationPattern.h"
+#include "ensenso_camera_msgs/MonoCalibrationPattern.h"
+#include "ensenso_camera_msgs/ImagePoint.h"
 
-#include <ensenso_camera_msgs/StereoCalibrationPattern.h>
-#include <ensenso_camera_msgs/MonoCalibrationPattern.h>
-#include <ensenso_camera_msgs/ImagePoint.h>
+#include <vector>
 
 #include "nxLib.h"
 
 template <typename messageType>
-class ChessboardPattern{
+class ChessboardPattern
+{
 public:
   double thickness = 0;
   int gridSizeX = 0;

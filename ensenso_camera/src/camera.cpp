@@ -1,10 +1,10 @@
 #include "ensenso_camera/camera.h"
 
-#include <sensor_msgs/distortion_models.h>
-#include <ensenso_camera/parameters.h>
-
+#include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
 #include "ensenso_camera/conversion.h"
+
+#include <sensor_msgs/distortion_models.h>
 
 ParameterSet::ParameterSet(const std::string& name, const NxLibItem& defaultParameters)
 {

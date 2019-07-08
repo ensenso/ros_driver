@@ -1,3 +1,4 @@
+// Do not change the order of this block. Otherwise getBinaryData with CV::mat overload will not be recognized
 #include <cv_bridge/cv_bridge.h>
 #include "ensenso_camera/image_utilities.h"
 
@@ -7,7 +8,6 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/image_encodings.h>
-
 
 double const NXLIB_TIMESTAMP_OFFSET = 11644473600;
 
