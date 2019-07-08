@@ -1,16 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ensenso_camera_test)
 
+find_package(OpenCV REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
-  ensenso_camera
-  ensenso_camera_msgs
-  roslint
-  rospy
-  tf
-)
+        ensenso_camera
+        ensenso_camera_msgs
+        roslint
+        rospy
+        tf
+        )
 
 catkin_package(
-  CATKIN_DEPENDS ensenso_camera_msgs
+        CATKIN_DEPENDS ensenso_camera_msgs
 )
 
 roslint_python()
@@ -27,10 +28,11 @@ if (CATKIN_ENABLE_TESTING)
     add_rostest(test/texture_point_cloud.test)
     add_rostest(test/workspace_calibration.test)
     add_rostest(test/colorized_point_cloud.test)
+    add_rostest(test/telecentric_projection.test)
 
-  # Mono camera tests
-  add_rostest(test/request_data_mono.test)
-  add_rostest(test/locate_pattern_mono.test)
+    # Mono camera tests
+    add_rostest(test/request_data_mono.test)
+    add_rostest(test/locate_pattern_mono.test)
 
-  roslint_add_test()
-endif()
+    roslint_add_test()
+endif ()

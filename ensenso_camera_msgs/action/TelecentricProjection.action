@@ -1,0 +1,49 @@
+# In Order to use this action, a point cloud has to be requested beforehand.
+# You either have to specify the render frame, or a valid view pose, to which the point cloud data should be rendered to.
+# The Pose, to which the point cloud should be rendered.
+geometry_msgs/Transform view_pose
+# The Frame, to which to point cloud should be rendered.
+string render_frame
+
+# Specifies which surfaces (seen by the cameras in serials) should be included in the point cloud.
+# If the array is left empty, the point cloud of all opened stereo cameras within the same process
+# (nodelet manager) is used.
+string[] serials
+
+# Parameters for the telecentric projection
+# The size of a pixel in millimeters. Is used for generation of the telecentric depth map
+# If not specified the default will be 1
+int32 pixel_scale
+
+# Allows to avoid aliasing and sparse depth maps when using toghether with use_openGL set to false. value
+# is in between 0..1 and downscales the resolution during the rendering process.
+# If not specified the default will be 1
+float64 scaling
+
+# The size of the depth map.
+# Default: 1024 (width), 768 (height)
+int32 size_width
+int32 size_height
+
+# Defines, if OpenGL is to be used for rendering. Default is true.
+bool use_openGL
+
+# When this flag is enabled, the requested data will be published on the
+# corresponding topics (see the documentation of the camera node).
+# Automatically enabled, when publish_results and include_results_in_response
+# are both not given.
+bool publish_results
+
+# When this flag is enabled, the resulting data will be included in the result
+# of this action (see below).
+bool include_results_in_response
+
+---
+
+# The resulting depth image, rendered into the viewPose's frame or render_frame
+sensor_msgs/Image rendered_view
+
+# A potential NxLib exception that occurred while executing the action.
+NxLibException error
+
+---

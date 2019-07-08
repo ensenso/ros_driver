@@ -40,6 +40,8 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string f
       nh, "calibrate_hand_eye", boost::bind(&StereoCamera::onCalibrateHandEye, this, _1));
   calibrateWorkspaceServer = make_unique<CalibrateWorkspaceServer>(
       nh, "calibrate_workspace", boost::bind(&StereoCamera::onCalibrateWorkspace, this, _1));
+  telecentricProjectionServer = make_unique<TelecentricProjectionServer>(
+      nh, "project_telecentric", boost::bind(&StereoCamera::onTelecentricProjection, this, _1));
   texturedPointCloudServer = make_unique<TexturedPointCloudServer>(
       nh, "texture_point_cloud", boost::bind(&StereoCamera::onTexturedPointCloud, this, _1));
 
@@ -50,6 +52,7 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string f
   rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
   disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
   depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
+  renderedViewPublisher = imageTransport.advertise("depth/rendered_view", 1);
 
   pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
   pointCloudPublisherColor = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("point_cloud_color", 1);
@@ -74,6 +77,7 @@ void StereoCamera::startServers() const
   locatePatternServer->start();
   projectPatternServer->start();
   texturedPointCloudServer->start();
+  telecentricProjectionServer->start();
 }
 
 void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr const& goal)
@@ -913,6 +917,151 @@ void StereoCamera::onCalibrateWorkspace(const ensenso_camera_msgs::CalibrateWork
   calibrateWorkspaceServer->setSucceeded(result);
 
   FINISH_NXLIB_ACTION(CalibrateWorkspace)
+}
+
+void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProjectionGoalConstPtr const& goal)
+{
+  START_NXLIB_ACTION(TelecentricProjection, telecentricProjectionServer)
+
+  ensenso_camera_msgs::TelecentricProjectionResult result;
+
+  bool useViewPose = goal->render_frame.empty();
+  bool useFrame = !useViewPose;
+  tf2::Transform transform;
+  std::string publishingFrame = useViewPose ? targetFrame : goal->render_frame;
+
+  if (useViewPose)
+  {
+    if (!isValid(goal->view_pose))
+    {
+      std::string error = "The given view pose is not valid. Aborting.";
+      ROS_ERROR("%s", error.c_str());
+      result.error.message = error;
+      telecentricProjectionServer->setAborted(result);
+      return;
+    }
+    transform = fromMsg(goal->view_pose);
+  }
+
+  if (useFrame)
+  {
+    transform = getLatestTransform(tfBuffer, targetFrame, goal->render_frame);
+  }
+
+  // check goal parameters (message generation will default to value 0 or empty string)
+  int pixelScale = goal->pixel_scale != 0. ? goal->pixel_scale : 1;
+  double scaling = goal->scaling != 0. ? goal->scaling : 1.0;
+  int sizeWidth = goal->size_width != 0 ? goal->size_width : 1024;
+  int sizeHeight = goal->size_height != 0. ? goal->size_height : 768;
+  bool useOpenGL = goal->use_openGL == 1;
+
+  NxLibCommand renderPointMap(cmdRenderPointMap, serial);
+  writePoseToNxLib(transform, renderPointMap.parameters()[itmViewPose]);
+  for (int i = 0; i < static_cast<int>(goal->serials.size()); i++)
+  {
+    renderPointMap.parameters()[itmCameras][i] = goal->serials[i];
+  }
+  renderPointMap.parameters()[itmPixelSize] = pixelScale;
+  renderPointMap.parameters()[itmScaling] = scaling;
+  renderPointMap.parameters()[itmSize][0] = sizeWidth;
+  renderPointMap.parameters()[itmSize][1] = sizeHeight;
+  renderPointMap.parameters()[itmUseOpenGL] = useOpenGL;
+
+  renderPointMap.execute();
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud;
+  if (!renderPointMap.result()[itmImages][itmRenderPointMap].exists())
+  {
+    std::string error{ "RenderPointMap command went wrong. Aborting Action." };
+    result.error.message = error;
+    ROS_ERROR("%s", error.c_str());
+    telecentricProjectionServer->setAborted(result);
+    return;
+  }
+
+  if (goal->publish_results || goal->include_results_in_response)
+  {
+    auto renderedView = depthImageFromNxLibNode(renderPointMap.result()[itmImages][itmRenderPointMap], "rendered_pose");
+    if (goal->publish_results)
+    {
+      renderedViewPublisher.publish(renderedView);
+    }
+    if (goal->include_results_in_response)
+    {
+      result.rendered_view = *renderedView;
+      telecentricProjectionServer->setSucceeded(result);
+    }
+    else
+    {
+      telecentricProjectionServer->setSucceeded();
+    }
+  }
+  else
+  {
+    telecentricProjectionServer->setSucceeded();
+  }
+
+  FINISH_NXLIB_ACTION(TelecentricProjection)
+}
+
+void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudGoalConstPtr const& goal)
+{
+  START_NXLIB_ACTION(TexturedPointCloud, texturedPointCloudServer)
+
+  ensenso_camera_msgs::TexturedPointCloudResult result;
+
+  if (goal->mono_serial.empty())
+  {
+    std::string error = "In Order to use this action, you have to specify one mono serial";
+    ROS_ERROR("%s", error.c_str());
+    result.error.message = error;
+    texturedPointCloudServer->setAborted(result);
+    return;
+  }
+
+  double far = goal->far_plane ? goal->far_plane : 10000.;
+  double near = goal->near_plane ? goal->near_plane : -10000.;
+
+  NxLibCommand renderPointMap(cmdRenderPointMap, serial);
+
+  // If goal->serials are left empty, all open stereo cameras will be used as default by the command.
+  for (int i = 0; i < static_cast<int>(goal->serials.size()); i++)
+  {
+    renderPointMap.parameters()[itmCameras][i] = goal->serials[i];
+  }
+  renderPointMap.parameters()[itmCamera] = goal->mono_serial;
+  renderPointMap.parameters()[itmUseOpenGL] = goal->use_openGL;
+  renderPointMap.parameters()[itmNear] = near;
+  renderPointMap.parameters()[itmTexture] = true;
+  renderPointMap.parameters()[itmFar] = far;
+
+  renderPointMap.execute();
+
+  if (goal->publish_results || goal->include_results_in_response)
+  {
+    NxLibItem const& cmdResults = renderPointMap.result();
+    auto cloudColored = pointCloudTexturedFromNxLib(cmdResults[itmImages][itmRenderPointMapTexture],
+                                                    cmdResults[itmImages][itmRenderPointMap], targetFrame);
+    if (goal->publish_results)
+    {
+      pointCloudPublisherColor.publish(cloudColored);
+    }
+    if (goal->include_results_in_response)
+    {
+      pcl::toROSMsg(*cloudColored, result.point_cloud);
+      texturedPointCloudServer->setSucceeded(result);
+    }
+    else
+    {
+      texturedPointCloudServer->setSucceeded();
+    }
+  }
+  else
+  {
+    texturedPointCloudServer->setSucceeded();
+  }
+
+  FINISH_NXLIB_ACTION(TexturedPointCloud)
 }
 
 void StereoCamera::saveParameterSet(std::string name, bool projectorWasSet)
