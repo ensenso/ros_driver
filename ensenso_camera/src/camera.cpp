@@ -266,6 +266,10 @@ bool Camera::open()
 
     //Get monocular cam node
     linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
+
+    // Print info that monocular camera does not use auto-exposure by default
+    ROS_INFO("Monocular camera with auto exposure set to OFF by default");
+
     //Publish static tf
     geometry_msgs::TransformStamped static_transform;
     tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
@@ -907,6 +911,9 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   ensenso_camera_msgs::RequestDataResult result;
   ensenso_camera_msgs::RequestDataFeedback feedback;
  
+  if(goal->linked_camera_auto_exposure)
+    linkedMonoCamera.node[itmParameters][itmCapture][itmAutoExposure] = true;
+
   // After loading goal, branch in two options: request from linked camera, or 'default' ensenso request
   if(goal->linked_camera_request)
     handleLinkedCameraRequestData(goal, result);
