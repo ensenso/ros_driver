@@ -911,8 +911,7 @@ void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& g
   ensenso_camera_msgs::RequestDataResult result;
   ensenso_camera_msgs::RequestDataFeedback feedback;
  
-  if(goal->linked_camera_auto_exposure)
-    linkedMonoCamera.node[itmParameters][itmCapture][itmAutoExposure] = true;
+  linkedMonoCamera.node[itmParameters][itmCapture][itmAutoExposure] = goal->linked_camera_auto_exposure ? true : false;
 
   // After loading goal, branch in two options: request from linked camera, or 'default' ensenso request
   if(goal->linked_camera_request)
