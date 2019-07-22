@@ -32,7 +32,7 @@ void Nodelet::onInit()
   }
 
   std::string serial, fileCameraPath, cameraFrame, targetFrame, robotFrame, wristFrame, linkedCameraFrame;
-  bool cameraIsFixed;
+  bool cameraIsFixed, linked_camera_auto_exposure;
 
   if (!nhLocal.getParam("serial", serial))
   {
@@ -76,6 +76,11 @@ void Nodelet::onInit()
     targetFrame = cameraFrame;
   }
 
+  if (!nhLocal.getParam("linked_camera_auto_exposure", linked_camera_auto_exposure))
+  {
+    linked_camera_auto_exposure = false;
+  }
+
   nhLocal.param<std::string>("robot_frame", robotFrame, "");
   nhLocal.param<std::string>("wrist_frame", wristFrame, "");
   if (cameraIsFixed && robotFrame.empty())
@@ -89,7 +94,7 @@ void Nodelet::onInit()
 
   NODELET_DEBUG("Opening the camera '%s'...", serial.c_str());
   camera = make_unique<Camera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
-                               wristFrame, linkedCameraFrame);
+                               wristFrame, linkedCameraFrame, linked_camera_auto_exposure);
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");
