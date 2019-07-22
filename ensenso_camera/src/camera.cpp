@@ -268,7 +268,7 @@ bool Camera::open()
     linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
 
     // Print info that monocular camera does not use auto-exposure by default
-    ROS_INFO("Monocular camera with auto exposure set to OFF by default");
+    ROS_INFO("Monocular camera %s with auto exposure set to OFF by default", serialLinkedCamera.c_str());
 
     //Publish static tf
     geometry_msgs::TransformStamped static_transform;
