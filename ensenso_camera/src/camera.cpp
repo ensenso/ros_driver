@@ -138,7 +138,7 @@ ParameterSet::ParameterSet(const std::string &name, const NxLibItem &defaultPara
 
 Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
                std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
-               std::string const& wristFrame, std::string const& linkedCameraFrame)
+               std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure)
   : serial(serial)
   , fileCameraPath(fileCameraPath)
   , fixed(fixed)
@@ -147,6 +147,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   , robotFrame(robotFrame)
   , wristFrame(wristFrame)
   , linkedCameraFrame(linkedCameraFrame)
+  , linked_camera_auto_exposure(linked_camera_auto_exposure)
 {
   isFileCamera = !fileCameraPath.empty();
 
@@ -266,6 +267,12 @@ bool Camera::open()
 
     //Get monocular cam node
     linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
+
+    linkedMonoCamera.node[itmParameters][itmCapture][itmAutoExposure] = linked_camera_auto_exposure ? true : false;
+
+    // Print info that monocular camera does not use auto-exposure by default
+    ROS_INFO("Monocular camera %s with auto exposure set to %d", serialLinkedCamera.c_str(), linked_camera_auto_exposure);
+
     //Publish static tf
     geometry_msgs::TransformStamped static_transform;
     tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
