@@ -57,11 +57,11 @@ bool MonoCamera::open()
 
 void MonoCamera::updateCameraInfo()
 {
-  fillCameraInfoFromNxLib(cameraInfo);
-  fillCameraInfoFromNxLib(rectifiedCameraInfo);
+  fillCameraInfoFromNxLib(cameraInfo, false);
+  fillCameraInfoFromNxLib(rectifiedCameraInfo, true);
 }
 
-void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info)
+void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool rectified)
 {
   Camera::fillBasicCameraInfoFromNxLib(info);
 
@@ -70,9 +70,10 @@ void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info)
   info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
   info->D.clear();
 
-  for (int i = 0; i < 5; i++)
-  {
-    info->D.push_back(calibrationNode[itmDistortion][i].asDouble());
+  if(rectified) {
+    info->D.resize(5,0.);
+  } else {
+    fillDistortionParamsFromNxLib(calibrationNode[itmDistortion], info);
   }
 
   info->K.fill(0);
@@ -332,10 +333,6 @@ std::vector<MonoCalibrationPattern> MonoCamera::collectPattern(bool clearBuffer)
   NxLibCommand collectPattern(cmdCollectPattern, serial);
   collectPattern.parameters()[itmCameras] = serial;
   collectPattern.parameters()[itmDecodeData] = true;
-  collectPattern.parameters()[itmFilter][itmCameras] = serial;
-  collectPattern.parameters()[itmFilter][itmUseModel] = true;
-  collectPattern.parameters()[itmFilter][itmType] = valStatic;
-  collectPattern.parameters()[itmFilter][itmValue] = true;
   try
   {
     collectPattern.execute();

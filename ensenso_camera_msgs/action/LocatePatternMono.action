@@ -33,7 +33,7 @@ string frame
 geometry_msgs/PoseStamped[] mono_pattern_poses
 
 # Information about the patterns taken from the mono camera.
-ensenso_camera_msgs/MonoCalibrationPattern[] mono_patterns
+MonoCalibrationPattern[] mono_patterns
 
 # A potential NxLib exception that occured while executing the action.
 NxLibException error

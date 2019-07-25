@@ -2,8 +2,8 @@
 
 #include "ensenso_camera/conversion.h"
 
-template <typename messageType>
-ChessboardPattern<messageType>::ChessboardPattern(NxLibItem const& node)
+template <typename MessageType>
+CalibrationPattern<MessageType>::CalibrationPattern(NxLibItem const& node)
 {
   thickness = node[itmThickness].asDouble() / ensenso_conversion::conversionFactor;
   gridSpacing = node[itmGridSpacing].asDouble() / ensenso_conversion::conversionFactor;
@@ -11,8 +11,8 @@ ChessboardPattern<messageType>::ChessboardPattern(NxLibItem const& node)
   gridSizeY = node[itmGridSize][1].asInt();
 }
 
-template <typename messageType>
-ChessboardPattern<messageType>::ChessboardPattern(messageType const& message)
+template <typename MessageType>
+CalibrationPattern<MessageType>::CalibrationPattern(MessageType const& message)
 {
   thickness = message.thickness;
   gridSpacing = message.grid_spacing;
@@ -20,8 +20,8 @@ ChessboardPattern<messageType>::ChessboardPattern(messageType const& message)
   gridSizeY = message.grid_size_y;
 }
 
-template <typename messageType>
-void ChessboardPattern<messageType>::readMetaDataFromMessage(messageType const& message)
+template <typename MessageType>
+void CalibrationPattern<MessageType>::readMetaDataFromMessage(MessageType const& message)
 {
   thickness = message.thickness;
   gridSpacing = message.grid_spacing;
@@ -29,8 +29,8 @@ void ChessboardPattern<messageType>::readMetaDataFromMessage(messageType const& 
   gridSizeY = message.grid_size_y;
 }
 
-template <typename messageType>
-void ChessboardPattern<messageType>::writeMetaDataToMessage(messageType& message)
+template <typename MessageType>
+void CalibrationPattern<MessageType>::writeMetaDataToMessage(MessageType& message)
 {
   message.thickness = thickness;
   message.grid_spacing = gridSpacing;
@@ -38,8 +38,8 @@ void ChessboardPattern<messageType>::writeMetaDataToMessage(messageType& message
   message.grid_size_y = gridSizeY;
 }
 
-template <typename messageType>
-void ChessboardPattern<messageType>::writeMetaDataToNxLib(NxLibItem const& node)
+template <typename MessageType>
+void CalibrationPattern<MessageType>::writeMetaDataToNxLib(NxLibItem const& node)
 {
   node[itmPattern][itmThickness] = thickness * ensenso_conversion::conversionFactor;
   node[itmPattern][itmGridSpacing] = gridSpacing * ensenso_conversion::conversionFactor;
@@ -47,10 +47,10 @@ void ChessboardPattern<messageType>::writeMetaDataToNxLib(NxLibItem const& node)
   node[itmPattern][itmGridSize][1] = gridSizeY;
 }
 
-template <typename messageType>
-messageType ChessboardPattern<messageType>::toRosMessage() const
+template <typename MessageType>
+MessageType CalibrationPattern<MessageType>::toRosMessage() const
 {
-  messageType rosMsg;
+  MessageType rosMsg;
   rosMsg.grid_size_x = gridSizeX;
   rosMsg.grid_size_y = gridSizeY;
   rosMsg.grid_spacing = gridSpacing;
@@ -58,12 +58,12 @@ messageType ChessboardPattern<messageType>::toRosMessage() const
   return rosMsg;
 }
 
-MonoCalibrationPattern::MonoCalibrationPattern(NxLibItem const& node) : ChessboardPattern(node)
+MonoCalibrationPattern::MonoCalibrationPattern(NxLibItem const& node) : CalibrationPattern(node)
 {
 }
 
 MonoCalibrationPattern::MonoCalibrationPattern(ensenso_camera_msgs::MonoCalibrationPattern const& message)
-  : ChessboardPattern(message)
+  : CalibrationPattern(message)
 {
   readFromMessage(message);
 }
@@ -76,7 +76,7 @@ void MonoCalibrationPattern::readFromMessage(ensenso_camera_msgs::MonoCalibratio
 
 void MonoCalibrationPattern::writeToMessage(ensenso_camera_msgs::MonoCalibrationPattern& message)
 {
-  ChessboardPattern::writeMetaDataToMessage(message);
+  CalibrationPattern::writeMetaDataToMessage(message);
 
   message.points.clear();
   message.points.insert(message.points.begin(), points.begin(), points.end());
@@ -84,7 +84,7 @@ void MonoCalibrationPattern::writeToMessage(ensenso_camera_msgs::MonoCalibration
 
 void MonoCalibrationPattern::writeToNxLib(NxLibItem const& node)
 {
-  ChessboardPattern::writeMetaDataToNxLib(node);
+  CalibrationPattern::writeMetaDataToNxLib(node);
   for (size_t i = 0; i < points.size(); i++)
   {
     node[itmPoints][i][0] = points[i].x;
@@ -94,7 +94,7 @@ void MonoCalibrationPattern::writeToNxLib(NxLibItem const& node)
 
 ensenso_camera_msgs::MonoCalibrationPattern MonoCalibrationPattern::toRosMsg() const
 {
-  ensenso_camera_msgs::MonoCalibrationPattern rosMonoPattern = ChessboardPattern::toRosMessage();
+  ensenso_camera_msgs::MonoCalibrationPattern rosMonoPattern = CalibrationPattern::toRosMessage();
 
   for (auto const& point : points)
   {
@@ -119,7 +119,7 @@ void StereoCalibrationPattern::readFromMessage(ensenso_camera_msgs::StereoCalibr
 
 void StereoCalibrationPattern::writeToNxLib(NxLibItem const& node, bool right)
 {
-  ChessboardPattern::writeMetaDataToNxLib(node);
+  CalibrationPattern::writeMetaDataToNxLib(node);
   auto& points = leftPoints;
   if (right)
   {
@@ -133,19 +133,19 @@ void StereoCalibrationPattern::writeToNxLib(NxLibItem const& node, bool right)
   }
 }
 
-StereoCalibrationPattern::StereoCalibrationPattern(NxLibItem const& node) : ChessboardPattern(node)
+StereoCalibrationPattern::StereoCalibrationPattern(NxLibItem const& node) : CalibrationPattern(node)
 {
 }
 
 StereoCalibrationPattern::StereoCalibrationPattern(ensenso_camera_msgs::StereoCalibrationPattern const& message)
-  : ChessboardPattern(message)
+  : CalibrationPattern(message)
 {
   readFromMessage(message);
 }
 
 ensenso_camera_msgs::StereoCalibrationPattern StereoCalibrationPattern::toRosMsg() const
 {
-  ensenso_camera_msgs::StereoCalibrationPattern rosStereoPattern = ChessboardPattern::toRosMessage();
+  ensenso_camera_msgs::StereoCalibrationPattern rosStereoPattern = CalibrationPattern::toRosMessage();
 
   for (auto const& point : leftPoints)
   {

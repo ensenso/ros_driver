@@ -1,23 +1,19 @@
 <launch>
-  <!-- Camera serial of the depth camera -->
-  <arg name="camera1" value="160606" />
-  <!-- Camera serial of the rgb camera -->
-  <arg name="camera2" value="4002895081" />
+  <arg name="serial_stereo" doc="Serial of the Ensenso stereo camera" />
+  <arg name="serial_mono" doc="Serial of a mono camera supported by the NxLib" />
+  <arg name="stereo_ns" value="stereo" />
+  <arg name="mono_ns" value="mono" />
 
-  <arg name="camera1_ns" value="stereo_camera" />
-  <arg name="camera2_ns" value="rgb_camera" />
+  <include file="$(find ensenso_camera)/launch/mono_stereo_nodelets.launch">
+    <arg name="serial_stereo" value="$(arg serial_stereo)" />
+    <arg name="serial_mono" value="$(arg serial_mono)" />
+    <arg name="stereo_ns" value="$(arg stereo_ns)" />
+    <arg name="mono_ns" value="$(arg mono_ns)" />
+  </include>
 
-  <arg name="target_frame" value="Workspace" />
-
-  <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
-
-  <!-- Camera nodes running as nodelets -->
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera1)" args="load ensenso_camera/nodelet /manager_" output="screen" ns="$(arg camera1_ns)">
-    <param name="serial" type="string" value="$(arg camera1)" />
-    <param name="target_frame" type="string" value="$(arg target_frame)" />
-  </node>
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera2)" args="load ensenso_camera/nodelet_mono /manager_" output="screen" ns="$(arg camera2_ns)">
-    <param name="serial" type="string" value="$(arg camera2)" />
-    <param name="link_frame" type="string" value="$(arg camera1)_optical_frame" />
+  <node pkg="ensenso_camera" type="color_point_cloud" name="color_point_cloud" >
+    <param name="rgb_serial" type="string" value="$(arg serial_mono)" />
+    <param name="stereo_ns" type="string" value="$(arg stereo_ns)" />
+    <param name="rgb_ns" type="string" value="$(arg mono_ns)" />
   </node>
 </launch>

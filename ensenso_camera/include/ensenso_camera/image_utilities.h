@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
 
 #include "nxLib.h"
 
@@ -38,3 +39,8 @@ ros::Time timestampFromNxLibNode(NxLibItem const& node);
  * The Image has a canonical format (z-values in Meters, float 1-channel image(TYPE_32FC1))
  */
 sensor_msgs::ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame);
+
+/**
+ * Gets the corresponding distortion parameters from the Item.
+ */
+void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs::CameraInfoPtr const& info);

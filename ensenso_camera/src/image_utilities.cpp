@@ -8,6 +8,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/distortion_models.h>
 
 double const NXLIB_TIMESTAMP_OFFSET = 11644473600;
 
@@ -180,4 +181,45 @@ sensor_msgs::ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string
   out_msg.image = depthImage;
 
   return out_msg.toImageMsg();
+}
+
+void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs::CameraInfoPtr const& info)
+{
+  std::vector<double> distParams(5, 0.);
+  bool isPlumbModel = info->distortion_model == sensor_msgs::distortion_models::PLUMB_BOB;
+  if (!isPlumbModel)
+  {
+    info->D = distParams;
+    return;
+  }
+
+  auto getNxLibValue = [](NxLibItem const& itemToCheck) -> double {
+    double value = 0.;
+    try
+    {
+      value = itemToCheck.asDouble();
+    }
+    catch (...)
+    {
+      ROS_WARN("The distortion parameter %s does not exist. Using value 0.0 instead.", itemToCheck.path.c_str());
+    }
+    return value;
+  };
+
+  if (distortionItem.isObject())
+  {
+    distParams[0] = getNxLibValue(distortionItem[itmK1]);
+    distParams[1] = getNxLibValue(distortionItem[itmK2]);
+    distParams[2] = getNxLibValue(distortionItem[itmT1]);
+    distParams[3] = getNxLibValue(distortionItem[itmT2]);
+    distParams[4] = getNxLibValue(distortionItem[itmK3]);
+  }
+  else if (distortionItem.isArray())
+  {
+    for (int i = 0; i < 5; i++)
+    {
+      info->D.push_back(getNxLibValue(distortionItem[i]));
+    }
+  }
+  info->D = distParams;
 }
