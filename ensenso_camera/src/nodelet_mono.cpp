@@ -51,11 +51,9 @@ void NodeletMono::onInit()
     if (!cameraNode.exists())
     {
       NODELET_WARN("The serial of the camera has been too long and was interpreted as an 32-bit integer and exceeds "
-                   "its "
-                   "length. Please append a \"!\" to "
-                   "the number. E.g. \'_serial:=1234567\' to \'_serial:=1234567!\', so it can be "
-                   "interpreted as a numerical "
-                   "string.");
+                   "its length. Please append a \"!\" to the number. E.g. \'_serial:=1234567\' to "
+                   "\'_serial:=1234567!\', so it can be interpreted as a numerical string. If you are using a launch "
+                   "file, just define the parameter's type as string, e.g.: type=\"string\".");
       NODELET_ERROR("Could not find any camera. Shutting down.");
       nxLibFinalize();
       exit(EXIT_FAILURE);
@@ -92,7 +90,7 @@ void NodeletMono::onInit()
   if (fileCameraPath.empty())
   {
     std::string type = NxLibItem()[itmCameras][itmBySerialNo][serial][itmType].asString();
-    std::string const neededType = "Monocular";
+    std::string const neededType = valMonocular;
     if (type != neededType)
     {
       NODELET_ERROR("The camera to be opened is of the wrong type %s. It should be %s.", type.c_str(),
@@ -111,16 +109,14 @@ void NodeletMono::onInit()
 
   nhLocal.getParam("target_frame", targetFrame);
   nhLocal.getParam("link_frame", linkFrame);
-  if (targetFrame.empty() && linkFrame.empty())
-  {
-    // camera frame is also the global workspace
-    targetFrame = cameraFrame;
-    linkFrame = cameraFrame;
-  }
   if (!targetFrame.empty() && linkFrame.empty())
   {
-    // There is no link in between link and target frame. So the global NxLib Trafo must be identity.
     linkFrame = targetFrame;
+  }
+  else if (targetFrame.empty() && linkFrame.empty())
+  {
+    targetFrame = cameraFrame;
+    linkFrame = cameraFrame;
   }
 
   camera = make_unique<MonoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, linkFrame);

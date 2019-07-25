@@ -41,7 +41,7 @@ public:
 
 private:
   void updateCameraInfo() override;
-  void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info);
+  void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool rectified = false);
 
   std::vector<MonoCalibrationPattern> collectPattern(bool clearBuffer = false) const;
 

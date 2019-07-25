@@ -18,8 +18,8 @@ import sensor_msgs.point_cloud2 as pc2
 
 WAIT_TIMEOUT = 20
 
-STEREO_NAMESPACE = "stereo_camera"
-MONO_NAMESPACE = "rgb_camera"
+STEREO_NAMESPACE = "stereo"
+MONO_NAMESPACE = "mono"
 MONO_SERIAL = "4002895081"
 
 

@@ -35,7 +35,7 @@ geometry_msgs/PoseStamped[] pattern_poses
 # Information about the patterns. When there is only one pattern visible and we
 # took multiple shots of it, the image points will be the ones from the last
 # image.
-ensenso_camera_msgs/StereoCalibrationPattern[] patterns
+StereoCalibrationPattern[] patterns
 
 # A potential NxLib exception that occured while executing the action.
 NxLibException error

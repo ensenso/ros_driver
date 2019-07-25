@@ -66,7 +66,7 @@ void Nodelet::onInit()
   if (fileCameraPath.empty())
   {
     std::string type = NxLibItem()[itmCameras][itmBySerialNo][serial][itmType].asString();
-    std::string const neededType = "Stereo";
+    std::string const neededType = valStereo;
     if (type != neededType)
     {
       NODELET_ERROR("The camera to be opened is of the wrong type %s. It should be %s.", type.c_str(),
@@ -85,42 +85,18 @@ void Nodelet::onInit()
 
   nhLocal.param<std::string>("robot_frame", robotFrame, "");
   nhLocal.param<std::string>("wrist_frame", wristFrame, "");
-  bool performingHandEyeCalibration = true;
-  if (robotFrame.empty() && wristFrame.empty())
-  {
-    performingHandEyeCalibration = false;
-  }
 
-  if (performingHandEyeCalibration)
+  if (cameraIsFixed && robotFrame.empty())
   {
-    if (cameraIsFixed)
-    {
-      // When we do fixed a hand eye calibration, the link between the robot base and the camera frame is calculated.
-      // Therefore the link_frame has to be the robot base.
-      if (robotFrame.empty())
-      {
-        robotFrame = cameraFrame;
-      }
-      linkFrame = robotFrame;
-    }
-    else
-    {
-      // When we do a moving hand eye calibration, the link between the robot wrist and the camera frame is
-      // calculated. Therefore the link_frame has to be the robot wrist.
-      if (wristFrame.empty())
-      {
-        wristFrame = cameraFrame;
-      }
-      linkFrame = wristFrame;
-    }
+    robotFrame = cameraFrame;
+  }
+  if (!cameraIsFixed && wristFrame.empty())
+  {
+    wristFrame = cameraFrame;
   }
 
   nhLocal.getParam("target_frame", targetFrame);
-  if (!performingHandEyeCalibration)
-  {
-    // If handeye calibration is about to be done, the link_frame is automatically set.
-    nhLocal.getParam("link_frame", linkFrame);
-  }
+  nhLocal.getParam("link_frame", linkFrame);
 
   if (!targetFrame.empty() && linkFrame.empty())
   {

@@ -54,9 +54,9 @@ private:
   image_transport::CameraPublisher rightRectifiedImagePublisher;
   image_transport::Publisher disparityMapPublisher;
   image_transport::CameraPublisher depthImagePublisher;
-  image_transport::Publisher renderedViewPublisher;
+  image_transport::Publisher projectedImagePublisher;
 
-  ros::Publisher pointCloudPublisher, pointCloudPublisherColor;
+  ros::Publisher pointCloudPublisher, pointCloudPublisherColor, projectedPointCloudPublisher;
 
   // Information that we remember between the different steps of the hand eye
   // calibration.

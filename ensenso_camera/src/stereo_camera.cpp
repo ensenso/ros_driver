@@ -52,10 +52,11 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string f
   rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
   disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
   depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
-  renderedViewPublisher = imageTransport.advertise("depth/rendered_view", 1);
+  projectedImagePublisher = imageTransport.advertise("depth/projected_depth_map", 1);
 
   pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
   pointCloudPublisherColor = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("point_cloud_color", 1);
+  projectedPointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("projected_point_cloud", 1);
 }
 
 bool StereoCamera::open()
@@ -364,9 +365,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       else
       {
         ROS_WARN_ONCE("Depth images are not yet supported for linked and multi camera usage. Only request depth images "
-                      "when "
-                      "using "
-                      "one stereo camera only.");
+                      "when using one stereo camera only.");
       }
     }
   }
@@ -925,27 +924,28 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
 
   ensenso_camera_msgs::TelecentricProjectionResult result;
 
-  bool useViewPose = goal->render_frame.empty();
-  bool useFrame = !useViewPose;
+  bool useViewPose = isValid(goal->view_pose);
+  bool frameGiven = !goal->frame.empty();
+
+  if (!frameGiven)
+  {
+    std::string error = "You have to define a valid frame, to which to projection will be published. Aborting";
+    ROS_ERROR("%s", error.c_str());
+    result.error.message = error;
+    telecentricProjectionServer->setAborted(result);
+    return;
+  }
+
   tf2::Transform transform;
-  std::string publishingFrame = useViewPose ? targetFrame : goal->render_frame;
+  std::string publishingFrame = useViewPose ? targetFrame : goal->frame;
 
   if (useViewPose)
   {
-    if (!isValid(goal->view_pose))
-    {
-      std::string error = "The given view pose is not valid. Aborting.";
-      ROS_ERROR("%s", error.c_str());
-      result.error.message = error;
-      telecentricProjectionServer->setAborted(result);
-      return;
-    }
     transform = fromMsg(goal->view_pose);
   }
-
-  if (useFrame)
+  else
   {
-    transform = getLatestTransform(tfBuffer, targetFrame, goal->render_frame);
+    transform = getLatestTransform(tfBuffer, targetFrame, goal->frame);
   }
 
   // check goal parameters (message generation will default to value 0 or empty string)
@@ -953,7 +953,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   double scaling = goal->scaling != 0. ? goal->scaling : 1.0;
   int sizeWidth = goal->size_width != 0 ? goal->size_width : 1024;
   int sizeHeight = goal->size_height != 0. ? goal->size_height : 768;
-  bool useOpenGL = goal->use_openGL == 1;
+  bool useOpenGL = goal->use_opengl == 1;
 
   NxLibCommand renderPointMap(cmdRenderPointMap, serial);
   writePoseToNxLib(transform, renderPointMap.parameters()[itmViewPose]);
@@ -969,7 +969,6 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
 
   renderPointMap.execute();
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud;
   if (!renderPointMap.result()[itmImages][itmRenderPointMap].exists())
   {
     std::string error{ "RenderPointMap command went wrong. Aborting Action." };
@@ -981,19 +980,39 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
 
   if (goal->publish_results || goal->include_results_in_response)
   {
-    auto renderedView = depthImageFromNxLibNode(renderPointMap.result()[itmImages][itmRenderPointMap], "rendered_pose");
-    if (goal->publish_results)
+    if (goal->request_point_cloud || (!goal->request_point_cloud && !goal->request_depth_image))
     {
-      renderedViewPublisher.publish(renderedView);
+      auto pointCloud = pointCloudFromNxLib(renderPointMap.result()[itmImages][itmRenderPointMap], goal->frame);
+      if (goal->publish_results)
+      {
+        projectedPointCloudPublisher.publish(*pointCloud);
+      }
+      if (goal->include_results_in_response)
+      {
+        pcl::toROSMsg(*pointCloud, result.projected_point_cloud);
+        telecentricProjectionServer->setSucceeded(result);
+      }
+      else
+      {
+        telecentricProjectionServer->setSucceeded();
+      }
     }
-    if (goal->include_results_in_response)
+    if (goal->request_depth_image)
     {
-      result.rendered_view = *renderedView;
-      telecentricProjectionServer->setSucceeded(result);
-    }
-    else
-    {
-      telecentricProjectionServer->setSucceeded();
+      auto renderedView = depthImageFromNxLibNode(renderPointMap.result()[itmImages][itmRenderPointMap], goal->frame);
+      if (goal->publish_results)
+      {
+        projectedImagePublisher.publish(renderedView);
+      }
+      if (goal->include_results_in_response)
+      {
+        result.projected_depth_map = *renderedView;
+        telecentricProjectionServer->setSucceeded(result);
+      }
+      else
+      {
+        telecentricProjectionServer->setSucceeded();
+      }
     }
   }
   else
@@ -1256,10 +1275,7 @@ void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& inf
   {
     info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
     info->D.clear();
-    for (int i = 0; i < 5; i++)
-    {
-      info->D.push_back(monoCalibrationNode[itmDistortion][i].asDouble());
-    }
+    fillDistortionParamsFromNxLib(monoCalibrationNode[itmDistortion], info);
 
     info->K.fill(0);  // The mono camera matrix.
     info->P.fill(0);  // The stereo camera matrix.

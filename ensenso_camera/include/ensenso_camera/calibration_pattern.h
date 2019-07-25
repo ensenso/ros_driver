@@ -8,8 +8,8 @@
 
 #include "nxLib.h"
 
-template <typename messageType>
-class ChessboardPattern
+template <typename MessageType>
+class CalibrationPattern
 {
 public:
   double thickness = 0;
@@ -18,16 +18,16 @@ public:
   double gridSpacing = 0;
 
 protected:
-  explicit ChessboardPattern(messageType const& message);
-  explicit ChessboardPattern(NxLibItem const& node);
+  explicit CalibrationPattern(MessageType const& message);
+  explicit CalibrationPattern(NxLibItem const& node);
 
-  void readMetaDataFromMessage(messageType const& message);
-  void writeMetaDataToMessage(messageType& message);
+  void readMetaDataFromMessage(MessageType const& message);
+  void writeMetaDataToMessage(MessageType& message);
   void writeMetaDataToNxLib(NxLibItem const& node);
-  messageType toRosMessage() const;
+  MessageType toRosMessage() const;
 };
 
-class MonoCalibrationPattern : ChessboardPattern<ensenso_camera_msgs::MonoCalibrationPattern>
+class MonoCalibrationPattern : CalibrationPattern<ensenso_camera_msgs::MonoCalibrationPattern>
 {
 public:
   std::vector<ensenso_camera_msgs::ImagePoint> points;
@@ -42,7 +42,7 @@ public:
   ensenso_camera_msgs::MonoCalibrationPattern toRosMsg() const;
 };
 
-class StereoCalibrationPattern : ChessboardPattern<ensenso_camera_msgs::StereoCalibrationPattern>
+class StereoCalibrationPattern : CalibrationPattern<ensenso_camera_msgs::StereoCalibrationPattern>
 {
 public:
   std::vector<ensenso_camera_msgs::ImagePoint> leftPoints;

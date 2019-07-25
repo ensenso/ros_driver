@@ -1,9 +1,16 @@
 # In Order to use this action, a point cloud has to be requested beforehand.
-# You either have to specify the render frame, or a valid view pose, to which the point cloud data should be rendered to.
-# The Pose, to which the point cloud should be rendered.
+
+# The TF frame, to which to point cloud should be rendered.
+string frame
+
+# Optional: If you define a view_pose yourself, the view_pose will be used for rendering.
+# Otherwise TF will look for the transform between the frame and the used camera.
 geometry_msgs/Transform view_pose
-# The Frame, to which to point cloud should be rendered.
-string render_frame
+
+# Enable these flags for every type of data that you want to receive after running the
+# If none of the flags is given, the point cloud flag is automatically set.
+bool request_depth_image
+bool request_point_cloud
 
 # Specifies which surfaces (seen by the cameras in serials) should be included in the point cloud.
 # If the array is left empty, the point cloud of all opened stereo cameras within the same process
@@ -15,7 +22,7 @@ string[] serials
 # If not specified the default will be 1
 int32 pixel_scale
 
-# Allows to avoid aliasing and sparse depth maps when using toghether with use_openGL set to false. value
+# Allows to avoid aliasing and sparse depth maps when using toghether with use_opengl set to false. value
 # is in between 0..1 and downscales the resolution during the rendering process.
 # If not specified the default will be 1
 float64 scaling
@@ -26,7 +33,7 @@ int32 size_width
 int32 size_height
 
 # Defines, if OpenGL is to be used for rendering. Default is true.
-bool use_openGL
+bool use_opengl
 
 # When this flag is enabled, the requested data will be published on the
 # corresponding topics (see the documentation of the camera node).
@@ -40,8 +47,11 @@ bool include_results_in_response
 
 ---
 
-# The resulting depth image, rendered into the viewPose's frame or render_frame
-sensor_msgs/Image rendered_view
+# The resulting depth image, rendered from the origin point cloud into the view_pose or frame.
+sensor_msgs/Image projected_depth_map
+
+# The resulting poind cloud, rendered form the origin point cloud into the point cloud seen by the given viewpose or frame
+sensor_msgs/PointCloud2 projected_point_cloud
 
 # A potential NxLib exception that occurred while executing the action.
 NxLibException error

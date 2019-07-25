@@ -11,7 +11,7 @@ from ensenso_camera_msgs.msg import TexturedPointCloudAction, TexturedPointCloud
 
 def main():
     loop_rate = rospy.get_param("~rate", 2)
-    rgb_serial = rospy.get_param("~rgb_serial", '4002895081')
+    rgb_serial = rospy.get_param("~rgb_serial")
     stereo_namespace = rospy.get_param("~stereo_ns", "/stereo_camera")
     rgb_namespace = rospy.get_param("~rgb_ns", "/rgb_camera")
     timeout = rospy.get_param("~timeout", 60)
@@ -70,7 +70,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        rospy.init_node("ensenso_colorize_pointcloud")
+        rospy.init_node("color_point_cloud")
         main()
     except rospy.ROSInterruptException:
         pass
