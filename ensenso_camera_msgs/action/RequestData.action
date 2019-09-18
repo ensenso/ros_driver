@@ -10,6 +10,7 @@ bool request_point_cloud
 bool request_normals
 bool request_rgbd
 bool request_depth_map
+bool request_rotated_depth_map
 
 bool linked_camera_request
 bool request_linked_camera_rgb_image
@@ -55,6 +56,7 @@ sensor_msgs/Image disparity_map
 # The depth map is a 3 channel image with 3D Coordinates (x,y,z). 
 # Image dimensions (width, height) are the same as disparity map
 sensor_msgs/Image depth_map
+sensor_msgs/Image rotated_depth_map
 
 # The raw images of the left and right camera respectively. A single image if
 # FlexView is disabled.

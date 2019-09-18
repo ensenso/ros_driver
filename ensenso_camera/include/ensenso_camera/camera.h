@@ -12,6 +12,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <pcl/common/transforms.h>
+#include <pcl_ros/transforms.h>
 
 #include <map>
 #include <memory>

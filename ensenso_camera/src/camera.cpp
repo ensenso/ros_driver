@@ -819,9 +819,72 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       // Set depth map of action result (3 channel image with 3D Coordinates(x,y,z)): image size is the same as disparity map
       result.depth_map = *cv_image.toImageMsg();
     
+
       if(goal->log_time)
         ROS_INFO("Set disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - setMapStartTime ).count());
-       }
+
+      if(goal->request_rotated_depth_map)
+      {
+        PointCloudROI const* pointCloudROI = 0;
+        if (parameterSets.at(currentParameterSet).useROI)
+        {
+          pointCloudROI = &parameterSets.at(currentParameterSet).roi;
+        }
+        auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmPointMap], targetFrame, pointCloudROI, true);
+
+        tf::StampedTransform cam_ROBOT;
+        try
+        {
+          transformListener.lookupTransform(robotFrame, cameraFrame, ros::Time(0), cam_ROBOT);
+        }
+        catch (tf::TransformException& e)
+        {
+          ROS_ERROR("Error reading camera pose");
+        }
+
+        Eigen::Quaternion<double> rotation(cam_ROBOT.getRotation().x(), cam_ROBOT.getRotation().y(), cam_ROBOT.getRotation().z(), cam_ROBOT.getRotation().w());
+        // Executing the transformation
+        pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
+        // You can either apply transform_1 or transform_2; they are the same
+        pcl_ros::transformPointCloud(*pointCloud, *transformed_cloud, cam_ROBOT);
+
+        auto rgbd_image = boost::make_shared<sr::rgbd::Image>();
+
+        double cx = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][2][0].asDouble();
+        double cy = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][2][1].asDouble();
+        double fx = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][0][0].asDouble();
+        double fy = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][1][1].asDouble();
+
+        //Move raw data to rgbd image
+        rgbd_image->depth = cv::Mat( depthMap.rows, depthMap.cols, CV_32FC1, NAN);
+        rgbd_image->P.setOpticalTranslation(0, 0);
+        rgbd_image->P.setOpticalCenter(cx, cy);
+        rgbd_image->P.setFocalLengths(fx, fy);
+
+        for(auto point : *transformed_cloud)
+        {
+          sr::Vec2i pix = rgbd_image->P.project3Dto2D(sr::Vec3(point.x, -point.y, -point.z));
+          if (pix.x >= 0 && pix.y >= 0 && pix.x < rgbd_image->depth.cols && pix.y < rgbd_image->depth.rows)
+          {
+              rgbd_image->depth.at<float>(pix.y, pix.x) = point.z;
+          }
+        }
+
+      cv_bridge::CvImage cv_image_(
+        header,
+        sensor_msgs::image_encodings::TYPE_32FC1,
+        floatDepthMap
+      );
+
+        // Set depth map of action result (3 channel image with 3D Coordinates(x,y,z)): image size is the same as disparity map
+        result.rotated_depth_map = *cv_image_.toImageMsg();
+
+
+      }
+
+      }
+
+
 
 
     result.success = true;
