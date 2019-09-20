@@ -198,6 +198,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
 
   defaultParameters = NxLibItem()["rosDefaultParameters"];
   rootNode = NxLibItem();
+
 }
 
 bool Camera::open()
@@ -832,21 +833,37 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
         }
         auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI, false);
 
-        tf::StampedTransform cam_ROBOT, virtual_cam_ROBOT;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
+        tf::StampedTransform cam_ROBOT, virtual_cam_ROBOT, virtual_SR;
         
         try
         {
-          transformListener.lookupTransform("sir_sr/base_link", cameraFrame, ros::Time(0), cam_ROBOT);
+          transformListener.lookupTransform("sir_sr/base_link" , "cam_right_depth_optical_frame",  ros::Time(0), cam_ROBOT);
+          std::cout << "Read" << std::endl;
         }
         catch (tf::TransformException& e)
         {
           ROS_ERROR("Error reading camera pose %s", cameraFrame);
         }
 
+         tf::Quaternion q = cam_ROBOT.getRotation();
+          double yaw, pitch, roll;
+         cam_ROBOT.getBasis().getRPY(roll, pitch, yaw);
+         tf::Vector3 v = cam_ROBOT.getOrigin();
+         std::cout << "- Translation: [" << v.getX() << ", " << v.getY() << ", " << v.getZ() << "]" << std::endl;
+         std::cout << "- Rotation: in Quaternion [" << q.getX() << ", " << q.getY() << ", " 
+                   << q.getZ() << ", " << q.getW() << "]" << std::endl
+                   << "            in RPY (radian) [" <<  roll << ", " << pitch << ", " << yaw << "]" << std::endl
+                   << "            in RPY (degree) [" <<  roll*180.0/M_PI << ", " << pitch*180.0/M_PI << ", " << yaw*180.0/M_PI << "]" << std::endl;
 
+        //virtual_cam_ROBOT.setIdentity();
+        tf::Matrix3x3 mm;
+        mm.setIdentity();
 
-        pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
-        virtual_cam_ROBOT.setIdentity();
+        mm.setRPY(M_PI, 0,0);
+        tf::Quaternion q1;
+        mm.getRotation(q1);
+        virtual_cam_ROBOT.setRotation(q1);
         virtual_cam_ROBOT.setOrigin(cam_ROBOT.getOrigin());
 
         //Publish static tf
@@ -856,19 +873,36 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
         static_transform.header.frame_id = std::string(std::getenv("ROBOT")) + "/base_link";
         static_transform.child_frame_id = "virtual_cam_ROBOT";
         static_tf_broadcaster.sendTransform(static_transform);
+        ros::Rate r(1000);
+        r.sleep();
 
-        std::cout << cam_ROBOT << std::endl;
+         q = virtual_cam_ROBOT.getRotation();
+         virtual_cam_ROBOT.getBasis().getRPY(roll, pitch, yaw);
+         v = virtual_cam_ROBOT.getOrigin();
+         std::cout << "- Translation: [" << v.getX() << ", " << v.getY() << ", " << v.getZ() << "]" << std::endl;
+         std::cout << "- Rotation: in Quaternion [" << q.getX() << ", " << q.getY() << ", " 
+                   << q.getZ() << ", " << q.getW() << "]" << std::endl
+                   << "            in RPY (radian) [" <<  roll << ", " << pitch << ", " << yaw << "]" << std::endl
+                   << "            in RPY (degree) [" <<  roll*180.0/M_PI << ", " << pitch*180.0/M_PI << ", " << yaw*180.0/M_PI << "]" << std::endl;
 
         try
         {
-          transformListener.lookupTransform(cameraFrame, "virtual_cam_ROBOT" , ros::Time(0), cam_ROBOT);
+          transformListener.lookupTransform("cam_right_depth_optical_frame", "virtual_cam_ROBOT" , ros::Time(0), cam_ROBOT);
+          std::cout << "Read" << std::endl;
         }
         catch (tf::TransformException& e)
         {
           ROS_ERROR("Error reading camera pose %s", cameraFrame);
         }
 
-        std::cout << cam_ROBOT << std::endl;
+         q = cam_ROBOT.getRotation();
+         cam_ROBOT.getBasis().getRPY(roll, pitch, yaw);
+         v = cam_ROBOT.getOrigin();
+         std::cout << "- Translation: [" << v.getX() << ", " << v.getY() << ", " << v.getZ() << "]" << std::endl;
+         std::cout << "- Rotation: in Quaternion [" << q.getX() << ", " << q.getY() << ", " 
+                   << q.getZ() << ", " << q.getW() << "]" << std::endl
+                   << "            in RPY (radian) [" <<  roll << ", " << pitch << ", " << yaw << "]" << std::endl
+                   << "            in RPY (degree) [" <<  roll*180.0/M_PI << ", " << pitch*180.0/M_PI << ", " << yaw*180.0/M_PI << "]" << std::endl;
 
 
         pcl_ros::transformPointCloud(*pointCloud, *transformed_cloud, cam_ROBOT);
