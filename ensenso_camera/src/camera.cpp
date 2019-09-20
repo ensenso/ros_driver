@@ -830,22 +830,47 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
         {
           pointCloudROI = &parameterSets.at(currentParameterSet).roi;
         }
-        auto pointCloud = pointCloudFromNxLib(rootNode[itmImages][itmPointMap], targetFrame, pointCloudROI, true);
+        auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI, false);
 
-        tf::StampedTransform cam_ROBOT;
+        tf::StampedTransform cam_ROBOT, virtual_cam_ROBOT;
+        
         try
         {
-          transformListener.lookupTransform(robotFrame, cameraFrame, ros::Time(0), cam_ROBOT);
+          transformListener.lookupTransform("sir_sr/base_link", cameraFrame, ros::Time(0), cam_ROBOT);
         }
         catch (tf::TransformException& e)
         {
-          ROS_ERROR("Error reading camera pose");
+          ROS_ERROR("Error reading camera pose %s", cameraFrame);
         }
 
-        Eigen::Quaternion<double> rotation(cam_ROBOT.getRotation().x(), cam_ROBOT.getRotation().y(), cam_ROBOT.getRotation().z(), cam_ROBOT.getRotation().w());
-        // Executing the transformation
+
+
         pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
-        // You can either apply transform_1 or transform_2; they are the same
+        virtual_cam_ROBOT.setIdentity();
+        virtual_cam_ROBOT.setOrigin(cam_ROBOT.getOrigin());
+
+        //Publish static tf
+        geometry_msgs::TransformStamped static_transform;
+        tf::transformTFToMsg(virtual_cam_ROBOT, static_transform.transform);
+        static_transform.header.stamp = ros::Time::now();
+        static_transform.header.frame_id = std::string(std::getenv("ROBOT")) + "/base_link";
+        static_transform.child_frame_id = "virtual_cam_ROBOT";
+        static_tf_broadcaster.sendTransform(static_transform);
+
+        std::cout << cam_ROBOT << std::endl;
+
+        try
+        {
+          transformListener.lookupTransform(cameraFrame, "virtual_cam_ROBOT" , ros::Time(0), cam_ROBOT);
+        }
+        catch (tf::TransformException& e)
+        {
+          ROS_ERROR("Error reading camera pose %s", cameraFrame);
+        }
+
+        std::cout << cam_ROBOT << std::endl;
+
+
         pcl_ros::transformPointCloud(*pointCloud, *transformed_cloud, cam_ROBOT);
 
         auto rgbd_image = boost::make_shared<sr::rgbd::Image>();
@@ -856,24 +881,29 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
         double fy = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][1][1].asDouble();
 
         //Move raw data to rgbd image
-        rgbd_image->depth = cv::Mat( depthMap.rows, depthMap.cols, CV_32FC1, NAN);
+        rgbd_image->depth = cv::Mat(depthMap.rows, depthMap.cols, CV_32FC1, NAN);
         rgbd_image->P.setOpticalTranslation(0, 0);
         rgbd_image->P.setOpticalCenter(cx, cy);
         rgbd_image->P.setFocalLengths(fx, fy);
 
+        pcl::io::savePCDFile("/tmp/ori.pcd", *pointCloud);
+        pcl::io::savePCDFile("/tmp/rot.pcd", *transformed_cloud);
+        pcl::io::savePLYFile("/tmp/ori.ply", *pointCloud);
+        pcl::io::savePLYFile("/tmp/rot.ply", *transformed_cloud);
+        int counter=0;
         for(auto point : *transformed_cloud)
         {
           sr::Vec2i pix = rgbd_image->P.project3Dto2D(sr::Vec3(point.x, -point.y, -point.z));
           if (pix.x >= 0 && pix.y >= 0 && pix.x < rgbd_image->depth.cols && pix.y < rgbd_image->depth.rows)
-          {
-              rgbd_image->depth.at<float>(pix.y, pix.x) = point.z;
+          { 
+              rgbd_image->depth.at<float>(pix.y, pix.x) = fabs(point.z);
           }
         }
 
       cv_bridge::CvImage cv_image_(
         header,
         sensor_msgs::image_encodings::TYPE_32FC1,
-        floatDepthMap
+        rgbd_image->depth
       );
 
         // Set depth map of action result (3 channel image with 3D Coordinates(x,y,z)): image size is the same as disparity map
