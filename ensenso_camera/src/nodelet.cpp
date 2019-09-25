@@ -98,7 +98,7 @@ void Nodelet::onInit()
 
   NODELET_DEBUG("Opening the camera '%s'...", serial.c_str());
   camera = make_unique<Camera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
-                               wristFrame, linkedCameraFrame, linked_camera_auto_exposure);
+                               wristFrame, linkedCameraFrame, linked_camera_auto_exposure, leveledCameraFrame);
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");

@@ -138,7 +138,8 @@ ParameterSet::ParameterSet(const std::string &name, const NxLibItem &defaultPara
 
 Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
                std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
-               std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure, std::string const& leveledCameraFrame)
+               std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure,
+               std::string const& leveledCameraFrame)
   : serial(serial)
   , fileCameraPath(fileCameraPath)
   , fixed(fixed)
@@ -817,18 +818,21 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       // create a header
       std_msgs::Header header;
       header.frame_id = linkedCameraFrame;
-      header.stamp    = ros::Time::now();
+      header.stamp = ros::Time::now();
+
+      // Send only z channel
+      cv::Mat depthMapSplit[3];
+      cv::split(floatDepthMap, depthMapSplit);
 
       // prepare message
       cv_bridge::CvImage cv_image(
         header,
-        sensor_msgs::image_encodings::TYPE_32FC3,
-        floatDepthMap
+        sensor_msgs::image_encodings::TYPE_32FC1,
+        depthMapSplit[2]/1000.
       );
 
       // Set depth map of action result (3 channel image with 3D Coordinates(x,y,z)): image size is the same as disparity map
       result.depth_map = *cv_image.toImageMsg();
-    
 
       if(goal->log_time)
         ROS_INFO("Set disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - setMapStartTime ).count());
