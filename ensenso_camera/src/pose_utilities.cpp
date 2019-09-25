@@ -101,3 +101,38 @@ tf::StampedTransform transformFromPose(geometry_msgs::PoseStamped const& pose, s
 
   return transform;
 }
+
+
+void publishCameraPose(tf::StampedTransform virtualCamPose, std::string baseFrame, std::string targetFrame)
+{
+  geometry_msgs::TransformStamped static_transform;
+  tf::transformTFToMsg(virtualCamPose, static_transform.transform);
+  static_transform.header.stamp = ros::Time::now();
+  static_transform.header.frame_id = baseFrame ;
+  static_transform.child_frame_id = targetFrame;
+  tf2_ros::StaticTransformBroadcaster static_tf_broadcaster;
+  static_tf_broadcaster.sendTransform(static_transform);
+  ros::Rate r(10);
+  r.sleep();
+}
+
+
+tf::StampedTransform computeLeveledCameraPose(tf::StampedTransform originalPose)
+{
+
+  //  Create rotation matrix without pitch or roll
+  tf::Matrix3x3 rotationMatrix;
+  rotationMatrix.setIdentity();
+
+  // Rotate in roll to match default cam z-axis
+  rotationMatrix.setRPY(M_PI, 0,0);
+  tf::Quaternion q;
+  rotationMatrix.getRotation(q);
+
+  tf::StampedTransform leveledCameraPose;
+  leveledCameraPose.setRotation(q);
+
+  // Set the origin of the pose in the world to be that of the original camera
+  leveledCameraPose.setOrigin(originalPose.getOrigin());
+  return leveledCameraPose;
+}

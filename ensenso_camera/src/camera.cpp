@@ -200,7 +200,6 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   rootNode = NxLibItem();
   virtualCameraFrame = "virtual_" + cameraFrame;
 
-
 }
 
 bool Camera::open()
@@ -255,71 +254,47 @@ bool Camera::open()
     open.parameters()[itmCameras] = serial;
     open.execute();
 
-  // Check if current camera has linked camera to be opened too
-  std::string serialLinkedCamera = getLinkedCamera();
+    // Check if current camera has linked camera to be opened too
+    std::string serialLinkedCamera = getLinkedCamera();
 
-  // If there is a monocular camera, then open it too
-  if(serialLinkedCamera != ""){
-	  linkedMonoCamera.exists = true;
-	  linkedMonoCamera.serial = serialLinkedCamera;
-    linkedMonoCamera.cameraFrame = linkedCameraFrame;
-    ROS_INFO("Linked camera detected with serial %s -> %s", serialLinkedCamera.c_str(), serial.c_str());
-    NxLibCommand openMono(cmdOpen);
-    openMono.parameters()[itmCameras] = serialLinkedCamera;
-    openMono.execute();
+    // If there is a monocular camera, then open it too
+    if(serialLinkedCamera != ""){
+  	  linkedMonoCamera.exists = true;
+  	  linkedMonoCamera.serial = serialLinkedCamera;
+      linkedMonoCamera.cameraFrame = linkedCameraFrame;
+      ROS_INFO("Linked camera detected with serial %s -> %s", serialLinkedCamera.c_str(), serial.c_str());
+      NxLibCommand openMono(cmdOpen);
+      openMono.parameters()[itmCameras] = serialLinkedCamera;
+      openMono.execute();
 
-    //Get monocular cam node
-    linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
+      //Get monocular cam node
+      linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
 
-    linkedMonoCamera.node[itmParameters][itmCapture][itmAutoExposure] = linked_camera_auto_exposure ? true : false;
+      linkedMonoCamera.node[itmParameters][itmCapture][itmAutoExposure] = linked_camera_auto_exposure ? true : false;
 
-    // Print info that monocular camera does not use auto-exposure by default
-    ROS_INFO("Monocular camera %s with auto exposure set to %d", serialLinkedCamera.c_str(), linked_camera_auto_exposure);
+      // Print info that monocular camera does not use auto-exposure by default
+      ROS_INFO("Monocular camera %s with auto exposure set to %d", serialLinkedCamera.c_str(), linked_camera_auto_exposure);
 
-    //Publish static tf
-    geometry_msgs::TransformStamped static_transform;
-    tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
-    static_transform.header.stamp = ros::Time::now();
-    static_transform.header.frame_id = cameraFrame;
-    static_transform.child_frame_id = linkedCameraFrame;
-    static_tf_broadcaster.sendTransform(static_transform);
-    ros::spinOnce();
-    ros::Rate r(10);
-    r.sleep();
+      tf::StampedTransform linkedCamStampedTransform;
+      linkedCamStampedTransform.setData(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse());
+      publishCameraPose(linkedCamStampedTransform, cameraFrame, linkedCameraFrame);
 
-  }
+    }
 
+    tf::StampedTransform cam_ROBOT;
 
-  tf::StampedTransform cam_ROBOT, virtual_cam_ROBOT, virtual_SR;
-  
-  try
-  {
-    transformListener.lookupTransform( std::string(std::getenv("ROBOT")) + "/base_link", cameraFrame, ros::Time(0), cam_ROBOT);
-  }
-  catch (tf::TransformException& e)
-  {
-    ROS_ERROR("Error reading camera pose %s", cameraFrame);
-  }
+    try
+    {
+      transformListener.lookupTransform( std::string(std::getenv("ROBOT")) + "/base_link", cameraFrame, ros::Time(0), cam_ROBOT);
+    }
+    catch (tf::TransformException& e)
+    {
+      ROS_ERROR("Error reading camera pose %s", cameraFrame);
+    }
 
-  //virtual_cam_ROBOT.setIdentity();
-  tf::Matrix3x3 mm;
-  mm.setIdentity();
+    tf::StampedTransform leveledCameraPose = computeLeveledCameraPose(cam_ROBOT);
 
-  mm.setRPY(M_PI, 0,0);
-  tf::Quaternion q1;
-  mm.getRotation(q1);
-  virtual_cam_ROBOT.setRotation(q1);
-  virtual_cam_ROBOT.setOrigin(cam_ROBOT.getOrigin());
-
-  //Publish static tf
-  geometry_msgs::TransformStamped static_transform;
-  tf::transformTFToMsg(virtual_cam_ROBOT, static_transform.transform);
-  static_transform.header.stamp = ros::Time::now();
-  static_transform.header.frame_id = std::string(std::getenv("ROBOT")) + "/base_link";
-  static_transform.child_frame_id = virtualCameraFrame;
-  static_tf_broadcaster.sendTransform(static_transform);
-  ros::Rate r(10);
-  r.sleep();
+    publishCameraPose(leveledCameraPose, std::string(std::getenv("ROBOT")) + "/base_link", virtualCameraFrame);
 
   }
   catch (NxLibException& e)
