@@ -103,14 +103,13 @@ tf::StampedTransform transformFromPose(geometry_msgs::PoseStamped const& pose, s
 }
 
 
-void publishCameraPose(tf::StampedTransform virtualCamPose, std::string baseFrame, std::string targetFrame)
+void publishCameraPose(tf::StampedTransform virtualCamPose, std::string baseFrame, std::string targetFrame, tf2_ros::StaticTransformBroadcaster static_tf_broadcaster)
 {
   geometry_msgs::TransformStamped static_transform;
   tf::transformTFToMsg(virtualCamPose, static_transform.transform);
   static_transform.header.stamp = ros::Time::now();
   static_transform.header.frame_id = baseFrame ;
   static_transform.child_frame_id = targetFrame;
-  tf2_ros::StaticTransformBroadcaster static_tf_broadcaster;
   static_tf_broadcaster.sendTransform(static_transform);
   ros::Rate r(10);
   r.sleep();

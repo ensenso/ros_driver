@@ -42,7 +42,7 @@ tf::StampedTransform transformFromPose(geometry_msgs::PoseStamped const& pose, s
  * @param[in]  baseFrame       The base frame
  * @param[in]  targetFrame     The target frame
  */
-void publishCameraPose(tf::StampedTransform virtualCamPose, std::string baseFrame, std::string targetFrame);
+void publishCameraPose(tf::StampedTransform virtualCamPose, std::string baseFrame, std::string targetFrame, tf2_ros::StaticTransformBroadcaster static_tf_broadcaster);
 
 
 /**

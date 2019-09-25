@@ -278,7 +278,7 @@ bool Camera::open()
 
       tf::StampedTransform linkedCamStampedTransform;
       linkedCamStampedTransform.setData(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse());
-      publishCameraPose(linkedCamStampedTransform, cameraFrame, linkedCameraFrame);
+      publishCameraPose(linkedCamStampedTransform, cameraFrame, linkedCameraFrame, static_tf_broadcaster);
 
     }
 
@@ -295,7 +295,7 @@ bool Camera::open()
 
     tf::StampedTransform leveledCameraPose = computeLeveledCameraPose(cam_ROBOT);
 
-    publishCameraPose(leveledCameraPose, std::string(std::getenv("ROBOT")) + "/base_link", leveledCameraFrame);
+    publishCameraPose(leveledCameraPose, std::string(std::getenv("ROBOT")) + "/base_link", leveledCameraFrame, static_tf_broadcaster);
 
   }
   catch (NxLibException& e)
