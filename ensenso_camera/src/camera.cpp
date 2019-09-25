@@ -198,7 +198,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
 
   defaultParameters = NxLibItem()["rosDefaultParameters"];
   rootNode = NxLibItem();
-  virtualCameraFrame = "virtual_" + cameraFrame;
+  leveledCameraFrame = "leveled_" + cameraFrame;
 
 }
 
@@ -294,7 +294,7 @@ bool Camera::open()
 
     tf::StampedTransform leveledCameraPose = computeLeveledCameraPose(cam_ROBOT);
 
-    publishCameraPose(leveledCameraPose, std::string(std::getenv("ROBOT")) + "/base_link", virtualCameraFrame);
+    publishCameraPose(leveledCameraPose, std::string(std::getenv("ROBOT")) + "/base_link", leveledCameraFrame);
 
   }
   catch (NxLibException& e)
@@ -847,8 +847,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
 
         try
         {
-          transformListener.lookupTransform(virtualCameraFrame, cameraFrame, ros::Time(0), cam_ROBOT);
-          std::cout << "Read" << std::endl;
+          transformListener.lookupTransform(leveledCameraFrame, cameraFrame, ros::Time(0), cam_ROBOT);
         }
         catch (tf::TransformException& e)
         {

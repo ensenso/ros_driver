@@ -125,7 +125,7 @@ private:
 
   std::string cameraFrame;
   std::string linkedCameraFrame;
-  std::string virtualCameraFrame;
+  std::string leveledCameraFrame;
   std::string targetFrame;
   std::string robotFrame;
   std::string wristFrame;
