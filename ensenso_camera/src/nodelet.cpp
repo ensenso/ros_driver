@@ -31,7 +31,7 @@ void Nodelet::onInit()
     NxLibItem()[itmParameters][itmThreads] = threads;
   }
 
-  std::string serial, fileCameraPath, cameraFrame, targetFrame, robotFrame, wristFrame, linkedCameraFrame;
+  std::string serial, fileCameraPath, cameraFrame, targetFrame, robotFrame, wristFrame, linkedCameraFrame, leveledCameraFrame;
   bool cameraIsFixed, linked_camera_auto_exposure;
 
   if (!nhLocal.getParam("serial", serial))
@@ -70,6 +70,10 @@ void Nodelet::onInit()
   if (!nhLocal.getParam("linked_camera_frame", linkedCameraFrame))
   {
     linkedCameraFrame = "linked_camera_frame";
+  }
+  if (!nhLocal.getParam("leveled_camera_frame", leveledCameraFrame))
+  {
+    leveledCameraFrame = "leveled_camera_frame";
   }
   if (!nhLocal.getParam("target_frame", targetFrame))
   {

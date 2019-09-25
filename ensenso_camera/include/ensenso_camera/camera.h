@@ -190,7 +190,8 @@ private:
 public:
   Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
          std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
-         std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure);
+         std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure,
+         std::string const& leveledCameraFrame);
 
   bool open();
   void close();
