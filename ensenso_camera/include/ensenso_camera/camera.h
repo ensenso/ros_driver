@@ -404,4 +404,8 @@ private:
    * Obtain the directly linked camera, used by the renderPointCloud.
    */
   std::string getLinkedCamera() const;
+
+
+  boost::shared_ptr<sr::rgbd::Image> computeRotatedDepthMap();
+
 };

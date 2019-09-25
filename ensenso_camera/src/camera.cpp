@@ -835,65 +835,19 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
 
       if(goal->request_rotated_depth_map)
       {
-        PointCloudROI const* pointCloudROI = 0;
-        if (parameterSets.at(currentParameterSet).useROI)
-        {
-          pointCloudROI = &parameterSets.at(currentParameterSet).roi;
-        }
-        auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI, false);
 
-        pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
-        tf::StampedTransform cam_ROBOT;
-
-        try
-        {
-          transformListener.lookupTransform(leveledCameraFrame, cameraFrame, ros::Time(0), cam_ROBOT);
-        }
-        catch (tf::TransformException& e)
-        {
-          ROS_ERROR("Error reading camera pose %s", cameraFrame);
-        }
-
-        pcl_ros::transformPointCloud(*pointCloud, *transformed_cloud, cam_ROBOT);
-
-        auto rgbd_image = boost::make_shared<sr::rgbd::Image>();
-
-        double cx = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][2][0].asDouble();
-        double cy = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][2][1].asDouble();
-        double fx = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][0][0].asDouble();
-        double fy = cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera][1][1].asDouble();
-
-        //Move raw data to rgbd image
-        rgbd_image->depth = cv::Mat(depthMap.rows, depthMap.cols, CV_32FC1, NAN);
-        rgbd_image->P.setOpticalTranslation(0, 0);
-        rgbd_image->P.setOpticalCenter(cx, cy);
-        rgbd_image->P.setFocalLengths(fx, fy);
-
-        int counter=0;
-        for(auto point : *transformed_cloud)
-        {
-          sr::Vec2i pix = rgbd_image->P.project3Dto2D(sr::Vec3(point.x, -point.y, -point.z));
-          if (pix.x >= 0 && pix.y >= 0 && pix.x < rgbd_image->depth.cols && pix.y < rgbd_image->depth.rows)
-          { 
-              rgbd_image->depth.at<float>(pix.y, pix.x) = fabs(point.z);
-          }
-        }
-
-        cv_bridge::CvImage cv_image_(
+        auto rgbdImage = computeRotatedDepthMap();
+        cv_bridge::CvImage cv_image_bridge(
           header,
           sensor_msgs::image_encodings::TYPE_32FC1,
-          rgbd_image->depth
+          rgbdImage->depth
         );
 
-        // Set depth map of action result (3 channel image with 3D Coordinates(x,y,z)): image size is the same as disparity map
-        result.rotated_depth_map = *cv_image_.toImageMsg();
+        result.rotated_depth_map = *cv_image_bridge.toImageMsg();
 
       }
 
-      }
-
-
-
+    }
 
     result.success = true;
   }
@@ -976,6 +930,46 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
   FINISH_NXLIB_ACTION(RequestData)
 
 }
+
+
+boost::shared_ptr<sr::rgbd::Image> Camera::computeRotatedDepthMap()
+{
+
+  PointCloudROI const* pointCloudROI = 0;
+  if (parameterSets.at(currentParameterSet).useROI)
+  {
+    pointCloudROI = &parameterSets.at(currentParameterSet).roi;
+  }
+  auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI, false);
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr transformedPointCloud (new pcl::PointCloud<pcl::PointXYZ> ());
+  tf::StampedTransform cam_ROBOT;
+
+  try
+  {
+    transformListener.lookupTransform(leveledCameraFrame, cameraFrame, ros::Time(0), cam_ROBOT);
+  }
+  catch (tf::TransformException& e)
+  {
+    ROS_ERROR("Error reading camera pose %s", cameraFrame);
+  }
+
+  pcl_ros::transformPointCloud(*pointCloud, *transformedPointCloud, cam_ROBOT);
+
+  int width, height;
+  double timestamp;
+
+  cameraNode[itmImages][itmPointMap].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
+
+  auto rgbdImage = rgbdFromPointCloud(*transformedPointCloud,
+                            cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera],
+                            cv::Size(width, height),
+                            leveledCameraFrame);
+
+  return rgbdImage;
+
+}
+
 
 void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal)
 {
