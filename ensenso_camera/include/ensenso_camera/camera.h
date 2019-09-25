@@ -406,6 +406,11 @@ private:
   std::string getLinkedCamera() const;
 
 
+  /**
+   * @brief      Calculates the rotated depth map.
+   *
+   * @return     The rotated depth map.
+   */
   boost::shared_ptr<sr::rgbd::Image> computeRotatedDepthMap();
 
 };
