@@ -949,6 +949,8 @@ boost::shared_ptr<sr::rgbd::Image> Camera::computeRotatedDepthMap()
   pcl::PointCloud<pcl::PointXYZ>::Ptr transformedPointCloud (new pcl::PointCloud<pcl::PointXYZ> ());
   tf::StampedTransform cam_ROBOT;
 
+
+  // Read transform between the two cameras
   try
   {
     transformListener.lookupTransform(leveledCameraFrame, cameraFrame, ros::Time(0), cam_ROBOT);
@@ -958,6 +960,7 @@ boost::shared_ptr<sr::rgbd::Image> Camera::computeRotatedDepthMap()
     ROS_ERROR("Error reading camera pose %s", cameraFrame);
   }
 
+  // Apply transformation
   pcl_ros::transformPointCloud(*pointCloud, *transformedPointCloud, cam_ROBOT);
 
   int width, height;

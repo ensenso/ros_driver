@@ -131,7 +131,7 @@ tf::StampedTransform computeLeveledCameraPose(tf::StampedTransform originalPose)
   tf::StampedTransform leveledCameraPose;
   leveledCameraPose.setRotation(q);
 
-  // Set the origin of the pose in the world to be that of the original camera
+  // Set the x,y,z in the world to be that of the original camera
   leveledCameraPose.setOrigin(originalPose.getOrigin());
   return leveledCameraPose;
 }
