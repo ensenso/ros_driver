@@ -113,6 +113,37 @@ boost::shared_ptr<sr::rgbd::Image> rgbdFromNxLib(NxLibItem const& node,
 }
 
 
+boost::shared_ptr<sr::rgbd::Image> rgbdFromPointCloud(pcl::PointCloud<pcl::PointXYZ>  const& pointCloud,
+                                                      NxLibItem const& configPars,
+                                                      cv::Size imageSize,
+                                                      std::string frame)
+{
+
+  auto rgbd_image = boost::make_shared<sr::rgbd::Image>();
+
+  double cx = configPars[2][0].asDouble();
+  double cy = configPars[2][1].asDouble();
+  double fx = configPars[0][0].asDouble();
+  double fy = configPars[1][1].asDouble();
+
+  rgbd_image->depth = cv::Mat(imageSize, CV_32FC1, NAN);
+  rgbd_image->frame_id = frame;
+  rgbd_image->P.setOpticalTranslation(0, 0);
+  rgbd_image->P.setOpticalCenter(cx, cy);
+  rgbd_image->P.setFocalLengths(fx, fy);
+
+  for(auto point : pointCloud)
+  {
+    sr::Vec2i pix = rgbd_image->P.project3Dto2D(sr::Vec3(point.x, -point.y, -point.z));
+    if (pix.x >= 0 && pix.y >= 0 && pix.x < rgbd_image->depth.cols && pix.y < rgbd_image->depth.rows)
+    {
+        rgbd_image->depth.at<float>(pix.y, pix.x) = fabs(point.z);
+    }
+  }
+
+  return rgbd_image;
+}
+
 pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem const& pointMapNode,
                                                                       NxLibItem const& normalNode,
                                                                       std::string const& frame,

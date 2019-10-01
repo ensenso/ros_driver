@@ -59,3 +59,19 @@ pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem 
                                                                       NxLibItem const& normalNode,
                                                                       std::string const& frame,
                                                                       PointCloudROI const* roi = 0);
+
+/**
+ * @brief      Convert pcl to rgbd image
+ *
+ * @param      pointCloud  The point cloud
+ * @param      configPars  The configuration pars
+ * @param[in]  imageSize   The image size
+ * @param[in]  frame       The frame
+ *
+ * @return    rgbd image with z information of the point cloud
+ */
+
+boost::shared_ptr<sr::rgbd::Image> rgbdFromPointCloud(pcl::PointCloud<pcl::PointXYZ>  const& pointCloud,
+                                                      NxLibItem const& configPars,
+                                                      cv::Size imageSize,
+                                                      std::string frame);

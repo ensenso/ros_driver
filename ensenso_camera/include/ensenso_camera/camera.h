@@ -12,6 +12,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <pcl/common/transforms.h>
+#include <pcl_ros/transforms.h>
 
 #include <map>
 #include <memory>
@@ -123,6 +125,7 @@ private:
 
   std::string cameraFrame;
   std::string linkedCameraFrame;
+  std::string leveledCameraFrame;
   std::string targetFrame;
   std::string robotFrame;
   std::string wristFrame;
@@ -187,7 +190,8 @@ private:
 public:
   Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
          std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
-         std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure);
+         std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure,
+         std::string const& leveledCameraFrame);
 
   bool open();
   void close();
@@ -401,4 +405,13 @@ private:
    * Obtain the directly linked camera, used by the renderPointCloud.
    */
   std::string getLinkedCamera() const;
+
+
+  /**
+   * @brief      Calculates the rotated depth map.
+   *
+   * @return     The rotated depth map.
+   */
+  boost::shared_ptr<sr::rgbd::Image> computeRotatedDepthMap();
+
 };

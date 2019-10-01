@@ -31,7 +31,7 @@ void Nodelet::onInit()
     NxLibItem()[itmParameters][itmThreads] = threads;
   }
 
-  std::string serial, fileCameraPath, cameraFrame, targetFrame, robotFrame, wristFrame, linkedCameraFrame;
+  std::string serial, fileCameraPath, cameraFrame, targetFrame, robotFrame, wristFrame, linkedCameraFrame, leveledCameraFrame;
   bool cameraIsFixed, linked_camera_auto_exposure;
 
   if (!nhLocal.getParam("serial", serial))
@@ -71,6 +71,10 @@ void Nodelet::onInit()
   {
     linkedCameraFrame = "linked_camera_frame";
   }
+  if (!nhLocal.getParam("leveled_camera_frame", leveledCameraFrame))
+  {
+    leveledCameraFrame = "leveled_camera_frame";
+  }
   if (!nhLocal.getParam("target_frame", targetFrame))
   {
     targetFrame = cameraFrame;
@@ -94,7 +98,7 @@ void Nodelet::onInit()
 
   NODELET_DEBUG("Opening the camera '%s'...", serial.c_str());
   camera = make_unique<Camera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
-                               wristFrame, linkedCameraFrame, linked_camera_auto_exposure);
+                               wristFrame, linkedCameraFrame, linked_camera_auto_exposure, leveledCameraFrame);
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");

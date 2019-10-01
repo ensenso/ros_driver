@@ -138,7 +138,8 @@ ParameterSet::ParameterSet(const std::string &name, const NxLibItem &defaultPara
 
 Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const& fileCameraPath, bool fixed,
                std::string const& cameraFrame, std::string const& targetFrame, std::string const& robotFrame,
-               std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure)
+               std::string const& wristFrame, std::string const& linkedCameraFrame, bool const& linked_camera_auto_exposure,
+               std::string const& leveledCameraFrame)
   : serial(serial)
   , fileCameraPath(fileCameraPath)
   , fixed(fixed)
@@ -148,6 +149,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
   , wristFrame(wristFrame)
   , linkedCameraFrame(linkedCameraFrame)
   , linked_camera_auto_exposure(linked_camera_auto_exposure)
+  , leveledCameraFrame(leveledCameraFrame)
 {
   isFileCamera = !fileCameraPath.empty();
 
@@ -198,6 +200,7 @@ Camera::Camera(ros::NodeHandle nh, std::string const& serial, std::string const&
 
   defaultParameters = NxLibItem()["rosDefaultParameters"];
   rootNode = NxLibItem();
+
 }
 
 bool Camera::open()
@@ -252,39 +255,47 @@ bool Camera::open()
     open.parameters()[itmCameras] = serial;
     open.execute();
 
-  // Check if current camera has linked camera to be opened too
-  std::string serialLinkedCamera = getLinkedCamera();
+    // Check if current camera has linked camera to be opened too
+    std::string serialLinkedCamera = getLinkedCamera();
 
-  // If there is a monocular camera, then open it too
-  if(serialLinkedCamera != ""){
-	  linkedMonoCamera.exists = true;
-	  linkedMonoCamera.serial = serialLinkedCamera;
-    linkedMonoCamera.cameraFrame = linkedCameraFrame;
-    ROS_INFO("Linked camera detected with serial %s -> %s", serialLinkedCamera.c_str(), serial.c_str());
-    NxLibCommand openMono(cmdOpen);
-    openMono.parameters()[itmCameras] = serialLinkedCamera;
-    openMono.execute();
+    // If there is a monocular camera, then open it too
+    if(serialLinkedCamera != ""){
+  	  linkedMonoCamera.exists = true;
+  	  linkedMonoCamera.serial = serialLinkedCamera;
+      linkedMonoCamera.cameraFrame = linkedCameraFrame;
+      ROS_INFO("Linked camera detected with serial %s -> %s", serialLinkedCamera.c_str(), serial.c_str());
+      NxLibCommand openMono(cmdOpen);
+      openMono.parameters()[itmCameras] = serialLinkedCamera;
+      openMono.execute();
 
-    //Get monocular cam node
-    linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
+      //Get monocular cam node
+      linkedMonoCamera.node = NxLibItem()[itmCameras][itmBySerialNo][linkedMonoCamera.serial];
 
-    linkedMonoCamera.node[itmParameters][itmCapture][itmAutoExposure] = linked_camera_auto_exposure ? true : false;
+      linkedMonoCamera.node[itmParameters][itmCapture][itmAutoExposure] = linked_camera_auto_exposure ? true : false;
 
-    // Print info that monocular camera does not use auto-exposure by default
-    ROS_INFO("Monocular camera %s with auto exposure set to %d", serialLinkedCamera.c_str(), linked_camera_auto_exposure);
+      // Print info that monocular camera does not use auto-exposure by default
+      ROS_INFO("Monocular camera %s with auto exposure set to %d", serialLinkedCamera.c_str(), linked_camera_auto_exposure);
 
-    //Publish static tf
-    geometry_msgs::TransformStamped static_transform;
-    tf::transformTFToMsg(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse(), static_transform.transform);
-    static_transform.header.stamp = ros::Time::now();
-    static_transform.header.frame_id = cameraFrame;
-    static_transform.child_frame_id = linkedCameraFrame;
-    static_tf_broadcaster.sendTransform(static_transform);
-    ros::spinOnce();
-    ros::Rate r(10);
-    r.sleep();
+      tf::StampedTransform linkedCamStampedTransform;
+      linkedCamStampedTransform.setData(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse());
+      publishCameraPose(linkedCamStampedTransform, cameraFrame, linkedCameraFrame, static_tf_broadcaster);
 
-  }
+    }
+
+    tf::StampedTransform cam_ROBOT;
+
+    try
+    {
+      transformListener.lookupTransform( std::string(std::getenv("ROBOT")) + "/base_link", cameraFrame, ros::Time(0), cam_ROBOT);
+    }
+    catch (tf::TransformException& e)
+    {
+      ROS_ERROR("Error reading camera pose %s", cameraFrame);
+    }
+
+    tf::StampedTransform leveledCameraPose = computeLeveledCameraPose(cam_ROBOT);
+
+    publishCameraPose(leveledCameraPose, std::string(std::getenv("ROBOT")) + "/base_link", leveledCameraFrame, static_tf_broadcaster);
 
   }
   catch (NxLibException& e)
@@ -807,22 +818,40 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
       // create a header
       std_msgs::Header header;
       header.frame_id = linkedCameraFrame;
-      header.stamp    = ros::Time::now();
+      header.stamp = ros::Time::now();
+
+      // Send only z channel
+      cv::Mat depthMapSplit[3];
+      cv::split(floatDepthMap, depthMapSplit);
 
       // prepare message
       cv_bridge::CvImage cv_image(
         header,
-        sensor_msgs::image_encodings::TYPE_32FC3,
-        floatDepthMap
+        sensor_msgs::image_encodings::TYPE_32FC1,
+        depthMapSplit[2]/1000.
       );
 
       // Set depth map of action result (3 channel image with 3D Coordinates(x,y,z)): image size is the same as disparity map
       result.depth_map = *cv_image.toImageMsg();
-    
+
       if(goal->log_time)
         ROS_INFO("Set disparity map %.3f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - setMapStartTime ).count());
-       }
 
+      if(goal->request_rotated_depth_map)
+      {
+
+        auto rgbdImage = computeRotatedDepthMap();
+        cv_bridge::CvImage cv_image_bridge(
+          header,
+          sensor_msgs::image_encodings::TYPE_32FC1,
+          rgbdImage->depth
+        );
+
+        result.rotated_depth_map = *cv_image_bridge.toImageMsg();
+
+      }
+
+    }
 
     result.success = true;
   }
@@ -905,6 +934,49 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
   FINISH_NXLIB_ACTION(RequestData)
 
 }
+
+
+boost::shared_ptr<sr::rgbd::Image> Camera::computeRotatedDepthMap()
+{
+
+  PointCloudROI const* pointCloudROI = 0;
+  if (parameterSets.at(currentParameterSet).useROI)
+  {
+    pointCloudROI = &parameterSets.at(currentParameterSet).roi;
+  }
+  auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI, false);
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr transformedPointCloud (new pcl::PointCloud<pcl::PointXYZ> ());
+  tf::StampedTransform cam_ROBOT;
+
+
+  // Read transform between the two cameras
+  try
+  {
+    transformListener.lookupTransform(leveledCameraFrame, cameraFrame, ros::Time(0), cam_ROBOT);
+  }
+  catch (tf::TransformException& e)
+  {
+    ROS_ERROR("Error reading camera pose %s", cameraFrame);
+  }
+
+  // Apply transformation
+  pcl_ros::transformPointCloud(*pointCloud, *transformedPointCloud, cam_ROBOT);
+
+  int width, height;
+  double timestamp;
+
+  cameraNode[itmImages][itmPointMap].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
+
+  auto rgbdImage = rgbdFromPointCloud(*transformedPointCloud,
+                            cameraNode[itmCalibration][itmDynamic][itmStereo][itmLeft][itmCamera],
+                            cv::Size(width, height),
+                            leveledCameraFrame);
+
+  return rgbdImage;
+
+}
+
 
 void Camera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal)
 {
