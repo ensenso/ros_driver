@@ -26,7 +26,8 @@
   <depend>pcl_conversions</depend>
   <depend>pcl_ros</depend>
   <depend>roscpp</depend>
-  <depend>tf</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
   <depend>visualization_msgs</depend>
   <exec_depend>rospy</exec_depend>
 
