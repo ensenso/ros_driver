@@ -278,7 +278,20 @@ bool Camera::open()
 
       tf::StampedTransform linkedCamStampedTransform;
       linkedCamStampedTransform.setData(poseFromNxLib(linkedMonoCamera.node[itmLink]).inverse());
-      publishCameraPose(linkedCamStampedTransform, cameraFrame, linkedCameraFrame, static_tf_broadcaster);
+      //publishCameraPose(linkedCamStampedTransform, cameraFrame, linkedCameraFrame, static_tf_broadcaster);
+      geometry_msgs::TransformStamped static_transform;
+      tf::transformTFToMsg(linkedCamStampedTransform, static_transform.transform);
+      static_transform.header.stamp = ros::Time::now();
+      static_transform.header.frame_id = cameraFrame ;
+      static_transform.child_frame_id = linkedCameraFrame;
+      static_tf_broadcaster.sendTransform(static_transform);
+      std::cout << "TRANSFROM:: " << cameraFrame << " " << linkedCameraFrame << std::endl; 
+      ros::Rate rr(10);
+      rr.sleep();
+
+
+      ROS_INFO("Published linked cam tf");
+      
 
     }
 
@@ -292,6 +305,23 @@ bool Camera::open()
     {
       ROS_ERROR("Error reading camera pose %s", cameraFrame);
     }
+
+    if(linkedMonoCamera.exists){
+      tf::StampedTransform linkedcam_ROBOT;
+      try
+      {
+        transformListener.lookupTransform( std::string(std::getenv("ROBOT")) + "/base_link", linkedCameraFrame, ros::Time(0), linkedcam_ROBOT);
+      }
+      catch (tf::TransformException& e)
+      {
+        ROS_ERROR("Error reading camera pose %s", cameraFrame);
+      }
+
+      tf::Vector3 translation(linkedcam_ROBOT.getOrigin().getX(), linkedcam_ROBOT.getOrigin().getY(), cam_ROBOT.getOrigin().getZ() );
+      cam_ROBOT.setOrigin(translation);
+    }
+
+
 
     tf::StampedTransform leveledCameraPose = computeLeveledCameraPose(cam_ROBOT);
 
