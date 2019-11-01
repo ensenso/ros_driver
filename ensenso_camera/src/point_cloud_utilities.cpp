@@ -137,7 +137,12 @@ boost::shared_ptr<sr::rgbd::Image> rgbdFromPointCloud(pcl::PointCloud<pcl::Point
     sr::Vec2i pix = rgbd_image->P.project3Dto2D(sr::Vec3(point.x, -point.y, -point.z));
     if (pix.x >= 0 && pix.y >= 0 && pix.x < rgbd_image->depth.cols && pix.y < rgbd_image->depth.rows)
     {
-        rgbd_image->depth.at<float>(pix.y, pix.x) = fabs(point.z);
+        // The depth image should contain the depth of the point closest to the camera (smallest z-value)
+        if(std::isnan(rgbd_image->depth.at<float>(pix.y, pix.x)) || 
+          (!std::isnan(rgbd_image->depth.at<float>(pix.y, pix.x)) && fabs(point.z) < rgbd_image->depth.at<float>(pix.y, pix.x)))
+        {
+            rgbd_image->depth.at<float>(pix.y, pix.x) = fabs(point.z);
+        }
     }
   }
 
