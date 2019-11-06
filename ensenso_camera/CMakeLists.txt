@@ -20,7 +20,10 @@ find_package(catkin REQUIRED COMPONENTS
   roslint
   tf2
   tf2_ros
+  tf2_geometry_msgs
   visualization_msgs
+  geometry_msgs
+  sensor_msgs
 )
 
 set(ROSLINT_CPP_OPTS "--filter=-build/c++11,-build/header_guard,-legal/copyright,-readability/todo")
