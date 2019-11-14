@@ -374,7 +374,8 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   if (goal->request_normals)
   {
-    NxLibCommand(cmdComputeNormals, serial).execute();
+    NxLibCommand computeNormals(cmdComputeNormals, serial);
+    computeNormals.execute();
 
     auto pointCloud = pointCloudWithNormalsFromNxLib(cameraNode[itmImages][itmPointMap],
                                                      cameraNode[itmImages][itmNormals], targetFrame, pointCloudROI);
