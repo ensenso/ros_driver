@@ -12,7 +12,7 @@ float64 near_plane
 float64 far_plane
 
 # Defines, if OpenGL is to be used for rendering. Default is true.
-bool use_openGL
+bool use_opengl
 
 # When this flag is enabled, the requested data will be published on the
 # corresponding topics (see the documentation of the camera node).

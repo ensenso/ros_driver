@@ -35,7 +35,11 @@ void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
   // Initialize the node to be empty. This is necessary, because there is a bug in some versions of the NxLib that
   // overwrites the whole transformation node with an identity transformation as soon as a new node in /Links gets
   // created.
-  node.setNull();
+  if (node.path.find("ViewPose") == std::string::npos)
+  {
+    // The ensenso SDK 2.2.x has a structure locked ViewPose item in the global params. So it cannot be set to null.
+    node.setNull();
+  }
 
   if (isValid(pose))
   {

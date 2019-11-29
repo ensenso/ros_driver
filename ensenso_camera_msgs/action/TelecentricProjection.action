@@ -1,6 +1,6 @@
 # In Order to use this action, a point cloud has to be requested beforehand.
 
-# The TF frame, to which to point cloud should be rendered.
+# The TF frame, to which the point cloud should be rendered.
 string frame
 
 # Optional: If you define a view_pose yourself, the view_pose will be used for rendering.

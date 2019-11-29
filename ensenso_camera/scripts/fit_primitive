@@ -119,7 +119,8 @@ def main():
                             marker.pose.position.z = found_primitive.center.z
 
                             # Defining the marker orientation from angle axis
-                            # Source: https://stackoverflow.com/questions/23166898/efficient-way-to-calculate-a-3x3-rotation-matrix-from-the-rotation-defined-by-tw
+                            # Source: https://stackoverflow.com/questions/23166898/
+                            # efficient-way-to-calculate-a-3x3-rotation-matrix-from-the-rotation-defined-by-tw
                             z_camera = [0, 0, 1]
                             normal_plane = [found_primitive.normal.x, found_primitive.normal.y,
                                             found_primitive.normal.z]

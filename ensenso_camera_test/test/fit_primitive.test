@@ -3,5 +3,6 @@
     <arg name="serial" value="fit_prim_cam"/>
     <arg name="path" value="$(find ensenso_camera_test)/data/fit_primitive/camera.zip"/>
   </include>
-  <test pkg="ensenso_camera_test" type="fit_primitive.py" test-name="test_fit_primitive" cwd="node"></test>
+  <test pkg="ensenso_camera_test" type="fit_primitive.py" test-name="test_fit_primitive" cwd="node" time-limit="530.0"></test>
+  <!-- do not increase the time-lime more than 10 minutes, as travis will cancel hte job if the it takes longer than 10 mins -->
 </launch>

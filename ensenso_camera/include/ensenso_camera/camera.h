@@ -11,6 +11,7 @@
 #include "ensenso_camera/point_cloud_utilities.h"
 #include "ensenso_camera/queued_action_server.h"
 #include "ensenso_camera/image_utilities.h"
+#include "ensenso_camera/nxLibVersionInfo.h"
 
 #include "nxLib.h"
 
@@ -183,6 +184,8 @@ protected:
   // Whether the camera was created by this node. If that is the case, we will
   // delete it again after it got closed.
   bool createdFileCamera = false;
+
+  VersionInfo nxLibVersion;
 
   std::string serial;
   NxLibItem cameraNode;

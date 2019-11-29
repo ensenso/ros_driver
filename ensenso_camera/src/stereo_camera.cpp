@@ -152,7 +152,7 @@ void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr 
   }
   if (goal->ransac_iterations != 0)
   {
-    commandParameters[itmScaling] = goal->ransac_iterations;
+    commandParameters[itmIterations] = goal->ransac_iterations;
   }
 
   fitPrimitives.execute();
@@ -949,30 +949,28 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
     transform = getLatestTransform(tfBuffer, targetFrame, goal->frame);
   }
 
-  // check goal parameters (message generation will default to value 0 or empty string)
   int pixelScale = goal->pixel_scale != 0. ? goal->pixel_scale : 1;
   double scaling = goal->scaling != 0. ? goal->scaling : 1.0;
   int sizeWidth = goal->size_width != 0 ? goal->size_width : 1024;
   int sizeHeight = goal->size_height != 0. ? goal->size_height : 768;
   bool useOpenGL = goal->use_opengl == 1;
+  RenderPointMapParamsTelecentric params(useOpenGL, pixelScale, scaling, sizeWidth, sizeHeight, transform);
 
   NxLibCommand renderPointMap(cmdRenderPointMap, serial);
-  writePoseToNxLib(transform, renderPointMap.parameters()[itmViewPose]);
+
   for (int i = 0; i < static_cast<int>(goal->serials.size()); i++)
   {
     renderPointMap.parameters()[itmCameras][i] = goal->serials[i];
   }
-  renderPointMap.parameters()[itmPixelSize] = pixelScale;
-  renderPointMap.parameters()[itmScaling] = scaling;
-  renderPointMap.parameters()[itmSize][0] = sizeWidth;
-  renderPointMap.parameters()[itmSize][1] = sizeHeight;
-  renderPointMap.parameters()[itmUseOpenGL] = useOpenGL;
+  setRenderParams(renderPointMap.parameters(), nxLibVersion, &params);
 
   renderPointMap.execute();
 
-  if (!renderPointMap.result()[itmImages][itmRenderPointMap].exists())
+  NxLibItem resultPath = retrieveResultPath(renderPointMap.result(), nxLibVersion);
+
+  if (!resultPath.exists())
   {
-    std::string error{ "RenderPointMap command went wrong. Aborting Action." };
+    std::string error = "Rendered Point Map does not exist in path: " + resultPath.path;
     result.error.message = error;
     ROS_ERROR("%s", error.c_str());
     telecentricProjectionServer->setAborted(result);
@@ -983,7 +981,8 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   {
     if (goal->request_point_cloud || (!goal->request_point_cloud && !goal->request_depth_image))
     {
-      auto pointCloud = pointCloudFromNxLib(renderPointMap.result()[itmImages][itmRenderPointMap], goal->frame);
+      auto pointCloud = retrieveRenderedPointCloud(renderPointMap.result(), nxLibVersion, goal->frame);
+
       if (goal->publish_results)
       {
         projectedPointCloudPublisher.publish(*pointCloud);
@@ -998,16 +997,18 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
         telecentricProjectionServer->setSucceeded();
       }
     }
+
     if (goal->request_depth_image)
     {
-      auto renderedView = depthImageFromNxLibNode(renderPointMap.result()[itmImages][itmRenderPointMap], goal->frame);
+      auto renderedImage = retrieveRenderedDepthMap(renderPointMap.result(), nxLibVersion, goal->frame);
+
       if (goal->publish_results)
       {
-        projectedImagePublisher.publish(renderedView);
+        projectedImagePublisher.publish(renderedImage);
       }
       if (goal->include_results_in_response)
       {
-        result.projected_depth_map = *renderedView;
+        result.projected_depth_map = *renderedImage;
         telecentricProjectionServer->setSucceeded(result);
       }
       else
@@ -1041,27 +1042,24 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
 
   double far = goal->far_plane ? goal->far_plane : 10000.;
   double near = goal->near_plane ? goal->near_plane : -10000.;
+  bool useOpenGL = goal->use_opengl == 1;
+  bool withTexture = true;
+
+  RenderPointMapParamsProjection params(useOpenGL, far, near, withTexture);
 
   NxLibCommand renderPointMap(cmdRenderPointMap, serial);
-
-  // If goal->serials are left empty, all open stereo cameras will be used as default by the command.
   for (int i = 0; i < static_cast<int>(goal->serials.size()); i++)
   {
     renderPointMap.parameters()[itmCameras][i] = goal->serials[i];
   }
   renderPointMap.parameters()[itmCamera] = goal->mono_serial;
-  renderPointMap.parameters()[itmUseOpenGL] = goal->use_openGL;
-  renderPointMap.parameters()[itmNear] = near;
-  renderPointMap.parameters()[itmTexture] = true;
-  renderPointMap.parameters()[itmFar] = far;
+  setRenderParams(renderPointMap.parameters(), nxLibVersion, &params);
 
   renderPointMap.execute();
 
   if (goal->publish_results || goal->include_results_in_response)
   {
-    NxLibItem const& cmdResults = renderPointMap.result();
-    auto cloudColored = pointCloudTexturedFromNxLib(cmdResults[itmImages][itmRenderPointMapTexture],
-                                                    cmdResults[itmImages][itmRenderPointMap], targetFrame);
+    auto cloudColored = retrieveTexturedPointCloud(renderPointMap.result(), nxLibVersion, targetFrame);
     if (goal->publish_results)
     {
       pointCloudPublisherColor.publish(cloudColored);

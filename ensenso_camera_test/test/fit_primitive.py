@@ -11,6 +11,8 @@ from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
 
 from helper import Point
 
+INLIER_THRESHOLD = 0.005
+
 
 # All used parameters with a length unit use meters as unit
 
@@ -18,7 +20,7 @@ from helper import Point
 def get_cylinder_fit_primitive():
     primitive = Primitive()
     primitive.type = Primitive.CYLINDER
-    primitive.inlier_threshold = 0.001
+    primitive.inlier_threshold = INLIER_THRESHOLD
     primitive.count = 1
     primitive.inlier_fraction_in = 0.015
     primitive.min_radius = 0.095
@@ -29,7 +31,7 @@ def get_cylinder_fit_primitive():
 def get_sphere_fit_primitive():
     primitive = Primitive()
     primitive.type = Primitive.SPHERE
-    primitive.inlier_threshold = 0.001
+    primitive.inlier_threshold = INLIER_THRESHOLD
     primitive.count = 1
     primitive.inlier_fraction_in = 0.03
     primitive.min_radius = 0.048
@@ -40,11 +42,9 @@ def get_sphere_fit_primitive():
 def get_plane_fit_primitive():
     primitive = Primitive()
     primitive.type = Primitive.PLANE
-    primitive.inlier_threshold = 0.001
+    primitive.inlier_threshold = INLIER_THRESHOLD
     primitive.count = 1
     primitive.inlier_fraction_in = 0.015
-    primitive.min_radius = 0.095
-    primitive.max_radius = 0.105
     return primitive
 
 
@@ -87,7 +87,6 @@ class TestFitPrimitive(unittest.TestCase):
         goal = FitPrimitiveGoal()
         primitive = get_sphere_fit_primitive()
         goal.primitives.append(primitive)
-
         result = self.get_result(goal)
         self.result_check(result)
 
@@ -107,27 +106,8 @@ class TestFitPrimitive(unittest.TestCase):
         result = self.get_result(goal)
         self.result_check(result)
 
-    def test_primitive_combinations(self):
-        goal = FitPrimitiveGoal()
-
-        goal.primitives.append(get_sphere_fit_primitive())
-        goal.primitives.append(get_cylinder_fit_primitive())
-        goal.primitives.append(get_plane_fit_primitive())
-
-        result = self.get_result(goal)
-        self.result_check(result)
-
-    def test_counts_of_object(self):
-        goal = FitPrimitiveGoal()
-        primitive = get_plane_fit_primitive()
-        primitive.count = 3
-        goal.primitives.append(primitive)
-
-        result = self.get_result(goal)
-        self.result_check(result)
-
     def result_check(self, result):
-        delta = 0.005
+        delta = INLIER_THRESHOLD * 2
         for primitive in result.primitives:
             if primitive.type == get_sphere_fit_primitive().type:
                 sphere = SphereTestValues()

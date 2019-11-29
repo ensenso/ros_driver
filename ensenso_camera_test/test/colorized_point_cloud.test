@@ -1,6 +1,6 @@
 <launch>
   <arg name="serial_stereo" value="160606" />
-  <arg name="serial_mono" value="4002895081" />
+  <arg name="serial_mono" value="color_mono" />
   <arg name="stereo_ns" value="stereo" />
   <arg name="mono_ns" value="mono" />
 

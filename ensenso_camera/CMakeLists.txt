@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
 
+find_package(Boost 1.58.0 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   actionlib
@@ -26,9 +27,6 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
-set(ROSLINT_CPP_OPTS "--filter=-build/c++11,-build/header_guard,-legal/copyright,-readability/todo")
-
-roslint_cpp()
 roslint_python(
   scripts/fit_primitive
   scripts/image_stream
@@ -37,7 +35,7 @@ roslint_python(
   scripts/request_data
   scripts/request_data_mono
   scripts/set_origin
-  scripts/request_data_several
+  scripts/color_point_cloud
 )
 if(CATKIN_ENABLE_TESTING)
   roslint_add_test()

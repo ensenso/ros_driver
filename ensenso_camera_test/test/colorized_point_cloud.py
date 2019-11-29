@@ -20,7 +20,7 @@ WAIT_TIMEOUT = 20
 
 STEREO_NAMESPACE = "stereo"
 MONO_NAMESPACE = "mono"
-MONO_SERIAL = "4002895081"
+MONO_SERIAL = "color_mono"
 
 
 class TestColorizedPointCloud(unittest.TestCase):
@@ -55,7 +55,7 @@ class TestColorizedPointCloud(unittest.TestCase):
 
     def aquire_data(self):
         goal_texture = TexturedPointCloudGoal()
-        goal_texture.use_openGL = True
+        goal_texture.use_opengl = False
         goal_texture.include_results_in_response = True
         goal_texture.mono_serial = MONO_SERIAL
         goal_texture.far_plane = 4000.0
@@ -68,11 +68,14 @@ class TestColorizedPointCloud(unittest.TestCase):
         result = self.colorize_point_cloud.get_result()
         self.assertEqual(result.error.message, "", msg="Got an error with the result")
         self.cloud_points = list(pc2.read_points(result.point_cloud, skip_nans=True))
-        self.assertTrue(len(self.cloud_points) != 0, msg=" The recieved point cloud is empty.")
+        self.assertTrue(len(self.cloud_points) != 0,
+                        msg=" The recieved point cloud is empty. Recieved {} points".format(len(self.cloud_points)))
 
     def check_color(self):
         for p in self.cloud_points:
-            # p has 4 points. The last one holds the color information. (http://answers.ros.org/question/208834/read-colours-from-a-pointcloud2-python/)
+            # p has 4 points. The last one holds the color information.
+            # (http://answers.ros.org/question/208834/read-colours-from-a-pointcloud2-python/)
+
             test = p[3]
             # cast float32 to int so that bitwise operations are possible
             s = struct.pack('>f', test)

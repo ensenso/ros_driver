@@ -13,6 +13,7 @@ from geometry_msgs.msg import Transform
 from cv_bridge import CvBridge
 import cv2 as cv
 import numpy as np
+import time
 
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.point_cloud2 import PointCloud2
@@ -33,6 +34,7 @@ class TestTelecentricProjection(unittest.TestCase):
                 self.fail(msg="Request_data action servers timed out!")
 
         self.pc_subscriber = rospy.Subscriber("/projected_point_cloud", PointCloud2, self.callback)
+        self.got_subscribed_cloud = False
 
         # Rotation, that is 90 degrees rotated to the original camera in the test
         self.trafo = Transform()
@@ -125,6 +127,7 @@ class TestTelecentricProjection(unittest.TestCase):
             self.fail(msg="Action did not succeed.")
 
     def callback(self, data):
+        self.got_subscribed_cloud = True
         self.subscribed_cloud = data
 
     def send_goal_with_publishing_point_cloud(self):
@@ -143,6 +146,11 @@ class TestTelecentricProjection(unittest.TestCase):
         self.assertTrue(len(cloud_points) != 0, msg=" The recieved point cloud is empty.")
 
     def test_subscribed_point_cloud(self):
+        if not self.got_subscribed_cloud:
+            # Wait 4 seconds to receive a point cloud from the subscriber.
+            time.sleep(4)
+            if not self.got_subscribed_cloud:
+                self.fail("Recieved no published point cloud!")
         cloud_points = list(pc2.read_points(self.subscribed_cloud, skip_nans=True))
         self.assertTrue(len(cloud_points) != 0, msg=" The recieved point cloud is empty.")
 

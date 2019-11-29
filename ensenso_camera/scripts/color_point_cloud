@@ -56,7 +56,7 @@ def main():
 
         # Request the textured PC after getting mono rgb image and stereo point cloud
         texture_goal = TexturedPointCloudGoal()
-        texture_goal.use_openGL = True
+        texture_goal.use_opengl = True
         texture_goal.publish_results = True
         texture_goal.mono_serial = rgb_serial
         texture_goal.far_plane = 4000.0

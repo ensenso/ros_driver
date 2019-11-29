@@ -40,6 +40,7 @@ Camera::Camera(ros::NodeHandle const& n, std::string serial, std::string fileCam
   statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
 
   cameraNode = NxLibItem()[itmCameras][itmBySerialNo][this->serial];
+  nxLibVersion = getCurrentNxLibVersion();
 
   defaultParameters = NxLibItem()["rosDefaultParameters"];
 }
