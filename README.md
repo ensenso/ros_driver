@@ -1,4 +1,4 @@
-# ensenso_driver
+# ensenso_driver [![Build Status](https://travis-ci.org/ensenso/ros_driver.svg?branch=master)](https://travis-ci.org/ensenso/ros_driver)
 
 Official ROS driver for [Ensenso](http://www.ensenso.com) stereo cameras. You can find the documentation on the [ROS wiki](http://wiki.ros.org/ensenso_driver).
 
