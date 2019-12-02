@@ -1,0 +1,12 @@
+<launch>
+  <arg name="camera_serial" doc="Serial of the stereo camera to calibrate with." />
+  <arg name="target_frame" doc="The frame you want to receive 3D data in." />
+  <arg name="link_frame" doc="The frame on which the camera is mounted - defaults to the camera frame for a fixed hand eye calibration."/>
+
+  <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera_serial)" args="load ensenso_camera/nodelet /manager_" output="screen">
+    <param name="serial" type="string" value="$(arg camera_serial)" />
+    <param name="target_frame" type="string" value="$(arg target_frame)" />
+    <param name="link_frame" type="string" value="$(arg link_frame)" />
+  </node>
+</launch>
