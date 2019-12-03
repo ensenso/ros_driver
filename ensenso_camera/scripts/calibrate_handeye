@@ -28,7 +28,7 @@ def capture_pattern(hand_eye_client):
     hand_eye_client.send_goal(goal)
     wait_for_result(hand_eye_client)
     try:
-        # Check if any stereo pattern has been found, if the capture has been successful.
+        # Check if a stereo pattern has been found.
         result = hand_eye_client.get_result()
         if not result.found_pattern:
             rospy.logerr("Did not find any patterns.")
@@ -58,9 +58,8 @@ def main():
     reset_patterns(hand_eye_calib_client)
     for i in range(count_poses):
         #
-        # ---- Pause the robot here.
-        # ---- Also wait for 1-2 seconds due to its inertia.
-        # rospy.sleep (2.0)
+        # ----The Robot should stand still here.
+        #
         rospy.loginfo("Pattern number: {}".format(i + 1))
         now = rospy.get_time()
         capture_pattern(hand_eye_calib_client)
@@ -69,8 +68,9 @@ def main():
             rospy.loginfo("Finished capturing patterns")
             break
 
-        # The Robot can move to the next position for image capturing.
-        # move robot to position ... or any other call to move the robot.
+        #
+        # ---- Move the robot to the next position.
+        #
         time_left_to_move_robot = capture_wait - (rospy.get_time() - now)
         while time_left_to_move_robot > 0.8:
             start_loop = rospy.get_time()
