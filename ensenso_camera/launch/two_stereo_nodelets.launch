@@ -1,10 +1,10 @@
 <launch>
   <!-- This launch file is a sample launch file for a multi camera setup with a shared workspace. E.g. workspace calibration -->
-  <arg name="camera1" value="123" doc="Serial of the Ensenso stereo camera 1"/>
-  <arg name="camera2" value="456" doc="Serial of the Ensenso stereo camera 2"/>
+  <arg name="camera1" doc="Serial of the Ensenso stereo camera 1"/>
+  <arg name="camera2" doc="Serial of the Ensenso stereo camera 2"/>
 
-  <arg name="camera1_ns" value="stereo_camera_one" doc="Namespace of the Ensenso stereo camera 1" />
-  <arg name="camera2_ns" value="stereo_camera_two" doc="Namespace of the Ensenso stereo camera 2" />
+  <arg name="camera1_ns" doc="Namespace of the Ensenso stereo camera 1" />
+  <arg name="camera2_ns" doc="Namespace of the Ensenso stereo camera 2" />
 
   <arg name="frame_to_publish" value="AnyFrame" />
 
