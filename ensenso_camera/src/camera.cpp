@@ -335,12 +335,13 @@ bool Camera::open()
     return false;
   }
 
-  ROS_INFO("Opened camera with serial number '%s'.", serial.c_str());
 
   updateCameraInfo();
   saveDefaultParameterSet();
 
   rootNode[itmParameters][itmRenderPointMap][itmUseOpenGL] = false;
+  
+  ROS_INFO("Opened camera with serial number '%s'.", serial.c_str());
   
   return true;
 }
@@ -369,10 +370,13 @@ void Camera::close()
 
 bool Camera::loadMonocularSettings(const std::string& paramFile)
 {
-  NxLibCommand loadMono(cmdLoadUEyeParameterSet);
-  loadMono.parameters()[itmCameras] = linkedMonoCamera.serial;
-  loadMono.parameters()[itmFilename] = paramFile;
-  loadMono.execute();
+  if(linkedMonoCamera.exists){
+    std::cout << "Loading monocular camera settings... " << std::endl;
+    NxLibCommand loadMono(cmdLoadUEyeParameterSet);
+    loadMono.parameters()[itmCameras] = linkedMonoCamera.serial;
+    loadMono.parameters()[itmFilename] = paramFile;
+    loadMono.execute();
+  }
   
   return true;
 }
