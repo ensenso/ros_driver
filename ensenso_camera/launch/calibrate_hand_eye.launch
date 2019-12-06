@@ -1,7 +1,7 @@
 <launch>
   <arg name="camera_serial" doc="Serial of the stereo camera to calibrate with." />
   <arg name="robot_frame" doc="The robots base frame - base_link in the most cases." />
-  <arg name="wrist_frame" doc="The frame on which the camera is mounted - defaults to the camera frame for a fixed hand eye calibration."/>
+  <arg name="wrist_frame" doc="The frame on which the camera is mounted - defaults to the camera frame."/>
   <arg name="is_fixed" doc="whether the handeye calibration is fixed or a moving one" />
 
   <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
