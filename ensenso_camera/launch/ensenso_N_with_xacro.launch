@@ -1,0 +1,36 @@
+<launch>
+  <!-- In this example the camera has been workspace calibrated a priori -->
+  <!-- Camera Parameters -->
+  <arg name="camera" doc="Camera Serial" />
+  <arg name="target_frame" value="Workspace" />
+
+  <!-- Xacro Parameters -->
+  <!-- From that attachment frame the xacro builds the camera frames -->
+  <arg name="xacro_reference_frame" default="xacro_ref" />
+  <!-- Margin for the the collision model of the camera -->
+  <arg name="collision_margin" default="0.04" />
+
+  <!-- a static transform from the camera_optical_frame (left lense) to the xacro reference frame (camera mount) -->
+  <!-- Fits for N Series -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_model_broadcaster"
+    args="0.05 0.0 -0.05 0.0 0.0 0.0 1.0 $(arg camera)_optical_frame $(arg xacro_reference_frame)" />
+
+  <!-- Use the xacro and surpass parameters -->
+  <param name="ensenso_description"
+    command="xacro --inorder '$(find ensenso_description)/ensenso_N_Series.xacro'
+      corresponding_frame_name:=$(arg xacro_reference_frame)
+      camera:=$(arg camera)
+      margin:=$(arg collision_margin)" />
+
+  <!-- publish the transforms between the defined frames in the xacro above -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="camera_state_publisher" >
+    <remap from="robot_description" to="ensenso_description" />
+  </node>
+
+  <!-- Start the Ensenso Camera as Nodelet -->
+  <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera)" args="load ensenso_camera/nodelet /manager_" output="screen">
+    <param name="serial" type="string" value="$(arg camera)" />
+    <param name="target_frame" type="string" value="$(arg target_frame)" />
+  </node>
+</launch>

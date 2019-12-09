@@ -4,25 +4,32 @@
 
   <!-- Parameters -->
   <!-- Name of the camera -->
-  <xacro:property name="camera" value="X200_xFA"/>
+  <xacro:arg name="camera" default="X200_xFA" />
+  <xacro:property name="camera" value="$(arg camera)" />
 
   <!-- Enlarges the bounding box in all directions -->
-  <xacro:property name="margin" value="0.03"/>
+  <xacro:arg name="margin" default="0.03" />
+  <xacro:property name="margin" value="$(arg margin)" />
 
   <!-- Lens objective properties -->
-  <xacro:property name="lens_length" value="0.05"/>
-  <xacro:property name="lens_radius" value="0.02"/>
+  <xacro:arg name="lens_length" default="0.05" />
+  <xacro:property name="lens_length" value="$(arg lens_length)"/>
+  <xacro:arg name="lens_radius" default="0.02" />
+  <xacro:property name="lens_radius" value="$(arg lens_radius)"/>
 
   <!-- Projector objective properties -->
-  <xacro:property name="projector_length" value="0.05"/>
-  <xacro:property name="projector_radius" value="0.02"/>
+  <xacro:arg name="projector_length" default="0.05" />
+  <xacro:property name="projector_length" value="$(arg projector_length)" />
+  <xacro:arg name="projector_radius" default="0.02" />
+  <xacro:property name="projector_radius" value="$(arg projector_radius)" />
 
   <!-- Tf Frame, that references to the cameras mounting frame -->
-  <xacro:property name="corresponding_frame_name" value="world"/>
+  <xacro:arg name="corresponding_frame_name" default="world" />
+  <xacro:property name="corresponding_frame_name" value="$(arg corresponding_frame_name)" />
   <link name="${corresponding_frame_name}"/>
 
   <xacro:ensenso_X200_xFA_Series camera="${camera}" parent="${corresponding_frame_name}" margin="${margin}" radius_lens_sensor="${lens_radius}" length_lens_sensor="${lens_length}" radius_lens_projector="${projector_radius}" length_lens_projector="${projector_length}">
-    <origin xyz="0 0 1.0" rpy="0 0 0" />
+    <origin xyz="0 0 0.0" rpy="0 0 0" />
   </xacro:ensenso_X200_xFA_Series>
 </robot>
 

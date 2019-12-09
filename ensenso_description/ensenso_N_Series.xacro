@@ -4,17 +4,20 @@
 
   <!-- Parameters -->
   <!-- Name of the camera -->
-  <xacro:property name="camera" value="N35"/>
+  <xacro:arg name="camera" default="N35" />
+  <xacro:property name="camera" value="$(arg camera)" />
 
   <!-- Enlarges the bounding box in all directions -->
-  <xacro:property name="margin" value="0.03"/>
+  <xacro:arg name="margin" default="0.03" />
+  <xacro:property name="margin" value="$(arg margin)" />
 
   <!-- Tf Frame, that references to the cameras mounting frame -->
-  <xacro:property name="corresponding_frame_name" value="world"/>
+  <xacro:arg name="corresponding_frame_name" default="world" />
+  <xacro:property name="corresponding_frame_name" value="$(arg corresponding_frame_name)" />
   <link name="${corresponding_frame_name}"/>
 
   <xacro:ensenso_N_Series camera="${camera}" parent="${corresponding_frame_name}" margin="${margin}">
-    <origin xyz="0 0 1.0" rpy="0 0 0" />
+    <origin xyz="0 0 0.0" rpy="0 0 0" />
   </xacro:ensenso_N_Series>
 </robot>
 

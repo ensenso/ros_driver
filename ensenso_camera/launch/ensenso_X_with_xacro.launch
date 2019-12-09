@@ -1,0 +1,55 @@
+<launch>
+  <!-- In this example the camera has been workspace calibrated a priori -->
+  <!-- Camera Parameters -->
+  <arg name="camera" doc="Camera Serial" />
+  <arg name="target_frame" value="Workspace" />
+
+  <!-- Xacro Parameters -->
+  <!-- From that attachment frame the xacro builds the camera frames -->
+  <arg name="xacro_reference_frame" default="xacro_ref" />
+  <!-- Margin for the the collision model of the camera -->
+  <arg name="collision_margin" default="0.04" />
+
+  <!-- Lens objective properties -->
+  <arg name="lens_length" default="0.05" />
+  <arg name="lens_radius" default="0.02" />
+
+  <!-- Projector objective properties -->
+  <arg name="projector_length" default="0.05" />
+  <arg name="projector_radius" default="0.02" />
+
+  <arg name="type" doc="Can be X200, X200_xFA, X400, X400_xFA" default="X200" />
+  <!-- a static transform from the camera_optical_frame (left lense) to the xacro reference frame (camera mount) -->
+  <!-- Switch between baselines (200mm or 400mm in the models) -->
+  <!-- The first argument of (x-Value) differs between the different baselines -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_model_broadcaster"
+    args="0.1 0.036 0.033 0.7071068 0 0 0.7071068 $(arg camera)_optical_frame $(arg xacro_reference_frame)"
+    if="$(eval type == 'X200' or type == 'X200_xFA')"/> <!-- fits for 200 mm baseline -->
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_model_broadcaster"
+    args="0.2 0.036 0.033 0.7071068 0 0 0.7071068 $(arg camera)_optical_frame $(arg xacro_reference_frame)"
+    if="$(eval type == 'X400' or type == 'X400_xFA')"/> <!-- fits for 400 mm baseline -->
+
+  <!-- Use the xacro and surpass parameters  -->
+  <param name="ensenso_description"
+    command="xacro --inorder '$(find ensenso_description)/ensenso_$(arg type)_Series.xacro'
+      corresponding_frame_name:=$(arg xacro_reference_frame)
+      camera:=$(arg camera)
+      margin:=$(arg collision_margin)
+      projector_length:=$(arg projector_length)
+      projector_radius:=$(arg projector_radius)
+      lens_length:=$(arg lens_length)
+      lens_radius:=$(arg lens_radius) "/>
+
+  <!-- publish the transforms between the defined frames in the xacro above -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="camera_state_publisher" >
+    <remap from="robot_description" to="ensenso_description" />
+  </node>
+
+  <!-- Start the Ensenso Camera as Nodelet -->
+  <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera)" args="load ensenso_camera/nodelet /manager_" output="screen">
+    <param name="serial" type="string" value="$(arg camera)" />
+    <param name="target_frame" type="string" value="$(arg target_frame)" />
+  </node>
+</launch>
