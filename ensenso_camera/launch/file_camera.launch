@@ -1,10 +1,8 @@
 <launch>
-  <arg name="camera" doc="serial of camera" />
-  <arg name="target_frame" value="AnFrame" />
-
-  <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera)" args="load ensenso_camera/nodelet /manager_" output="screen">
-    <param name="serial" type="string" value="$(arg camera)" />
-    <param name="target_frame" type="string" value="$(arg target_frame)" />
+  <arg name="serial" doc="The serial number of the created file camera."/>
+  <arg name="path" doc="The path that contains the camera images."/>
+  <node pkg="ensenso_camera" type="ensenso_camera_node" name="ensenso_camera_node">
+    <param name="serial" value="$(arg serial)"/>
+    <param name="file_camera_path" value="$(arg path)"/>
   </node>
 </launch>
