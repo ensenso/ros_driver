@@ -1633,45 +1633,55 @@ void Camera::loadParameterSet(std::string name, ProjectorState projector)
 ros::Time Camera::captureLinkedCameraImage(ensenso_camera_msgs::RequestDataResult* result, bool logTime) 
 {
 
-    auto monoCaptureStartTime = std::chrono::high_resolution_clock::now();
-
-    // For the RGB image turn off the lights and projector
-    NxLibCommand capture(cmdCapture);
-    cameraNode[itmParameters][itmCapture][itmProjector] = false;
-    cameraNode[itmParameters][itmCapture][itmFrontLight] = false;
-    capture.parameters()[itmCameras] = linkedMonoCamera.serial;
-    capture.execute();
-
-    auto monoPublishStartTime = std::chrono::high_resolution_clock::now();
-    // Once image is captured publish it right away     
-    int width, height;
-    double timestamp;
-    std::vector<float> data;
-    cv::Mat linkedRgbImage;
-
-    linkedMonoCamera.node[itmImages][itmRaw].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
-    imageFromNxLibNodeToOpencvMat(linkedRgbImage, linkedMonoCamera.node[itmImages][itmRaw]);
-
-    // create a header
-    std_msgs::Header header;
-    header.frame_id = linkedCameraFrame;
-    header.stamp    = ros::Time::now();
-
-    // prepare message
-    cv_bridge::CvImage cv_image(
-      header,
-      sensor_msgs::image_encodings::BGR8,
-      linkedRgbImage
-    );
-
-    // publish the image
-    result->linked_camera_rgb_image = *cv_image.toImageMsg();
-    result->success = true;
-
-    if(logTime)
+    try
     {
-      ROS_INFO("Capture linked cam image %f", std::chrono::duration<double>(monoPublishStartTime-monoCaptureStartTime ).count());
-      ROS_INFO("Set action result %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
+
+      auto monoCaptureStartTime = std::chrono::high_resolution_clock::now();
+
+
+
+      // For the RGB image turn off the lights and projector
+      NxLibCommand capture(cmdCapture);
+      cameraNode[itmParameters][itmCapture][itmProjector] = false;
+      cameraNode[itmParameters][itmCapture][itmFrontLight] = false;
+      capture.parameters()[itmCameras] = linkedMonoCamera.serial;
+      capture.execute();
+
+      auto monoPublishStartTime = std::chrono::high_resolution_clock::now();
+      // Once image is captured publish it right away     
+      int width, height;
+      double timestamp;
+      std::vector<float> data;
+      cv::Mat linkedRgbImage;
+
+      linkedMonoCamera.node[itmImages][itmRaw].getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
+      imageFromNxLibNodeToOpencvMat(linkedRgbImage, linkedMonoCamera.node[itmImages][itmRaw]);
+
+      // create a header
+      std_msgs::Header header;
+      header.frame_id = linkedCameraFrame;
+      header.stamp    = ros::Time::now();
+
+      // prepare message
+      cv_bridge::CvImage cv_image(
+        header,
+        sensor_msgs::image_encodings::BGR8,
+        linkedRgbImage
+      );
+
+      // publish the image
+      result->linked_camera_rgb_image = *cv_image.toImageMsg();
+      result->success = true;
+
+      if(logTime)
+      {
+        ROS_INFO("Capture linked cam image %f", std::chrono::duration<double>(monoPublishStartTime-monoCaptureStartTime ).count());
+        ROS_INFO("Set action result %f", std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - monoPublishStartTime ).count());
+      }
+
+    }
+    catch (NxLibException& e) { // Display NxLib API exceptions, if any
+    printf("An NxLib API error with code %d (%s) occurred while accessing item %s.\n", e.getErrorCode(), e.getErrorText().c_str(), e.getItemPath().c_str());
     }
 
     return timestampFromNxLibNode(linkedMonoCamera.node[itmImages][itmRaw]);
