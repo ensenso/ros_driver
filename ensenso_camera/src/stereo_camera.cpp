@@ -364,8 +364,10 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       }
       else
       {
-        ROS_WARN_ONCE("Depth images are not yet supported for linked and multi camera usage. Only request depth images "
-                      "when using one stereo camera only.");
+        ROS_WARN_ONCE("Currently it is not possible to determine the depth map once the stereo camera is extrinsically "
+                      "calibrated because the point cloud is then transformed internally. If you want to have a depth "
+                      "map, the camera must not be extrinsically calibrated (workspace-/ hand-eye calibration), or "
+                      "have a link to another camera.");
       }
     }
   }
