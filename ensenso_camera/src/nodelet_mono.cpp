@@ -69,13 +69,19 @@ void NodeletMono::onInit()
 
   if (serial.empty())
   {
-    // No serial specified. Try to use the first camera in the tree.
     NxLibItem cameras = NxLibItem()[itmCameras][itmBySerialNo];
-    if (cameras.count() > 0)
+    // Try to find the first monocular camera.
+    bool foundAppropriateCamera = false;
+    for (int i = 0; i < cameras.count(); i++)
     {
-      serial = cameras[0].name();
+      if (cameras[i][itmType].exists() && cameras[i][itmType].asString() == valMonocular)
+      {
+        foundAppropriateCamera = true;
+        serial = cameras[i].name();
+        break;
+      }
     }
-    else
+    if (!foundAppropriateCamera)
     {
       NODELET_ERROR("Could not find any camera. Shutting down.");
       nxLibFinalize();
