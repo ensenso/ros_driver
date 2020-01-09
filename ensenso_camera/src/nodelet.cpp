@@ -115,8 +115,11 @@ void Nodelet::onInit()
     linkFrame = cameraFrame;
   }
 
+  int captureTimeout;
+  nhLocal.param("capture_timeout", captureTimeout, 0);
+
   camera = make_unique<StereoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
-                                     wristFrame, linkFrame);
+                                     wristFrame, linkFrame, captureTimeout);
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");

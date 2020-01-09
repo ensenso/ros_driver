@@ -66,9 +66,13 @@ private:
   std::string handEyeCalibrationPatternBuffer;
   std::vector<tf2::Transform> handEyeCalibrationRobotPoses;
 
+  // Timeout, in milliseconds, used for capture commands. If <= 0, default timeout is used.
+  int captureTimeout;
+
 public:
   StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
-               std::string targetFrame, std::string robotFrame, std::string wristFrame, std::string linkFrame);
+               std::string targetFrame, std::string robotFrame, std::string wristFrame, std::string linkFrame,
+               int captureTimeout);
 
   bool open() override;
 
