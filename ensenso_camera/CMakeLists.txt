@@ -83,6 +83,7 @@ add_library(
   src/image_utilities.cpp
   src/point_cloud_utilities.cpp
   src/pose_utilities.cpp
+  src/virtual_object_handler.cpp
 )
 target_link_libraries(
   ensenso_camera_nodelet

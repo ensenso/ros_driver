@@ -2,6 +2,8 @@
 
 #include "ensenso_camera/camera.h"
 
+#include <ensenso_camera/virtual_object_handler.h>
+
 #include <ensenso_camera_msgs/RequestDataAction.h>
 #include <ensenso_camera_msgs/LocatePatternAction.h>
 #include <ensenso_camera_msgs/ProjectPatternAction.h>
@@ -69,10 +71,14 @@ private:
   // Timeout, in milliseconds, used for capture commands. If <= 0, default timeout is used.
   int captureTimeout;
 
+  // Handler for virtual objects.
+  // If set, will update the 'Objects' item based on the current pose of the camera, before each capture.
+  std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler;
+
 public:
   StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
                std::string targetFrame, std::string robotFrame, std::string wristFrame, std::string linkFrame,
-               int captureTimeout);
+               int captureTimeout, std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler=nullptr);
 
   bool open() override;
 
