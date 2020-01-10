@@ -14,11 +14,12 @@
 
 StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed,
                            std::string cameraFrame, std::string targetFrame, std::string robotFrame,
-                           std::string wristFrame, std::string linkFrame)
+                           std::string wristFrame, std::string linkFrame, int captureTimeout)
   : Camera(nh, std::move(serial), std::move(fileCameraPath), fixed, std::move(cameraFrame), std::move(targetFrame),
            std::move(linkFrame))
   , robotFrame(std::move(robotFrame))
   , wristFrame(std::move(wristFrame))
+  , captureTimeout(captureTimeout)
 {
   leftCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
@@ -1143,6 +1144,10 @@ ros::Time StereoCamera::capture() const
 
   NxLibCommand capture(cmdCapture, serial);
   capture.parameters()[itmCameras] = serial;
+  if (captureTimeout > 0)
+  {
+    capture.parameters()[itmTimeout] = captureTimeout;
+  }
   capture.execute();
 
   NxLibItem imageNode = cameraNode[itmImages][itmRaw];
