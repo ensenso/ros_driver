@@ -27,23 +27,23 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string f
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
 
   fitPrimitiveServer =
-      make_unique<FitPrimitiveServer>(nh, "fit_primitive", boost::bind(&StereoCamera::onFitPrimitive, this, _1));
+      ::make_unique<FitPrimitiveServer>(nh, "fit_primitive", boost::bind(&StereoCamera::onFitPrimitive, this, _1));
   setParameterServer =
-      make_unique<SetParameterServer>(nh, "set_parameter", boost::bind(&StereoCamera::onSetParameter, this, _1));
+      ::make_unique<SetParameterServer>(nh, "set_parameter", boost::bind(&StereoCamera::onSetParameter, this, _1));
 
   requestDataServer =
-      make_unique<RequestDataServer>(nh, "request_data", boost::bind(&StereoCamera::onRequestData, this, _1));
+      ::make_unique<RequestDataServer>(nh, "request_data", boost::bind(&StereoCamera::onRequestData, this, _1));
   locatePatternServer =
-      make_unique<LocatePatternServer>(nh, "locate_pattern", boost::bind(&StereoCamera::onLocatePattern, this, _1));
+      ::make_unique<LocatePatternServer>(nh, "locate_pattern", boost::bind(&StereoCamera::onLocatePattern, this, _1));
   projectPatternServer =
-      make_unique<ProjectPatternServer>(nh, "project_pattern", boost::bind(&StereoCamera::onProjectPattern, this, _1));
-  calibrateHandEyeServer = make_unique<CalibrateHandEyeServer>(
+      ::make_unique<ProjectPatternServer>(nh, "project_pattern", boost::bind(&StereoCamera::onProjectPattern, this, _1));
+  calibrateHandEyeServer = ::make_unique<CalibrateHandEyeServer>(
       nh, "calibrate_hand_eye", boost::bind(&StereoCamera::onCalibrateHandEye, this, _1));
-  calibrateWorkspaceServer = make_unique<CalibrateWorkspaceServer>(
+  calibrateWorkspaceServer = ::make_unique<CalibrateWorkspaceServer>(
       nh, "calibrate_workspace", boost::bind(&StereoCamera::onCalibrateWorkspace, this, _1));
-  telecentricProjectionServer = make_unique<TelecentricProjectionServer>(
+  telecentricProjectionServer = ::make_unique<TelecentricProjectionServer>(
       nh, "project_telecentric", boost::bind(&StereoCamera::onTelecentricProjection, this, _1));
-  texturedPointCloudServer = make_unique<TexturedPointCloudServer>(
+  texturedPointCloudServer = ::make_unique<TexturedPointCloudServer>(
       nh, "texture_point_cloud", boost::bind(&StereoCamera::onTexturedPointCloud, this, _1));
 
   image_transport::ImageTransport imageTransport(nh);
@@ -1043,12 +1043,12 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
     return;
   }
 
-  double far = goal->far_plane ? goal->far_plane : 10000.;
-  double near = goal->near_plane ? goal->near_plane : -10000.;
+  double farPlane = goal->far_plane ? goal->far_plane : 10000.;
+  double nearPlane = goal->near_plane ? goal->near_plane : -10000.;
   bool useOpenGL = goal->use_opengl == 1;
   bool withTexture = true;
 
-  RenderPointMapParamsProjection params(useOpenGL, far, near, withTexture);
+  RenderPointMapParamsProjection params(useOpenGL, farPlane, nearPlane, withTexture);
 
   NxLibCommand renderPointMap(cmdRenderPointMap, serial);
   for (int i = 0; i < static_cast<int>(goal->serials.size()); i++)

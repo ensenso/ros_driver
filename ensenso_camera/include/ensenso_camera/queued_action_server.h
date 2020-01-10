@@ -34,7 +34,7 @@ public:
                      bool autoStart = false)
     : nodeHandle(nodeHandle), callback(callback)
   {
-    actionServer = make_unique<actionlib::ActionServer<ActionSpec>>(nodeHandle, name, false);
+    actionServer = ::make_unique<actionlib::ActionServer<ActionSpec>>(nodeHandle, name, false);
     actionServer->registerGoalCallback(boost::bind(&QueuedActionServer::onGoalReceived, this, _1));
     actionServer->registerCancelCallback(boost::bind(&QueuedActionServer::onCancelReceived, this, _1));
 
