@@ -808,10 +808,13 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     ros::Rate waitingRate(5);
     while (!calibrateHandEye.finished())
     {
-      ensenso_camera_msgs::CalibrateHandEyeFeedback feedback;
-      feedback.number_of_iterations = calibrateHandEye.result()[itmProgress][itmIterations].asInt();
-      feedback.residual = getCalibrationResidual(calibrateHandEye.result()[itmProgress]);
-      calibrateHandEyeServer->publishFeedback(feedback);
+      if (calibrateHandEye.result()[itmProgress].exists())
+      {
+        ensenso_camera_msgs::CalibrateHandEyeFeedback feedback;
+        feedback.number_of_iterations = calibrateHandEye.result()[itmProgress][itmIterations].asInt();
+        feedback.residual = getCalibrationResidual(calibrateHandEye.result()[itmProgress]);
+        calibrateHandEyeServer->publishFeedback(feedback);
+      }
 
       if (calibrateHandEyeServer->isPreemptRequested())
       {
