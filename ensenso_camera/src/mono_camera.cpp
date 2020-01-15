@@ -12,9 +12,9 @@ MonoCamera::MonoCamera(ros::NodeHandle nh, std::string serial, std::string fileC
   rectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
 
   requestDataServer =
-      make_unique<RequestDataMonoServer>(nh, "request_data", boost::bind(&MonoCamera::onRequestData, this, _1));
+      ::make_unique<RequestDataMonoServer>(nh, "request_data", boost::bind(&MonoCamera::onRequestData, this, _1));
   locatePatternServer =
-      make_unique<LocatePatternMonoServer>(nh, "locate_pattern", boost::bind(&MonoCamera::onLocatePattern, this, _1));
+      ::make_unique<LocatePatternMonoServer>(nh, "locate_pattern", boost::bind(&MonoCamera::onLocatePattern, this, _1));
 
   image_transport::ImageTransport imageTransport(nh);
   rawImagePublisher = imageTransport.advertiseCamera("raw/image", 1);

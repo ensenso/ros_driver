@@ -3,7 +3,13 @@ project(ensenso_camera)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
+
+if(UNIX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
+endif()
+if(WIN32)
+  add_definitions("-DWIN32_LEAN_AND_MEAN")
+endif()
 
 find_package(Boost 1.58.0 REQUIRED)
 find_package(OpenCV REQUIRED)

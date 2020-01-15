@@ -125,7 +125,7 @@ void NodeletMono::onInit()
     linkFrame = cameraFrame;
   }
 
-  camera = make_unique<MonoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, linkFrame);
+  camera = ::make_unique<MonoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, linkFrame);
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");

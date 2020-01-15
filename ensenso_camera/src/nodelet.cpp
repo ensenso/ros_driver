@@ -118,7 +118,7 @@ void Nodelet::onInit()
   int captureTimeout;
   nhLocal.param("capture_timeout", captureTimeout, 0);
 
-  camera = make_unique<StereoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
+  camera = ::make_unique<StereoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
                                      wristFrame, linkFrame, captureTimeout);
   if (!camera->open())
   {
