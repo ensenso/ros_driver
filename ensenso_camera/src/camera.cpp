@@ -266,15 +266,15 @@ void Camera::updateGlobalLink(ros::Time time, std::string frame, bool useCachedT
   // Transformation are represented in the NxLib as follows.
   // The camera's link node contains the calibration data from e.g. the hand
   // eye calibration. This is always used when it is present.
-  // The transformation between the camera frame and the target frame (in
-  // which the data is returned) is fetched from TF and written to a link node
-  // of the NxLib. When the target frame is different from the camera's own
-  // frame, we set the camera's link target to this link node.
+  // The transformation between the link frame and the target frame (in
+  // which the data is returned) is fetched from TF and written to a global link node
+  // of the NxLib.
+  // The link in the camera node has to reference this global link, if it exists. (e.g. when the linkFrame
+  // is different from the targetFrame)
 
-  if (cameraFrame == frame || linkFrame == frame)
+  if (linkFrame == frame)
   {
-    // The camera frame is the target frame already. No need to transform
-    // anything in the NxLib.
+    // The frame is the target frame already. So the camera does not need a reference to a global link.
     cameraNode[itmLink][itmTarget] = "";
     return;
   }
