@@ -266,15 +266,15 @@ void Camera::updateGlobalLink(ros::Time time, std::string frame, bool useCachedT
   // Transformation are represented in the NxLib as follows.
   // The camera's link node contains the calibration data from e.g. the hand
   // eye calibration. This is always used when it is present.
-  // The transformation between the camera frame and the target frame (in
-  // which the data is returned) is fetched from TF and written to a link node
-  // of the NxLib. When the target frame is different from the camera's own
-  // frame, we set the camera's link target to this link node.
+  // The transformation between the link frame and the target frame (in
+  // which the data is returned) is fetched from TF and written to a global link node
+  // of the NxLib.
+  // The link in the camera node has to reference this global link, if it exists. (e.g. when the linkFrame
+  // is different from the targetFrame)
 
-  if (cameraFrame == frame)
+  if (linkFrame == frame)
   {
-    // The camera frame is the target frame already. No need to transform
-    // anything in the NxLib.
+    // The frame is the target frame already. So the camera does not need a reference to a global link.
     cameraNode[itmLink][itmTarget] = "";
     return;
   }
@@ -282,27 +282,22 @@ void Camera::updateGlobalLink(ros::Time time, std::string frame, bool useCachedT
   cameraNode[itmLink][itmTarget] = TARGET_FRAME_LINK + "_" + serial;
 
   // Update the transformation to the target frame in the NxLib according to
-  // the current information from TF. Only if the link frame and target frame differs. Otherwise the transformation will
-  // be doubled. If they're the same, the global Link must be the identity transform and the tf will be in the camera
-  // link. (camera -> link in Nxlib or link -> camera in ROS).
-  if (frame != linkFrame)
+  // the current information from TF. Only if the link frame and target frame differs.
+  geometry_msgs::TransformStamped transform;
+  if (useCachedTransformation && transformationCache.count(frame) != 0)
   {
-    geometry_msgs::TransformStamped transform;
-    if (useCachedTransformation && transformationCache.count(frame) != 0)
-    {
-      transform = transformationCache[frame];
-    }
-    else
-    {
-      transform = tfBuffer.lookupTransform(linkFrame, frame, time, ros::Duration(TRANSFORMATION_REQUEST_TIMEOUT));
-      transformationCache[frame] = transform;
-    }
-    tf2::Transform tfTrafo;
-    tf2::convert(transform.transform, tfTrafo);
-    NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial].setNull();
-    NxLibItem()[itmLinks].setNull();
-    writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial]);
+    transform = transformationCache[frame];
   }
+  else
+  {
+    transform = tfBuffer.lookupTransform(linkFrame, frame, time, ros::Duration(TRANSFORMATION_REQUEST_TIMEOUT));
+    transformationCache[frame] = transform;
+  }
+  tf2::Transform tfTrafo;
+  tf2::convert(transform.transform, tfTrafo);
+  NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial].setNull();
+  NxLibItem()[itmLinks].setNull();
+  writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial]);
 }
 
 std::vector<geometry_msgs::TransformStamped> Camera::estimatePatternPoses(ros::Time imageTimestamp,
