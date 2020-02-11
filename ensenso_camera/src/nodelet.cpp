@@ -22,6 +22,7 @@ void Nodelet::onInit()
   catch (NxLibException& e)
   {
     NODELET_ERROR("Error while initializing the NxLib. Shutting down.");
+    printf("An NxLib API error with code %d (%s) occurred while accessing item %s.\n", e.getErrorCode(), e.getErrorText().c_str(), e.getItemPath().c_str());
     exit(EXIT_FAILURE);
   }
 
