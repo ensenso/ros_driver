@@ -809,7 +809,7 @@ void Camera::handleLinkedCameraRequestData(ensenso_camera_msgs::RequestDataGoalC
   } 
 
   // Capture stereo images and compute disparity map 
-  else if(goal->request_disparity_map)
+  if(goal->request_disparity_map)
   {
     
     // Capture stereo image
