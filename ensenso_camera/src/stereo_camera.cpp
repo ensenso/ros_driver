@@ -14,12 +14,14 @@
 
 StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed,
                            std::string cameraFrame, std::string targetFrame, std::string robotFrame,
-                           std::string wristFrame, std::string linkFrame, int captureTimeout)
+                           std::string wristFrame, std::string linkFrame, int captureTimeout, 
+                           std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler)
   : Camera(nh, std::move(serial), std::move(fileCameraPath), fixed, std::move(cameraFrame), std::move(targetFrame),
            std::move(linkFrame))
   , robotFrame(std::move(robotFrame))
   , wristFrame(std::move(wristFrame))
   , captureTimeout(captureTimeout)
+  , virtualObjectHandler(std::move(virtualObjectHandler))
 {
   leftCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
@@ -1143,6 +1145,19 @@ void StereoCamera::loadParameterSet(std::string name, ProjectorState projector)
 
 ros::Time StereoCamera::capture() const
 {
+  // Update virtual objects. Ignore failures with a simple warning.
+  if (virtualObjectHandler)
+  {
+    try
+    {
+      virtualObjectHandler->updateObjectLinks();
+    }
+    catch (const std::exception &e)
+    {
+      ROS_WARN("Unable to update virtual objects. Error: %s", e.what());
+    }
+  }
+
   ROS_DEBUG("Capturing an image...");
 
   NxLibCommand capture(cmdCapture, serial);

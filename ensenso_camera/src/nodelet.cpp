@@ -6,6 +6,8 @@
 #include <pluginlib/class_list_macros.h>
 #include <string>
 
+#include <fstream>
+
 namespace ensenso_camera
 {
 void Nodelet::onInit()
@@ -118,8 +120,28 @@ void Nodelet::onInit()
   int captureTimeout;
   nhLocal.param("capture_timeout", captureTimeout, 0);
 
+  // Load virtual objects
+  std::unique_ptr<VirtualObjectHandler> virtualObjectHandler;
+  std::string objectsFile;
+  if (nhLocal.getParam("objects_file", objectsFile) && !objectsFile.empty())
+  {
+    // Get objects frame, default to target
+    std::string objectsFrame = targetFrame;
+    nhLocal.getParam("objects_frame", objectsFrame);
+
+    NODELET_DEBUG("Loading virtual objects...");
+    try
+    {
+      virtualObjectHandler = make_unique<VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame);
+    }
+    catch (const std::exception &e)
+    {
+      NODELET_WARN("Unable to load virtual objects file '%s'. Error: %s", objectsFile.c_str(), e.what());
+    }
+  }
+
   camera = ::make_unique<StereoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
-                                     wristFrame, linkFrame, captureTimeout);
+                                     wristFrame, linkFrame, captureTimeout, std::move(virtualObjectHandler));
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");
