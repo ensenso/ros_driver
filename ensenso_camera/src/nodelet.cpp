@@ -132,7 +132,7 @@ void Nodelet::onInit()
     NODELET_DEBUG("Loading virtual objects...");
     try
     {
-      virtualObjectHandler = make_unique<VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame);
+      virtualObjectHandler = ::make_unique<VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame);
     }
     catch (const std::exception &e)
     {
