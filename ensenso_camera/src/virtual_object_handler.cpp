@@ -8,6 +8,8 @@
 
 #include <tf2/LinearMath/Quaternion.h>
 
+#include <visualization_msgs/MarkerArray.h>
+
 #include <nxLib.h>
 
 using namespace ensenso_camera;
@@ -26,11 +28,133 @@ std::string readFile(const std::string& filename)
   buffer << file.rdbuf();
   return buffer.str();
 }
+
+/// Class responsible for publishing NxLib virtual objects as ROS visualization_msgs::MarkerArray
+struct VirtualObjectMarkerPublisher
+{
+  VirtualObjectMarkerPublisher(const std::string& topic, double publishRate, const NxLibItem& objects,
+                               const std::string& frame, std::atomic_bool& stop_)
+    : rate(publishRate), stop(stop_)
+  {
+    // Create output topic
+    publisher = m_node_handle.advertise<visualization_msgs::MarkerArray>(topic, 1);
+
+    // Collect markers
+    for (int i = 0; i < objects.count(); ++i)
+    {
+      auto& object = objects[i];
+
+      visualization_msgs::Marker marker;
+      marker.ns = ros::this_node::getName();
+      marker.id = i;
+      marker.header.stamp = ros::Time::now();
+      marker.header.frame_id = frame;
+      marker.action = visualization_msgs::Marker::MODIFY;  // Note: ADD = MODIFY
+
+      // Set color
+      const auto color = object[itmLighting][itmColor];
+      if (color.exists() && color.count() == 3)
+      {
+        marker.color.r = static_cast<float>(color[0].asDouble());
+        marker.color.g = static_cast<float>(color[1].asDouble());
+        marker.color.b = static_cast<float>(color[2].asDouble());
+        marker.color.a = 1.0f;
+      }
+      else
+      {
+        // Default color (gray)
+        marker.color.r = 0.5;
+        marker.color.g = 0.5;
+        marker.color.b = 0.5;
+        marker.color.a = 1.0;
+      }
+
+      // Set pose
+      marker.pose = poseFromTransform(transformFromNxLib(object[itmLink]));
+
+      auto type = object[itmType];
+      auto filename = object[itmFilename];
+
+      // Set type and deal with object-specific properties
+      if (filename.exists())
+      {
+        marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+        marker.mesh_resource = "file://" + filename.asString();
+
+        // Scale from mm to m
+        marker.scale.x = 1.0 / 1000.0;
+        marker.scale.y = 1.0 / 1000.0;
+        marker.scale.z = 1.0 / 1000.0;
+      }
+      else if (type.asString() == valSphere)
+      {
+        marker.type = visualization_msgs::Marker::SPHERE;
+
+        // Sphere scale is diameter in meters
+        marker.scale.x = object[itmRadius].asDouble() * 2.0 / 1000.0;
+        marker.scale.y = marker.scale.x;
+        marker.scale.z = marker.scale.x;
+      }
+      else if (type.asString() == valCylinder)
+      {
+        marker.type = visualization_msgs::Marker::CYLINDER;
+
+        /// Cylinder scale x/y is diameter in meters, z is height in meters.
+        marker.scale.x = object[itmRadius].asDouble() * 2.0 / 1000.0;
+        marker.scale.y = marker.scale.x;
+        marker.scale.z = object[itmHeight].asDouble() / 1000.0;
+
+        /// Cylinders in NxLib start at the base.
+        /// Cylinders in ROS start at the centroid.
+        // marker.pose.position.z += marker.scale.z / 2.0;
+      }
+      else if (type.asString() == valCube)
+      {
+        marker.type = visualization_msgs::Marker::CUBE;
+
+        marker.scale.x = object[itmWidth].asDouble() / 1000.0;
+        marker.scale.y = object[itmWidth].asDouble() / 1000.0;
+        marker.scale.z = object[itmWidth].asDouble() / 1000.0;
+      }
+      else if (type.asString() == valCuboid)
+      {
+        marker.type = visualization_msgs::Marker::CUBE;
+
+        marker.scale.x = object[itmWidth].asDouble() / 1000.0;
+        marker.scale.z = object[itmHeight].asDouble() / 1000.0;
+        marker.scale.y = object[itmDepth].asDouble() / 1000.0;
+      }
+      else
+      {
+        // Unsupported type, skip it
+        continue;
+      }
+
+      markers.markers.push_back(marker);
+    }
+  }
+
+  void run()
+  {
+    while (ros::ok() && !stop)
+    {
+      publisher.publish(markers);
+      rate.sleep();
+    }
+  }
+
+  ros::NodeHandle m_node_handle;
+  ros::Publisher publisher;
+  ros::Rate rate;
+  visualization_msgs::MarkerArray markers;
+  std::atomic_bool& stop;
+};
 }  // namespace
 
 VirtualObjectHandler::VirtualObjectHandler(const std::string& filename, const std::string& objectsFrame,
-                                           const std::string& cameraFrame)
-  : objectsFrame(objectsFrame), cameraFrame(cameraFrame)
+                                           const std::string& linkFrame, const std::string& markerTopic,
+                                           double markerPublishRate)
+  : objectsFrame(objectsFrame), linkFrame(linkFrame)
 {
   // Read the file contents and assign it to the objects tag
   auto objects = NxLibItem{ itmObjects };
@@ -40,6 +164,25 @@ VirtualObjectHandler::VirtualObjectHandler(const std::string& filename, const st
   for (int i = 0; i < objects.count(); ++i)
   {
     originalTransforms.push_back(transformFromNxLib(objects[i][itmLink]));
+  }
+
+  // Create publisher thread
+  if (!markerTopic.empty())
+  {
+    markerThread = std::thread([=]() {
+      VirtualObjectMarkerPublisher publisher{ markerTopic, markerPublishRate, objects, objectsFrame, stopMarkerThread };
+      publisher.run();
+    });
+  }
+}
+
+VirtualObjectHandler::~VirtualObjectHandler()
+{
+  stopMarkerThread = true;
+
+  if (markerThread.joinable())
+  {
+    markerThread.join();
   }
 }
 
@@ -55,7 +198,7 @@ void VirtualObjectHandler::updateObjectLinks()
   tf2::Transform cameraTransform;
   try
   {
-    cameraTransform = fromMsg(tfBuffer.lookupTransform(cameraFrame, objectsFrame, ros::Time(0)).transform);
+    cameraTransform = fromMsg(tfBuffer.lookupTransform(linkFrame, objectsFrame, ros::Time(0)).transform);
   }
   catch (const tf2::TransformException& e)
   {

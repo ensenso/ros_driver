@@ -70,11 +70,18 @@ CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const&
       std::string objectsFrame = targetFrame;
       nh.getParam("objects_frame", objectsFrame);
 
+      // Get virtual object marker publish settings.
+      // Default to empty topic, meaning no markers are published.
+      std::string markerTopic;
+      double markerRate = 1;
+      nh.getParam("visualization_marker_topic", markerTopic);
+      nh.getParam("visualization_marker_rate", markerRate);
+
       ROS_DEBUG("Loading virtual objects...");
       try
       {
-        virtualObjectHandler =
-            ::make_unique<ensenso_camera::VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame);
+        virtualObjectHandler = ::make_unique<ensenso_camera::VirtualObjectHandler>(objectsFile, objectsFrame, linkFrame,
+                                                                                   markerTopic, markerRate);
       }
       catch (std::exception const& e)
       {
