@@ -44,7 +44,7 @@ before_install:
   - rosdep update --include-eol-distros  # Support EOL distros.
   - sudo apt-get install python-catkin-tools
 
-  if: dist=xenial
+  # Xenial (or pcl on xenial) is missing vtk libraries
   - sudo apt install libvtk6.2 -y
 
   # Install EnsensoSDK
