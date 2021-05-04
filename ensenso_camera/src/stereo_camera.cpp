@@ -354,6 +354,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       if (cameraFrame == targetFrame)
       {
         auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], targetFrame);
+        leftRectifiedCameraInfo->header.stamp = depthImage->header.stamp;
 
         if (goal->include_results_in_response)
         {
