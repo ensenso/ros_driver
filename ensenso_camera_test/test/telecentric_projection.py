@@ -93,8 +93,8 @@ class TestTelecentricProjection(unittest.TestCase):
         # Message to cv image
         cv_image = bridge.imgmsg_to_cv2(image, desired_encoding="passthrough")
 
-        # Convert it to a mono image via numpy
-        mono8 = np.uint8(cv_image)
+        # Convert it to a mono image (expressed in millimeters) via numpy
+        mono8 = np.uint8(cv_image * 1000.0)
         cv.imwrite(PATH + "/image/mono8.jpg", mono8)
 
         # Grey image to binary image
