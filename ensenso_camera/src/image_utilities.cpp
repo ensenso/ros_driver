@@ -173,6 +173,9 @@ sensor_msgs::ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string
   cv::Mat depthImage;
   cv::extractChannel(pointMap, depthImage, 2);
 
+  // convert units from millimeters to meters
+  depthImage /= 1000.0;
+
   // convert cv mat to ros image
   cv_bridge::CvImage out_msg;
   out_msg.header.stamp.fromSec(timestamp - NXLIB_TIMESTAMP_OFFSET);
