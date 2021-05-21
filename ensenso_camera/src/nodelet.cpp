@@ -129,10 +129,18 @@ void Nodelet::onInit()
     std::string objectsFrame = targetFrame;
     nhLocal.getParam("objects_frame", objectsFrame);
 
+    // Get virtual object marker publish settings.
+    // Default to empty topic, meaning no markers are published.
+    std::string markerTopic;
+    double markerRate = 1;
+    nhLocal.getParam("visualization_marker_topic", markerTopic);
+    nhLocal.getParam("visualization_marker_rate", markerRate);
+
     NODELET_DEBUG("Loading virtual objects...");
     try
     {
-      virtualObjectHandler = ::make_unique<VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame);
+      virtualObjectHandler = ::make_unique<VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame,
+                                                                 markerTopic, markerRate);
     }
     catch (const std::exception &e)
     {
