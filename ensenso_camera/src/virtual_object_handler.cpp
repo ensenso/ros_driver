@@ -177,6 +177,11 @@ VirtualObjectHandler::VirtualObjectHandler(const std::string &filename, const st
 
 VirtualObjectHandler::~VirtualObjectHandler() {
   stopMarkerThread = true;
+
+  if (markerThread.joinable())
+  {
+    markerThread.join();
+  }
 }
 
 void VirtualObjectHandler::updateObjectLinks() {
