@@ -36,8 +36,7 @@ namespace {
         : rate(publishRate), stop(stop_)
       {
         // Create output topic
-        ros::NodeHandle node;
-        publisher = node.advertise<visualization_msgs::MarkerArray>(topic, 1);
+        publisher = m_node_handle.advertise<visualization_msgs::MarkerArray>(topic, 1);
 
         // Collect markers
         for (int i = 0; i < objects.count(); ++i)
@@ -143,6 +142,7 @@ namespace {
         }
       }
 
+      ros::NodeHandle m_node_handle;
       ros::Publisher publisher;
       ros::Rate rate;
       visualization_msgs::MarkerArray markers;
