@@ -138,10 +138,10 @@ namespace {
     };
 }
 
-VirtualObjectHandler::VirtualObjectHandler(const std::string &filename, const std::string &objectsFrame, const std::string &cameraFrame,
+VirtualObjectHandler::VirtualObjectHandler(const std::string &filename, const std::string &objectsFrame, const std::string &linkFrame,
                                            const std::string &markerTopic, double markerPublishRate) :
     objectsFrame(objectsFrame),
-    cameraFrame(cameraFrame)
+    linkFrame(linkFrame)
 {
     nxLibInitialize(false);
 
@@ -178,7 +178,7 @@ void VirtualObjectHandler::updateObjectLinks() {
     tf2::Transform cameraPose;
     try
     {
-        cameraPose = fromMsg(tfBuffer.lookupTransform(cameraFrame, objectsFrame, ros::Time(0)).transform);
+        cameraPose = fromMsg(tfBuffer.lookupTransform(linkFrame, objectsFrame, ros::Time(0)).transform);
     }
     catch (const tf2::TransformException& e)
     {
