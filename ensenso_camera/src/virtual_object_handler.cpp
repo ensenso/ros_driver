@@ -43,7 +43,6 @@ namespace {
         for (int i = 0; i < objects.count(); ++i)
         {
           auto& object = objects[i];
-          auto type = object[itmType];
 
           visualization_msgs::Marker marker;
           marker.ns = ros::this_node::getName();
@@ -73,8 +72,21 @@ namespace {
           // Set pose
           marker.pose = poseFromTransform(poseFromNxLib(object[itmLink]));
 
+          auto type = object[itmType];
+          auto filename = object[itmFilename];
+
           // Set type and deal with object-specific properties
-          if (type.asString() == valSphere)
+          if (filename.exists())
+          {
+            marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+            marker.mesh_resource = "file://" + filename.asString();
+
+            // Scale from mm to m
+            marker.scale.x = 1.0 / 1000.0;
+            marker.scale.y = 1.0 / 1000.0;
+            marker.scale.z = 1.0 / 1000.0;
+          }
+          else if (type.asString() == valSphere)
           {
             marker.type = visualization_msgs::Marker::SPHERE;
 
