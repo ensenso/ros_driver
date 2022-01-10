@@ -54,10 +54,10 @@ namespace {
           const auto color = object[itmLighting][itmColor];
           if (color.exists() && color.count() == 3)
           {
-            marker.color.r = color[0].asDouble();
-            marker.color.g = color[1].asDouble();
-            marker.color.b = color[2].asDouble();
-            marker.color.a = 1.0;
+            marker.color.r = static_cast<float>(color[0].asDouble());
+            marker.color.g = static_cast<float>(color[1].asDouble());
+            marker.color.b = static_cast<float>(color[2].asDouble());
+            marker.color.a = 1.0f;
           }
           else
           {
