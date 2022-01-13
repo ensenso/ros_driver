@@ -50,7 +50,7 @@ class Pose:
 
         return Pose(translation, rotation)
 
-    def equals(self, other, tolerance=0.001):
+    def equals(self, other, tolerance=0.002):
         """
         Check whether this pose is equal to another one. The poses are
         considered equal, when all of the entries are within the given tolerance
