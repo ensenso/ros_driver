@@ -137,7 +137,7 @@ target_link_libraries(
 ##################
 
 install(
-  TARGETS ensenso_camera_nodelet ensenso_camera_node texture_point_cloud
+  TARGETS ensenso_camera_nodelet ensenso_camera_mono_node ensenso_camera_node texture_point_cloud
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -147,6 +147,8 @@ catkin_install_python(
   PROGRAMS
   scripts/image_stream
   scripts/pattern_marker
+  scripts/request_data_mono
+  scripts/request_data
   scripts/set_origin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
