@@ -13,13 +13,15 @@ from geometry_msgs.msg import Transform
 from cv_bridge import CvBridge
 import cv2 as cv
 import numpy as np
+import os
 import time
 
 import sensor_msgs.point_cloud2 as pc2
 from sensor_msgs.point_cloud2 import PointCloud2
 
-PATH = "../data/telecentric_projection"
-IMAGE = PATH + "/image/reference_image.jpg"
+IMAGE_PATH = "../data/telecentric_projection/img"
+IMAGE_PATH_MONO8 = IMAGE_PATH + "mono8.jpg"
+IMAGE_PATH_BINARY = IMAGE_PATH + "binary.jpg"
 TIMEOUT = 20
 FRAME = "Workspace"
 
@@ -58,6 +60,12 @@ class TestTelecentricProjection(unittest.TestCase):
         # Test the subscribed cloud
         self.send_goal_with_publishing_point_cloud()
 
+    def tearDown(self):
+        if os.path.isfile(IMAGE_PATH_MONO8):
+            os.remove(IMAGE_PATH_MONO8)
+        if os.path.isfile(IMAGE_PATH_BINARY):
+            os.remove(IMAGE_PATH_BINARY)
+
     def request_point_cloud(self):
         request_data_goal = RequestDataGoal()
         request_data_goal.request_point_cloud = True
@@ -95,11 +103,11 @@ class TestTelecentricProjection(unittest.TestCase):
 
         # Convert it to a mono image (expressed in millimeters) via numpy
         mono8 = np.uint8(cv_image * 1000.0)
-        cv.imwrite(PATH + "/image/mono8.jpg", mono8)
+        cv.imwrite(IMAGE_PATH_MONO8, mono8)
 
         # Grey image to binary image
-        ret, binary_img = cv.threshold(mono8, 10, 255, cv.THRESH_BINARY)
-        cv.imwrite(PATH + "/image/binary.jpg", binary_img)
+        _, binary_img = cv.threshold(mono8, 10, 255, cv.THRESH_BINARY)
+        cv.imwrite(IMAGE_PATH_BINARY, binary_img)
 
         # Filter out non null pixels
         xyPoints = []
