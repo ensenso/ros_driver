@@ -215,8 +215,8 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   }
 
   bool requestPointCloud = goal->request_point_cloud || goal->request_depth_image;
-  if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_point_cloud &&
-      !goal->request_normals && !goal->request_depth_image)
+  if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_disparity_map &&
+      !goal->request_depth_image && !goal->request_point_cloud && goal->request_normals)
   {
     requestPointCloud = true;
   }
