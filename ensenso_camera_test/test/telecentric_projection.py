@@ -28,8 +28,9 @@ FRAME = "Workspace"
 
 class TestTelecentricProjection(unittest.TestCase):
     def setUp(self):
-        self.telecentric_projection_client = actionlib.SimpleActionClient("project_telecentric",
-                                                                          TelecentricProjectionAction)
+        self.telecentric_projection_client = actionlib.SimpleActionClient(
+            "project_telecentric", TelecentricProjectionAction
+        )
         self.request_data_client = actionlib.SimpleActionClient("request_data", RequestDataAction)
         for client in [self.telecentric_projection_client, self.request_data_client]:
             if not client.wait_for_server(rospy.Duration(TIMEOUT)):

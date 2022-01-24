@@ -14,7 +14,7 @@
 
 StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed,
                            std::string cameraFrame, std::string targetFrame, std::string robotFrame,
-                           std::string wristFrame, std::string linkFrame, int captureTimeout, 
+                           std::string wristFrame, std::string linkFrame, int captureTimeout,
                            std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler)
   : Camera(nh, std::move(serial), std::move(fileCameraPath), fixed, std::move(cameraFrame), std::move(targetFrame),
            std::move(linkFrame))
@@ -37,8 +37,8 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string f
       ::make_unique<RequestDataServer>(nh, "request_data", boost::bind(&StereoCamera::onRequestData, this, _1));
   locatePatternServer =
       ::make_unique<LocatePatternServer>(nh, "locate_pattern", boost::bind(&StereoCamera::onLocatePattern, this, _1));
-  projectPatternServer =
-      ::make_unique<ProjectPatternServer>(nh, "project_pattern", boost::bind(&StereoCamera::onProjectPattern, this, _1));
+  projectPatternServer = ::make_unique<ProjectPatternServer>(nh, "project_pattern",
+                                                             boost::bind(&StereoCamera::onProjectPattern, this, _1));
   calibrateHandEyeServer = ::make_unique<CalibrateHandEyeServer>(
       nh, "calibrate_hand_eye", boost::bind(&StereoCamera::onCalibrateHandEye, this, _1));
   calibrateWorkspaceServer = ::make_unique<CalibrateWorkspaceServer>(
@@ -368,10 +368,11 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       }
       else
       {
-        ROS_WARN_ONCE("Currently it is not possible to determine the depth map once the stereo camera is extrinsically "
-                      "calibrated because the point cloud is then transformed internally. If you want to have a depth "
-                      "map, the camera must not be extrinsically calibrated (workspace-/ hand-eye calibration), or "
-                      "have a link to another camera.");
+        ROS_WARN_ONCE(
+            "Currently it is not possible to determine the depth map once the stereo camera is extrinsically "
+            "calibrated because the point cloud is then transformed internally. If you want to have a depth "
+            "map, the camera must not be extrinsically calibrated (workspace-/ hand-eye calibration), or "
+            "have a link to another camera.");
       }
     }
   }
@@ -550,8 +551,9 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
     }
     else
     {
-      ROS_WARN("Cannot publish the pattern pose in TF, because there are "
-               "multiple patterns!");
+      ROS_WARN(
+          "Cannot publish the pattern pose in TF, because there are "
+          "multiple patterns!");
     }
   }
 
@@ -649,8 +651,9 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
   {
     if (robotFrame.empty() || wristFrame.empty())
     {
-      result.error_message = "You need to specify a robot base and wrist frame "
-                             "to do a hand eye calibration!";
+      result.error_message =
+          "You need to specify a robot base and wrist frame "
+          "to do a hand eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(result);
       return;
@@ -683,8 +686,9 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     }
     if (patterns.size() > 1)
     {
-      result.error_message = "Detected multiple calibration patterns during a "
-                             "hand eye calibration!";
+      result.error_message =
+          "Detected multiple calibration patterns during a "
+          "hand eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(result);
       return;
@@ -726,8 +730,9 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
   {
     if (handEyeCalibrationRobotPoses.size() < 5)
     {
-      result.error_message = "You need collect at least 5 patterns before "
-                             "starting a hand eye calibration!";
+      result.error_message =
+          "You need collect at least 5 patterns before "
+          "starting a hand eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(result);
       return;
@@ -768,8 +773,9 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
 
     if (robotPoses.size() != numberOfPatterns)
     {
-      result.error_message = "The number of pattern observations does not "
-                             "match the number of robot poses!";
+      result.error_message =
+          "The number of pattern observations does not "
+          "match the number of robot poses!";
       ROS_ERROR("%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(result);
       return;
@@ -862,8 +868,9 @@ void StereoCamera::onCalibrateWorkspace(const ensenso_camera_msgs::CalibrateWork
 
   if (!fixed)
   {
-    ROS_WARN("You are performing a workspace calibration for a moving camera. "
-             "Are you sure that this is what you want to do?");
+    ROS_WARN(
+        "You are performing a workspace calibration for a moving camera. "
+        "Are you sure that this is what you want to do?");
   }
 
   ensenso_camera_msgs::CalibrateWorkspaceResult result;
@@ -1153,7 +1160,7 @@ ros::Time StereoCamera::capture() const
     {
       virtualObjectHandler->updateObjectLinks();
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
       ROS_WARN("Unable to update virtual objects. Error: %s", e.what());
     }
@@ -1410,8 +1417,9 @@ void StereoCamera::writeParameter(ensenso_camera_msgs::Parameter const& paramete
 
     if (!flexViewNode.exists())
     {
-      ROS_WARN("Writing the parameter FlexView, but the camera does not "
-               "support it!");
+      ROS_WARN(
+          "Writing the parameter FlexView, but the camera does not "
+          "support it!");
       return;
     }
 

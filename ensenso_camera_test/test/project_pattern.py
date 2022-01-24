@@ -53,10 +53,12 @@ class TestProjectPattern(unittest.TestCase):
         self.assertEqual(len(detected_pattern.left_points), len(projection_result.left_points))
         self.assertEqual(len(detected_pattern.right_points), len(projection_result.right_points))
 
-        reference_points = map(lambda p: ImagePoint.from_message(p),
-                               detected_pattern.left_points + detected_pattern.right_points)
-        projected_points = map(lambda p: ImagePoint.from_message(p),
-                               projection_result.left_points + projection_result.right_points)
+        reference_points = map(
+            lambda p: ImagePoint.from_message(p), detected_pattern.left_points + detected_pattern.right_points
+        )
+        projected_points = map(
+            lambda p: ImagePoint.from_message(p), projection_result.left_points + projection_result.right_points
+        )
         for reference_point, projected_point in zip(reference_points, projected_points):
             self.assertTrue(reference_point.equals(projected_point))
 

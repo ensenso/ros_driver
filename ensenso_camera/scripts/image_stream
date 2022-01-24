@@ -27,10 +27,15 @@ def main():
 
     image_publisher = rospy.Publisher("image", Image, queue_size=1)
 
-    set_parameter_client.send_goal(SetParameterGoal(parameter_set=parameter_set, parameters=[
-        Parameter(key=Parameter.PROJECTOR, bool_value=False),
-        Parameter(key=Parameter.FRONT_LIGHT, bool_value=True)
-    ]))
+    set_parameter_client.send_goal(
+        SetParameterGoal(
+            parameter_set=parameter_set,
+            parameters=[
+                Parameter(key=Parameter.PROJECTOR, bool_value=False),
+                Parameter(key=Parameter.FRONT_LIGHT, bool_value=True),
+            ],
+        )
+    )
     set_parameter_client.wait_for_result()
 
     request_data_goal = RequestDataGoal()

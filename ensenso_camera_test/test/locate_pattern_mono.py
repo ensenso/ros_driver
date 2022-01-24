@@ -47,6 +47,7 @@ class TestLocatePattern(unittest.TestCase):
         estimated_pattern_pose = Pose.from_message(result.mono_pattern_poses[0].pose)
         self.assertTrue(reference_pattern_pose.equals(estimated_pattern_pose))
 
+
 if __name__ == "__main__":
     try:
         rospy.init_node("test_locate_pattern_mono")

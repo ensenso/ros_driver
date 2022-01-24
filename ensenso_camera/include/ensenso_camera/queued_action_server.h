@@ -171,11 +171,13 @@ private:
           if (currentGoal.getGoalStatus().status == actionlib_msgs::GoalStatus::ACTIVE ||
               currentGoal.getGoalStatus().status == actionlib_msgs::GoalStatus::PREEMPTING)
           {
-            ROS_WARN_NAMED("actionlib", "Your action handler did not set the "
-                                        "goal to a terminal state. Aborting it "
-                                        "for now.");
-            setAborted(Result(), "Aborted, because the user did not set the "
-                                 "goal to a terminal state.");
+            ROS_WARN_NAMED("actionlib",
+                           "Your action handler did not set the "
+                           "goal to a terminal state. Aborting it "
+                           "for now.");
+            setAborted(Result(),
+                       "Aborted, because the user did not set the "
+                       "goal to a terminal state.");
           }
         }
       }

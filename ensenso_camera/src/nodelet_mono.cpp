@@ -50,10 +50,11 @@ void NodeletMono::onInit()
     NxLibItem cameraNode = NxLibItem()[itmCameras][itmBySerialNo][serial];
     if (!cameraNode.exists())
     {
-      NODELET_WARN("The serial of the camera has been too long and was interpreted as an 32-bit integer and exceeds "
-                   "its length. Please append a \"!\" to the number. E.g. \'_serial:=1234567\' to "
-                   "\'_serial:=1234567!\', so it can be interpreted as a numerical string. If you are using a launch "
-                   "file, just define the parameter's type as string, e.g.: type=\"string\".");
+      NODELET_WARN(
+          "The serial of the camera has been too long and was interpreted as an 32-bit integer and exceeds "
+          "its length. Please append a \"!\" to the number. E.g. \'_serial:=1234567\' to "
+          "\'_serial:=1234567!\', so it can be interpreted as a numerical string. If you are using a launch "
+          "file, just define the parameter's type as string, e.g.: type=\"string\".");
       NODELET_ERROR("Could not find any camera. Shutting down.");
       nxLibFinalize();
       exit(EXIT_FAILURE);

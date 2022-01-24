@@ -70,9 +70,12 @@ void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info,
   info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
   info->D.clear();
 
-  if(rectified) {
-    info->D.resize(5,0.);
-  } else {
+  if (rectified)
+  {
+    info->D.resize(5, 0.);
+  }
+  else
+  {
     fillDistortionParamsFromNxLib(calibrationNode[itmDistortion], info);
   }
 
@@ -313,8 +316,9 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
     }
     else
     {
-      ROS_WARN("Cannot publish the pattern pose in TF, because there are "
-               "multiple patterns!");
+      ROS_WARN(
+          "Cannot publish the pattern pose in TF, because there are "
+          "multiple patterns!");
     }
   }
 
