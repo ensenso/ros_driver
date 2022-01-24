@@ -49,7 +49,8 @@ struct ParameterMapping
  * NxLib node. These are handled in the parameter reading and writing methods
  * of the camera class.
  */
-std::map<std::string, ParameterMapping> const parameterInformation{ //NOLINT
+std::map<std::string, ParameterMapping> const parameterInformation{
+  // NOLINT
   // Capture parameters.
   { ensenso_camera_msgs::Parameter::AUTO_EXPOSURE, { ParameterType::Bool, { itmCapture, itmAutoExposure } } },
   { ensenso_camera_msgs::Parameter::AUTO_GAIN, { ParameterType::Bool, { itmCapture, itmAutoGain } } },

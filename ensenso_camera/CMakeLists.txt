@@ -39,6 +39,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 roslint_python(
+  scripts/calibrate_handeye
+  scripts/color_point_cloud
   scripts/fit_primitive
   scripts/image_stream
   scripts/image_stream_mono
@@ -46,7 +48,6 @@ roslint_python(
   scripts/request_data
   scripts/request_data_mono
   scripts/set_origin
-  scripts/color_point_cloud
 )
 if(CATKIN_ENABLE_TESTING)
   roslint_add_test()
@@ -66,7 +67,15 @@ else()
 endif()
 
 catkin_package(
-  CATKIN_DEPENDS visualization_msgs ensenso_camera_msgs diagnostic_msgs
+  CATKIN_DEPENDS
+  actionlib
+  diagnostic_msgs
+  ensenso_camera_msgs
+  geometry_msgs
+  nodelet
+  roscpp
+  sensor_msgs
+  visualization_msgs
 )
 
 ###########
@@ -145,10 +154,14 @@ install(
 
 catkin_install_python(
   PROGRAMS
+  scripts/calibrate_handeye
+  scripts/color_point_cloud
+  scripts/fit_primitive
   scripts/image_stream
+  scripts/image_stream_mono
   scripts/pattern_marker
-  scripts/request_data_mono
   scripts/request_data
+  scripts/request_data_mono
   scripts/set_origin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

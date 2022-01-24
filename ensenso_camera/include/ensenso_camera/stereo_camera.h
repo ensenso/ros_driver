@@ -78,7 +78,8 @@ private:
 public:
   StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
                std::string targetFrame, std::string robotFrame, std::string wristFrame, std::string linkFrame,
-               int captureTimeout, std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler=nullptr);
+               int captureTimeout,
+               std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler = nullptr);
 
   bool open() override;
 
@@ -126,6 +127,7 @@ public:
    * Callback for the `project_telecentric` action.
    */
   void onTelecentricProjection(ensenso_camera_msgs::TelecentricProjectionGoalConstPtr const& goal);
+
 private:
   /**
    * Save the current settings to the parameter set with the given name.

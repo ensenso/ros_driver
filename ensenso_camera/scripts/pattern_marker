@@ -27,10 +27,15 @@ def main():
 
     marker_publisher = rospy.Publisher("pattern_marker", Marker, queue_size=10)
 
-    set_parameter_client.send_goal(SetParameterGoal(parameter_set=parameter_set, parameters=[
-        Parameter(key=Parameter.PROJECTOR, bool_value=False),
-        Parameter(key=Parameter.FRONT_LIGHT, bool_value=True)
-    ]))
+    set_parameter_client.send_goal(
+        SetParameterGoal(
+            parameter_set=parameter_set,
+            parameters=[
+                Parameter(key=Parameter.PROJECTOR, bool_value=False),
+                Parameter(key=Parameter.FRONT_LIGHT, bool_value=True),
+            ],
+        )
+    )
     set_parameter_client.wait_for_result()
 
     rate = rospy.Rate(loop_rate)
@@ -74,17 +79,10 @@ def main():
                     # because the reference point of the marker is in the middle of the cube, but
                     # the reference point of the pattern is on its surface.
 
-                    t = transformations.translation_matrix((
-                        pose.position.x,
-                        pose.position.y,
-                        pose.position.z
-                    ))
-                    r = transformations.quaternion_matrix([
-                        pose.orientation.x,
-                        pose.orientation.y,
-                        pose.orientation.z,
-                        pose.orientation.w
-                    ])
+                    t = transformations.translation_matrix((pose.position.x, pose.position.y, pose.position.z))
+                    r = transformations.quaternion_matrix(
+                        [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
+                    )
                     z_offset = transformations.translation_matrix((0, 0, 0.5 * pattern_thickness))
 
                     m = transformations.concatenate_matrices(t, r, z_offset)

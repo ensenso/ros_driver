@@ -27,10 +27,10 @@ class TestColorizedPointCloud(unittest.TestCase):
     def setUp(self):
         self.request_stereo = actionlib.SimpleActionClient(STEREO_NAMESPACE + "/request_data", RequestDataAction)
         self.request_mono = actionlib.SimpleActionClient(MONO_NAMESPACE + "/request_data", RequestDataMonoAction)
-        self.colorize_point_cloud = actionlib.SimpleActionClient(STEREO_NAMESPACE + "/texture_point_cloud",
-                                                                 TexturedPointCloudAction)
-        for client in [self.request_mono, self.request_stereo,
-                       self.colorize_point_cloud]:
+        self.colorize_point_cloud = actionlib.SimpleActionClient(
+            STEREO_NAMESPACE + "/texture_point_cloud", TexturedPointCloudAction
+        )
+        for client in [self.request_mono, self.request_stereo, self.colorize_point_cloud]:
             if not client.wait_for_server(rospy.Duration(WAIT_TIMEOUT)):
                 self.fail(msg="Timeout reached for servers.")
 
@@ -68,8 +68,10 @@ class TestColorizedPointCloud(unittest.TestCase):
         result = self.colorize_point_cloud.get_result()
         self.assertEqual(result.error.message, "", msg="Got an error with the result")
         self.cloud_points = list(pc2.read_points(result.point_cloud, skip_nans=True))
-        self.assertTrue(len(self.cloud_points) != 0,
-                        msg=" The recieved point cloud is empty. Recieved {} points".format(len(self.cloud_points)))
+        self.assertTrue(
+            len(self.cloud_points) != 0,
+            msg=" The recieved point cloud is empty. Recieved {} points".format(len(self.cloud_points)),
+        )
 
     def check_color(self):
         for p in self.cloud_points:
@@ -78,17 +80,17 @@ class TestColorizedPointCloud(unittest.TestCase):
 
             test = p[3]
             # cast float32 to int so that bitwise operations are possible
-            s = struct.pack('>f', test)
-            i = struct.unpack('>l', s)[0]
+            s = struct.pack(">f", test)
+            i = struct.unpack(">l", s)[0]
             # you can get back the float value by the inverse operations
             pack = ctypes.c_uint32(i).value
             r = (pack & 0x00FF0000) >> 16
             g = (pack & 0x0000FF00) >> 8
-            b = (pack & 0x000000FF)
+            b = pack & 0x000000FF
 
-            self.assertTrue(r != 0., msg="r-value cannot be zero")
-            self.assertTrue(g != 0., msg="g-value cannot be zero")
-            self.assertTrue(b != 0., msg="b-value cannot be zero")
+            self.assertTrue(r != 0.0, msg="r-value cannot be zero")
+            self.assertTrue(g != 0.0, msg="g-value cannot be zero")
+            self.assertTrue(b != 0.0, msg="b-value cannot be zero")
 
 
 if __name__ == "__main__":

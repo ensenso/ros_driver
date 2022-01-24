@@ -134,14 +134,14 @@ void Nodelet::onInit()
     {
       virtualObjectHandler = ::make_unique<VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame);
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
       NODELET_WARN("Unable to load virtual objects file '%s'. Error: %s", objectsFile.c_str(), e.what());
     }
   }
 
   camera = ::make_unique<StereoCamera>(nh, serial, fileCameraPath, cameraIsFixed, cameraFrame, targetFrame, robotFrame,
-                                     wristFrame, linkFrame, captureTimeout, std::move(virtualObjectHandler));
+                                       wristFrame, linkFrame, captureTimeout, std::move(virtualObjectHandler));
   if (!camera->open())
   {
     NODELET_ERROR("Failed to open the camera. Shutting down.");

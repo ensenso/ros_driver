@@ -52,8 +52,9 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(result[0].string_value, "Software")
 
         # Set the parameter in a specific parameter set.
-        result = self.set_parameter([Parameter(key=Parameter.TRIGGER_MODE, string_value="Continuous")],
-                                    parameter_set="test")
+        result = self.set_parameter(
+            [Parameter(key=Parameter.TRIGGER_MODE, string_value="Continuous")], parameter_set="test"
+        )
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].key, Parameter.TRIGGER_MODE)
         self.assertEqual(result[0].string_value, "Continuous")

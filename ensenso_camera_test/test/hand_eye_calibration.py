@@ -87,8 +87,9 @@ class TestHandEyeCalibration(unittest.TestCase):
         def on_feedback(feedback):
             self.last_feedback = feedback
 
-        self.send_calibration_goal(CalibrateHandEyeGoal(command=CalibrateHandEyeGoal.START_CALIBRATION),
-                                   feedback_cb=on_feedback)
+        self.send_calibration_goal(
+            CalibrateHandEyeGoal(command=CalibrateHandEyeGoal.START_CALIBRATION), feedback_cb=on_feedback
+        )
 
         self.assertIsNotNone(self.last_feedback)
         self.assertNotEqual(self.last_feedback.number_of_iterations, 0)

@@ -17,13 +17,12 @@ def main():
     timeout = rospy.get_param("~timeout", 60)
 
     # The servers are scoped into the namespaces of the different cameras. Otherwise the topics would interfere.
-    request_data_client_stereo = actionlib.SimpleActionClient(stereo_namespace + "/request_data",
-                                                              RequestDataAction)
-    request_data_client_mono = actionlib.SimpleActionClient(rgb_namespace + "/request_data",
-                                                            RequestDataMonoAction)
+    request_data_client_stereo = actionlib.SimpleActionClient(stereo_namespace + "/request_data", RequestDataAction)
+    request_data_client_mono = actionlib.SimpleActionClient(rgb_namespace + "/request_data", RequestDataMonoAction)
 
-    texture_point_cloud_client = actionlib.SimpleActionClient(stereo_namespace + "/texture_point_cloud",
-                                                              TexturedPointCloudAction)
+    texture_point_cloud_client = actionlib.SimpleActionClient(
+        stereo_namespace + "/texture_point_cloud", TexturedPointCloudAction
+    )
 
     for client in [request_data_client_stereo, request_data_client_mono, texture_point_cloud_client]:
         if not client.wait_for_server(rospy.Duration(timeout)):

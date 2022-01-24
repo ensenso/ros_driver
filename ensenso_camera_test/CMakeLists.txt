@@ -7,17 +7,19 @@ find_package(catkin REQUIRED COMPONENTS
   ensenso_camera_msgs
   roslint
   rospy
+  rostest
   tf
 )
 
 catkin_package(
-  CATKIN_DEPENDS ensenso_camera_msgs
+  CATKIN_DEPENDS
+  ensenso_camera_msgs
+  tf
 )
 
 roslint_python()
 
 if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
   add_rostest(test/hand_eye_calibration.test)
   add_rostest(test/fit_primitive.test)
   add_rostest(test/locate_pattern.test)

@@ -40,10 +40,15 @@ def main():
 
     marker_publisher = rospy.Publisher("primitive_markers", MarkerArray, queue_size=10)
 
-    set_parameter_client.send_goal(SetParameterGoal(parameter_set=parameter_set, parameters=[
-        Parameter(key=Parameter.PROJECTOR, bool_value=False),
-        Parameter(key=Parameter.FRONT_LIGHT, bool_value=True)
-    ]))
+    set_parameter_client.send_goal(
+        SetParameterGoal(
+            parameter_set=parameter_set,
+            parameters=[
+                Parameter(key=Parameter.PROJECTOR, bool_value=False),
+                Parameter(key=Parameter.FRONT_LIGHT, bool_value=True),
+            ],
+        )
+    )
     set_parameter_client.wait_for_result()
 
     rate = rospy.Rate(loop_rate)
@@ -122,12 +127,15 @@ def main():
                             # Source: https://stackoverflow.com/questions/23166898/
                             # efficient-way-to-calculate-a-3x3-rotation-matrix-from-the-rotation-defined-by-tw
                             z_camera = [0, 0, 1]
-                            normal_plane = [found_primitive.normal.x, found_primitive.normal.y,
-                                            found_primitive.normal.z]
-                            angle = np.arccos(np.dot(z_camera, normal_plane) / (
-                                    np.linalg.norm(z_camera) / np.linalg.norm(normal_plane)))
-                            axis = np.cross(z_camera, normal_plane) / np.linalg.norm(
-                                np.cross(z_camera, normal_plane))
+                            normal_plane = [
+                                found_primitive.normal.x,
+                                found_primitive.normal.y,
+                                found_primitive.normal.z,
+                            ]
+                            angle_norm = np.linalg.norm(z_camera) / np.linalg.norm(normal_plane)
+                            angle = np.arccos(np.dot(z_camera, normal_plane) / angle_norm)
+                            axis_cross = np.cross(z_camera, normal_plane)
+                            axis = axis_cross / np.linalg.norm(axis_cross)
                             rot_matrix = transformations.rotation_matrix(angle=angle, direction=axis)
                             quaternion = transformations.quaternion_from_matrix(rot_matrix)
 
