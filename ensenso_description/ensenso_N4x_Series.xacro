@@ -4,7 +4,7 @@
 
   <!-- Parameters -->
   <!-- Name of the camera -->
-  <xacro:arg name="camera" default="X400_xFA" />
+  <xacro:arg name="camera" default="N45" />
   <xacro:property name="camera_name" value="$(arg camera)" />
 
   <!-- Enlarges the bounding box in all directions -->
@@ -15,7 +15,7 @@
   <xacro:arg name="corresponding_frame_name" default="base_link" />
   <xacro:property name="corresponding_frame_name" value="$(arg corresponding_frame_name)" />
 
-  <xacro:ensenso_X400_xFA_Series name="${camera_name}" margin="${margin}"/>
+  <xacro:ensenso_N4x_Series name="${camera_name}" margin="${margin}"/>
   <joint name="${corresponding_frame_name}_to_${camera_name}" type="fixed">
     <parent link="${corresponding_frame_name}" />
     <child link="${camera_name}" />
@@ -25,5 +25,5 @@
   <link name="${corresponding_frame_name}" />
 </robot>
 <!-- example usage with: 
-  roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_description`/ensenso_X400_xFA_Series.xacro gui:=true
+  roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_description`/ensenso_N4x_Series.xacro gui:=true
 -->

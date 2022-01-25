@@ -5,7 +5,6 @@
   <description>Description package for Ensenso stereo cameras. This package consists of all current supported camera models.
     The Xacro macros, which import the mesh files as stl, accept the following parameters:
       - camera name
-      - parent frame and its transform regarding to the camera mounting frame
       - collision margin to the camera
   </description>
 
