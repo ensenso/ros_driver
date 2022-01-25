@@ -5,32 +5,25 @@
   <!-- Parameters -->
   <!-- Name of the camera -->
   <xacro:arg name="camera" default="X200" />
-  <xacro:property name="camera" value="$(arg camera)" />
+  <xacro:property name="camera_name" value="$(arg camera)" />
 
   <!-- Enlarges the bounding box in all directions -->
   <xacro:arg name="margin" default="0.03" />
   <xacro:property name="margin" value="$(arg margin)" />
 
-  <!-- Lens objective properties -->
-  <xacro:arg name="lens_length" default="0.05" />
-  <xacro:property name="lens_length" value="$(arg lens_length)"/>
-  <xacro:arg name="lens_radius" default="0.02" />
-  <xacro:property name="lens_radius" value="$(arg lens_radius)"/>
-
-  <!-- Projector objective properties -->
-  <xacro:arg name="projector_length" default="0.05" />
-  <xacro:property name="projector_length" value="$(arg projector_length)" />
-  <xacro:arg name="projector_radius" default="0.02" />
-  <xacro:property name="projector_radius" value="$(arg projector_radius)" />
-
   <!-- Tf Frame, that references to the cameras mounting frame -->
-  <xacro:arg name="corresponding_frame_name" default="world" />
+  <xacro:arg name="corresponding_frame_name" default="base_link" />
   <xacro:property name="corresponding_frame_name" value="$(arg corresponding_frame_name)" />
-  <link name="${corresponding_frame_name}"/>
 
-  <xacro:ensenso_X200_Series camera="${camera}" parent="${corresponding_frame_name}" margin="${margin}" radius_lens_sensor="${lens_radius}" length_lens_sensor="${lens_length}" radius_lens_projector="${projector_radius}" length_lens_projector="${projector_length}">
-    <origin xyz="0 0 0.0" rpy="0 0 0" />
-  </xacro:ensenso_X200_Series>
+  <xacro:ensenso_X200_Series name="${camera_name}" margin="${margin}"/>
+  <joint name="${corresponding_frame_name}_to_${camera_name}" type="fixed">
+    <parent link="${corresponding_frame_name}" />
+    <child link="${camera_name}" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+
+  <link name="${corresponding_frame_name}" />
 </robot>
-
-<!-- example usage with: roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_description`/ensenso_X200_Series.xacro gui:=true -->
+<!-- example usage with: 
+  roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_description`/ensenso_X200_Series.xacro gui:=true
+-->
