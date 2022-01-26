@@ -13,20 +13,74 @@ ParameterSet::ParameterSet(const std::string& name, const NxLibItem& defaultPara
   node << defaultParameters;
 }
 
-Camera::Camera(ros::NodeHandle const& n, std::string serial, std::string fileCameraPath, bool fixed,
-               std::string cameraFrame, std::string targetFrame, std::string linkFrame)
-  : fileCameraPath(std::move(fileCameraPath))
-  , serial(std::move(serial))
-  , fixed(fixed)
-  , cameraFrame(std::move(cameraFrame))
-  , linkFrame(std::move(linkFrame))
-  , targetFrame(std::move(targetFrame))
-  , nh(n)
+CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const& cameraType, std::string serial)
+  : serial(std::move(serial))
+{
+  nh.param<std::string>("file_camera_path", fileCameraPath, "");
+  isFileCamera = !fileCameraPath.empty();
+
+  nh.param("fixed", fixed, false);
+
+  if (!nh.getParam("camera_frame", cameraFrame))
+  {
+    cameraFrame = this->serial + "_optical_frame";
+  }
+
+  nh.getParam("link_frame", linkFrame);
+  nh.getParam("target_frame", targetFrame);
+
+  if (linkFrame.empty() && !targetFrame.empty())
+  {
+    linkFrame = targetFrame;
+  }
+  else if (linkFrame.empty() && targetFrame.empty())
+  {
+    linkFrame = cameraFrame;
+    targetFrame = cameraFrame;
+  }
+
+  if (cameraType == valStereo || cameraType == valStructuredLight)
+  {
+    nh.getParam("robot_frame", robotFrame);
+    nh.getParam("wrist_frame", wristFrame);
+
+    if (fixed && robotFrame.empty())
+    {
+      robotFrame = cameraFrame;
+    }
+    if (!fixed && wristFrame.empty())
+    {
+      wristFrame = cameraFrame;
+    }
+
+    nh.param("capture_timeout", captureTimeout, 0);
+
+    // Load virtual objects and create the handler.
+    std::string objectsFile;
+    if (nh.getParam("objects_file", objectsFile) && !objectsFile.empty())
+    {
+      // Get objects frame, default to target.
+      std::string objectsFrame = targetFrame;
+      nh.getParam("objects_frame", objectsFrame);
+
+      ROS_DEBUG("Loading virtual objects...");
+      try
+      {
+        virtualObjectHandler =
+            ::make_unique<ensenso_camera::VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame);
+      }
+      catch (std::exception const& e)
+      {
+        ROS_WARN("Unable to load virtual objects file '%s'. Error: %s", objectsFile.c_str(), e.what());
+      }
+    }
+  }
+}
+
+Camera::Camera(ros::NodeHandle& nh, CameraParameters _params) : params(std::move(_params)), nh(nh)
 {
   transformListener = make_unique<tf2_ros::TransformListener>(tfBuffer);
   transformBroadcaster = make_unique<tf2_ros::TransformBroadcaster>();
-
-  isFileCamera = !this->fileCameraPath.empty();
 
   accessTreeServer = ::make_unique<AccessTreeServer>(nh, "access_tree", boost::bind(&Camera::onAccessTree, this, _1));
   executeCommandServer =
@@ -38,7 +92,7 @@ Camera::Camera(ros::NodeHandle const& n, std::string serial, std::string fileCam
 
   statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
 
-  cameraNode = NxLibItem()[itmCameras][itmBySerialNo][this->serial];
+  cameraNode = NxLibItem()[itmCameras][itmBySerialNo][params.serial];
   nxLibVersion = getCurrentNxLibVersion();
 
   defaultParameters = NxLibItem()["rosDefaultParameters"];
@@ -90,8 +144,8 @@ bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParamet
       }
       tmpParameters.erase();
 
-      NxLibCommand synchronize(cmdSynchronize, serial);
-      synchronize.parameters()[itmCameras] = serial;
+      NxLibCommand synchronize(cmdSynchronize, params.serial);
+      synchronize.parameters()[itmCameras] = params.serial;
       synchronize.execute();
 
       updateCameraInfo();
@@ -221,7 +275,7 @@ void Camera::publishStatus(ros::TimerEvent const& event) const
 
   diagnostic_msgs::DiagnosticStatus cameraStatus;
   cameraStatus.name = "Camera";
-  cameraStatus.hardware_id = serial;
+  cameraStatus.hardware_id = params.serial;
   cameraStatus.level = diagnostic_msgs::DiagnosticStatus::OK;
   cameraStatus.message = "OK";
 
@@ -239,7 +293,7 @@ void Camera::publishStatus(ros::TimerEvent const& event) const
 
 void Camera::fillBasicCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info) const
 {
-  info->header.frame_id = cameraFrame;
+  info->header.frame_id = params.cameraFrame;
 
   info->width = cameraNode[itmSensor][itmSize][0].asInt();
   info->height = cameraNode[itmSensor][itmSize][1].asInt();
@@ -250,15 +304,15 @@ void Camera::fillBasicCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info
 
 void Camera::updateTransformations(tf2::Transform const& targetFrameTransformation) const
 {
-  cameraNode[itmLink][itmTarget] = TARGET_FRAME_LINK + "_" + serial;
-  writePoseToNxLib(targetFrameTransformation, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial]);
+  cameraNode[itmLink][itmTarget] = TARGET_FRAME_LINK + "_" + params.serial;
+  writePoseToNxLib(targetFrameTransformation, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + params.serial]);
 }
 
-void Camera::updateGlobalLink(ros::Time time, std::string frame, bool useCachedTransformation) const
+void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useCachedTransformation) const
 {
-  if (frame.empty())
+  if (targetFrame.empty())
   {
-    frame = targetFrame;
+    targetFrame = params.targetFrame;
   }
 
   // Transformation are represented in the NxLib as follows:
@@ -269,32 +323,32 @@ void Camera::updateGlobalLink(ros::Time time, std::string frame, bool useCachedT
   //  - The link in the camera node has to reference this global link, if it exists (e.g. when the linkFrame is
   //    different from the targetFrame).
 
-  if (linkFrame == frame)
+  if (params.linkFrame == targetFrame)
   {
     // The given target frame is the target frame already. So the camera does not need a reference to a global link.
     cameraNode[itmLink][itmTarget] = "";
     return;
   }
 
-  cameraNode[itmLink][itmTarget] = TARGET_FRAME_LINK + "_" + serial;
+  cameraNode[itmLink][itmTarget] = TARGET_FRAME_LINK + "_" + params.serial;
 
   // Update the transformation to the target frame in the NxLib according to the current information from TF only if
   // link and target frame differ.
   geometry_msgs::TransformStamped transform;
-  if (useCachedTransformation && transformationCache.count(frame) != 0)
+  if (useCachedTransformation && transformationCache.count(targetFrame) != 0)
   {
-    transform = transformationCache[frame];
+    transform = transformationCache[targetFrame];
   }
   else
   {
-    transform = tfBuffer.lookupTransform(linkFrame, frame, time, ros::Duration(TF_REQUEST_TIMEOUT));
-    transformationCache[frame] = transform;
+    transform = tfBuffer.lookupTransform(params.linkFrame, targetFrame, time, ros::Duration(TF_REQUEST_TIMEOUT));
+    transformationCache[targetFrame] = transform;
   }
   tf2::Transform tfTrafo;
   tf2::convert(transform.transform, tfTrafo);
-  NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial].setNull();
+  NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + params.serial].setNull();
   NxLibItem()[itmLinks].setNull();
-  writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + serial]);
+  writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + params.serial]);
 }
 
 std::vector<geometry_msgs::TransformStamped> Camera::estimatePatternPoses(ros::Time imageTimestamp,
@@ -302,9 +356,9 @@ std::vector<geometry_msgs::TransformStamped> Camera::estimatePatternPoses(ros::T
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
-  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, serial);
+  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, params.serial);
   estimatePatternPose.parameters()[itmAverage] = false;
-  estimatePatternPose.parameters()[itmFilter][itmCameras] = serial;
+  estimatePatternPose.parameters()[itmFilter][itmCameras] = params.serial;
   estimatePatternPose.parameters()[itmFilter][itmUseModel] = true;
   estimatePatternPose.parameters()[itmFilter][itmType] = valStatic;
   estimatePatternPose.parameters()[itmFilter][itmValue] = true;
@@ -318,7 +372,7 @@ std::vector<geometry_msgs::TransformStamped> Camera::estimatePatternPoses(ros::T
   for (int i = 0; i < numberOfPatterns; i++)
   {
     result.push_back(
-        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], cameraFrame, targetFrame));
+        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], params.cameraFrame, targetFrame));
   }
 
   return result;
@@ -329,7 +383,7 @@ geometry_msgs::TransformStamped Camera::estimatePatternPose(ros::Time imageTimes
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
-  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, serial);
+  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, params.serial);
   if (latestPatternOnly)
   {
     estimatePatternPose.parameters()[itmAverage] = false;
@@ -346,7 +400,7 @@ geometry_msgs::TransformStamped Camera::estimatePatternPose(ros::Time imageTimes
 
   ROS_ASSERT(estimatePatternPose.result()[itmPatterns].count() == 1);
 
-  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], cameraFrame, targetFrame);
+  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], params.cameraFrame, targetFrame);
 }
 
 ensenso_camera_msgs::ParameterPtr Camera::readParameter(std::string const& key) const
@@ -423,19 +477,19 @@ void Camera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
 
 bool Camera::open()
 {
-  if (isFileCamera && !cameraNode.exists())
+  if (params.isFileCamera && !cameraNode.exists())
   {
     try
     {
-      if (serial.size() > 15)
+      if (params.serial.size() > 15)
       {
-        ROS_ERROR("The serial '%s' is too long!", serial.c_str());
+        ROS_ERROR("The serial '%s' is too long!", params.serial.c_str());
         return false;
       }
 
-      NxLibCommand createCamera(cmdCreateCamera, serial);
-      createCamera.parameters()[itmSerialNumber] = serial;
-      createCamera.parameters()[itmFolderPath] = fileCameraPath;
+      NxLibCommand createCamera(cmdCreateCamera, params.serial);
+      createCamera.parameters()[itmSerialNumber] = params.serial;
+      createCamera.parameters()[itmFolderPath] = params.fileCameraPath;
       createCamera.execute();
 
       createdFileCamera = true;
@@ -450,32 +504,33 @@ bool Camera::open()
 
   if (!cameraNode.exists())
   {
-    ROS_ERROR("The camera '%s' could not be found", serial.c_str());
+    ROS_ERROR("The camera '%s' could not be found", params.serial.c_str());
     return false;
   }
   if (!cameraIsAvailable())
   {
-    ROS_ERROR("The camera '%s' is already in use", serial.c_str());
+    ROS_ERROR("The camera '%s' is already in use", params.serial.c_str());
     return false;
   }
 
   try
   {
-    NxLibCommand open(cmdOpen, serial);
-    open.parameters()[itmCameras] = serial;
+    NxLibCommand open(cmdOpen, params.serial);
+    open.parameters()[itmCameras] = params.serial;
     open.execute();
   }
   catch (NxLibException& e)
   {
-    ROS_ERROR("Error while opening the camera '%s'!", serial.c_str());
+    ROS_ERROR("Error while opening the camera '%s'!", params.serial.c_str());
     LOG_NXLIB_EXCEPTION(e)
     return false;
   }
 
   saveDefaultParameterSet();
   publishCurrentLinks();
+  updateCameraInfo();
 
-  ROS_INFO("Opened camera with serial number '%s'.", serial.c_str());
+  ROS_INFO("Opened camera with serial number '%s'.", params.serial.c_str());
   return true;
 }
 
@@ -485,14 +540,14 @@ void Camera::close()
 
   try
   {
-    NxLibCommand close(cmdClose, serial);
-    close.parameters()[itmCameras] = serial;
+    NxLibCommand close(cmdClose, params.serial);
+    close.parameters()[itmCameras] = params.serial;
     close.execute();
 
-    if (isFileCamera && createdFileCamera)
+    if (params.isFileCamera && createdFileCamera)
     {
-      NxLibCommand deleteCmd(cmdDeleteCamera, serial);
-      deleteCmd.parameters()[itmCameras] = serial;
+      NxLibCommand deleteCmd(cmdDeleteCamera, params.serial);
+      deleteCmd.parameters()[itmCameras] = params.serial;
       deleteCmd.execute();
     }
   }
@@ -545,8 +600,8 @@ void Camera::loadParameterSet(std::string name)
 
   if (changedParameters)
   {
-    NxLibCommand synchronize(cmdSynchronize, serial);
-    synchronize.parameters()[itmCameras] = serial;
+    NxLibCommand synchronize(cmdSynchronize, params.serial);
+    synchronize.parameters()[itmCameras] = params.serial;
     synchronize.execute();
   }
 
@@ -561,7 +616,7 @@ void Camera::publishCurrentLinks(ros::TimerEvent const& timerEvent)
 void Camera::publishCameraLink()
 {
   // The camera link is the calibrated link from camera to link.
-  if (cameraFrame == linkFrame)
+  if (params.cameraFrame == params.linkFrame)
   {
     return;
   }
@@ -580,7 +635,7 @@ geometry_msgs::TransformStamped Camera::stampedLinkToCamera()
   // camera->link, we want link->camera).
   tf2::Transform cameraToLinkInverse = getCameraToLinkTransform().inverse();
   // The camera always needs to be the child frame in this transformation.
-  return fromTfTransform(cameraToLinkInverse, linkFrame, cameraFrame);
+  return fromTfTransform(cameraToLinkInverse, params.linkFrame, params.cameraFrame);
 }
 
 tf2::Transform Camera::getCameraToLinkTransform()
@@ -600,8 +655,8 @@ tf2::Transform Camera::getCameraToLinkTransform()
   if (!isValid(transform))
   {
     transform.setIdentity();
-    ROS_WARN("Did not find a good transform from %s to %s. Transform has been set to identity", cameraFrame.c_str(),
-             linkFrame.c_str());
+    ROS_WARN("Did not find a good transform from %s to %s. Transform has been set to identity",
+             params.cameraFrame.c_str(), params.linkFrame.c_str());
   }
 
   return transform;

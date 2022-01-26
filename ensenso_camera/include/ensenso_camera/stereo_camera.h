@@ -32,9 +32,6 @@ enum ProjectorState
 class StereoCamera : public Camera
 {
 private:
-  std::string robotFrame;
-  std::string wristFrame;
-
   sensor_msgs::CameraInfoPtr leftCameraInfo;
   sensor_msgs::CameraInfoPtr rightCameraInfo;
   sensor_msgs::CameraInfoPtr leftRectifiedCameraInfo;
@@ -67,18 +64,8 @@ private:
   std::string handEyeCalibrationPatternBuffer;
   std::vector<tf2::Transform> handEyeCalibrationRobotPoses;
 
-  // Timeout, in milliseconds, used for capture commands. If <= 0, default timeout is used.
-  int captureTimeout;
-
-  // Handler for virtual objects.
-  // If set, will update the 'Objects' item based on the current pose of the camera, before each capture.
-  std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler;
-
 public:
-  StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
-               std::string targetFrame, std::string robotFrame, std::string wristFrame, std::string linkFrame,
-               int captureTimeout,
-               std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler = nullptr);
+  StereoCamera(ros::NodeHandle nh, CameraParameters params);
 
   void init() override;
 

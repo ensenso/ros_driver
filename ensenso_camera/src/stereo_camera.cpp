@@ -12,16 +12,7 @@
 #include <pcl_ros/point_cloud.h>
 #include <sensor_msgs/distortion_models.h>
 
-StereoCamera::StereoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed,
-                           std::string cameraFrame, std::string targetFrame, std::string robotFrame,
-                           std::string wristFrame, std::string linkFrame, int captureTimeout,
-                           std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler)
-  : Camera(nh, std::move(serial), std::move(fileCameraPath), fixed, std::move(cameraFrame), std::move(targetFrame),
-           std::move(linkFrame))
-  , robotFrame(std::move(robotFrame))
-  , wristFrame(std::move(wristFrame))
-  , captureTimeout(captureTimeout)
-  , virtualObjectHandler(std::move(virtualObjectHandler))
+StereoCamera::StereoCamera(ros::NodeHandle nh, CameraParameters params) : Camera(nh, std::move(params))
 {
   leftCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
@@ -86,7 +77,7 @@ void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr 
 {
   START_NXLIB_ACTION(FitPrimitive, fitPrimitiveServer)
 
-  NxLibCommand fitPrimitives(cmdFitPrimitive, serial);
+  NxLibCommand fitPrimitives(cmdFitPrimitive, params.serial);
   NxLibItem const& primitives = fitPrimitives.parameters()[itmPrimitive];
 
   int primitivesCount = 0;
@@ -235,12 +226,12 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   if (goal->request_raw_images)
   {
-    auto rawImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRaw], cameraFrame);
+    auto rawImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame);
 
     leftCameraInfo->header.stamp = rawImages[0].first->header.stamp;
-    leftCameraInfo->header.frame_id = cameraFrame;
+    leftCameraInfo->header.frame_id = params.cameraFrame;
     rightCameraInfo->header.stamp = leftCameraInfo->header.stamp;
-    rightCameraInfo->header.frame_id = cameraFrame;
+    rightCameraInfo->header.frame_id = params.cameraFrame;
 
     if (goal->include_results_in_response)
     {
@@ -266,25 +257,25 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   // when using CUDA.
   if (goal->request_rectified_images && !computeDisparityMap)
   {
-    NxLibCommand rectify(cmdRectifyImages, serial);
-    rectify.parameters()[itmCameras] = serial;
+    NxLibCommand rectify(cmdRectifyImages, params.serial);
+    rectify.parameters()[itmCameras] = params.serial;
     rectify.execute();
   }
   else if (computeDisparityMap)
   {
-    NxLibCommand disparityMapCommand(cmdComputeDisparityMap, serial);
-    disparityMapCommand.parameters()[itmCameras] = serial;
+    NxLibCommand disparityMapCommand(cmdComputeDisparityMap, params.serial);
+    disparityMapCommand.parameters()[itmCameras] = params.serial;
     disparityMapCommand.execute();
   }
 
   if (goal->request_rectified_images)
   {
-    auto rectifiedImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRectified], cameraFrame);
+    auto rectifiedImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame);
 
     leftRectifiedCameraInfo->header.stamp = rectifiedImages[0].first->header.stamp;
-    leftRectifiedCameraInfo->header.frame_id = cameraFrame;
+    leftRectifiedCameraInfo->header.frame_id = params.cameraFrame;
     rightRectifiedCameraInfo->header.stamp = leftRectifiedCameraInfo->header.stamp;
-    rightRectifiedCameraInfo->header.frame_id = cameraFrame;
+    rightRectifiedCameraInfo->header.frame_id = params.cameraFrame;
 
     if (goal->include_results_in_response)
     {
@@ -306,7 +297,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   if (goal->request_disparity_map)
   {
-    auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], cameraFrame);
+    auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame);
 
     if (goal->include_results_in_response)
     {
@@ -330,13 +321,13 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   {
     updateGlobalLink(imageTimestamp, "", goal->use_cached_transformation);
 
-    NxLibCommand computePointMap(cmdComputePointMap, serial);
-    computePointMap.parameters()[itmCameras] = serial;
+    NxLibCommand computePointMap(cmdComputePointMap, params.serial);
+    computePointMap.parameters()[itmCameras] = params.serial;
     computePointMap.execute();
 
     if (requestPointCloud && !goal->request_normals)
     {
-      auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], targetFrame, pointCloudROI);
+      auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], params.targetFrame, pointCloudROI);
 
       if (goal->include_results_in_response)
       {
@@ -350,9 +341,9 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
     if (goal->request_depth_image)
     {
-      if (cameraFrame == targetFrame)
+      if (params.cameraFrame == params.targetFrame)
       {
-        auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], targetFrame);
+        auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.targetFrame);
         leftRectifiedCameraInfo->header.stamp = depthImage->header.stamp;
 
         if (goal->include_results_in_response)
@@ -380,11 +371,11 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   if (goal->request_normals)
   {
-    NxLibCommand computeNormals(cmdComputeNormals, serial);
+    NxLibCommand computeNormals(cmdComputeNormals, params.serial);
     computeNormals.execute();
 
-    auto pointCloud = pointCloudWithNormalsFromNxLib(cameraNode[itmImages][itmPointMap],
-                                                     cameraNode[itmImages][itmNormals], targetFrame, pointCloudROI);
+    auto pointCloud = pointCloudWithNormalsFromNxLib(
+        cameraNode[itmImages][itmPointMap], cameraNode[itmImages][itmNormals], params.targetFrame, pointCloudROI);
 
     if (goal->include_results_in_response)
     {
@@ -432,8 +423,8 @@ void StereoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr 
   }
 
   // Synchronize to make sure that we read back the correct values.
-  NxLibCommand synchronize(cmdSynchronize, serial);
-  synchronize.parameters()[itmCameras] = serial;
+  NxLibCommand synchronize(cmdSynchronize, params.serial);
+  synchronize.parameters()[itmCameras] = params.serial;
   synchronize.execute();
 
   saveParameterSet(goal->parameter_set, projectorChanged);
@@ -514,7 +505,7 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  std::string patternFrame = targetFrame;
+  std::string patternFrame = params.targetFrame;
   if (!goal->target_frame.empty())
   {
     patternFrame = goal->target_frame;
@@ -646,7 +637,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
   }
   else if (goal->command == goal->CAPTURE_PATTERN)
   {
-    if (robotFrame.empty() || wristFrame.empty())
+    if (params.robotFrame.empty() || params.wristFrame.empty())
     {
       result.error_message = "You need to specify a robot base and wrist frame to do a hand-eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
@@ -662,13 +653,13 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     // Load the pattern buffer that we remembered from the previous calibration steps.
     if (!handEyeCalibrationPatternBuffer.empty())
     {
-      NxLibCommand setPatternBuffer(cmdSetPatternBuffer, serial);
+      NxLibCommand setPatternBuffer(cmdSetPatternBuffer, params.serial);
       setPatternBuffer.parameters()[itmPatterns] << handEyeCalibrationPatternBuffer;
       setPatternBuffer.execute();
     }
     else
     {
-      NxLibCommand(cmdDiscardPatterns, serial).execute();
+      NxLibCommand(cmdDiscardPatterns, params.serial).execute();
     }
 
     std::vector<StereoCalibrationPattern> patterns = collectPattern();
@@ -691,7 +682,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     result.found_pattern = true;
     patterns[0].writeToMessage(result.pattern);
 
-    auto patternPose = estimatePatternPose(imageTimestamp, cameraFrame, true);
+    auto patternPose = estimatePatternPose(imageTimestamp, params.cameraFrame, true);
     result.pattern_pose = stampedPoseFromTransform(patternPose).pose;
 
     PREEMPT_ACTION_IF_REQUESTED
@@ -699,7 +690,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     geometry_msgs::TransformStamped robotPose;
     try
     {
-      robotPose = tfBuffer.lookupTransform(robotFrame, wristFrame, ros::Time(0));
+      robotPose = tfBuffer.lookupTransform(params.robotFrame, params.wristFrame, ros::Time(0));
     }
     catch (tf2::TransformException& e)
     {
@@ -710,7 +701,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     }
 
     // Remember the newly collected data for the next step.
-    NxLibCommand getPatternBuffer(cmdGetPatternBuffer, serial);
+    NxLibCommand getPatternBuffer(cmdGetPatternBuffer, params.serial);
     getPatternBuffer.execute();
     handEyeCalibrationPatternBuffer = getPatternBuffer.result()[itmPatterns].asJson();
 
@@ -730,14 +721,14 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
 
     // Load the pattern observations.
     size_t numberOfPatterns = 0;
-    NxLibCommand setPatternBuffer(cmdSetPatternBuffer, serial);
+    NxLibCommand setPatternBuffer(cmdSetPatternBuffer, params.serial);
     if (!goal->pattern_observations.empty())
     {
       for (size_t i = 0; i < goal->pattern_observations.size(); i++)
       {
         StereoCalibrationPattern pattern(goal->pattern_observations[i]);
 
-        NxLibItem patternNode = setPatternBuffer.parameters()[itmPatterns][i][serial];
+        NxLibItem patternNode = setPatternBuffer.parameters()[itmPatterns][i][params.serial];
         pattern.writeToNxLib(patternNode[itmLeft][0]);
         pattern.writeToNxLib(patternNode[itmRight][0], true);
       }
@@ -774,10 +765,10 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     link = fromMsg(goal->link);
     patternPose = fromMsg(goal->pattern_pose);
 
-    NxLibCommand calibrateHandEye(cmdCalibrateHandEye, serial);
-    calibrateHandEye.parameters()[itmSetup] = fixed ? valFixed : valMoving;
+    NxLibCommand calibrateHandEye(cmdCalibrateHandEye, params.serial);
+    calibrateHandEye.parameters()[itmSetup] = params.fixed ? valFixed : valMoving;
     // The target node will be reset anyway before we calculate data for the next time.
-    calibrateHandEye.parameters()[itmTarget] = TARGET_FRAME_LINK + "_" + serial;
+    calibrateHandEye.parameters()[itmTarget] = TARGET_FRAME_LINK + "_" + params.serial;
     if (isValid(link))
     {
       writePoseToNxLib(link.inverse(), calibrateHandEye.parameters()[itmLink]);
@@ -815,7 +806,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
 
       if (calibrateHandEyeServer->isPreemptRequested())
       {
-        NxLibCommand(cmdBreak, serial).execute();
+        NxLibCommand(cmdBreak, params.serial).execute();
 
         calibrateHandEyeServer->setPreempted();
         return;
@@ -836,8 +827,8 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     if (goal->write_calibration_to_eeprom)
     {
       // Save the new calibration link to the camera's EEPROM.
-      NxLibCommand storeCalibration(cmdStoreCalibration, serial);
-      storeCalibration.parameters()[itmCameras] = serial;
+      NxLibCommand storeCalibration(cmdStoreCalibration, params.serial);
+      storeCalibration.parameters()[itmCameras] = params.serial;
       storeCalibration.parameters()[itmLink] = true;
       storeCalibration.execute();
     }
@@ -854,7 +845,7 @@ void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceG
 {
   START_NXLIB_ACTION(CalibrateWorkspace, calibrateWorkspaceServer)
 
-  if (!fixed)
+  if (!params.fixed)
   {
     ROS_WARN("You are performing a workspace calibration for a moving camera. Are you sure this is what you want?");
   }
@@ -899,18 +890,18 @@ void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceG
 
   tf2::Transform definedPatternPose = fromMsg(goal->defined_pattern_pose);
 
-  NxLibCommand calibrateWorkspace(cmdCalibrateWorkspace, serial);
-  calibrateWorkspace.parameters()[itmCameras] = serial;
+  NxLibCommand calibrateWorkspace(cmdCalibrateWorkspace, params.serial);
+  calibrateWorkspace.parameters()[itmCameras] = params.serial;
   writePoseToNxLib(patternTransformation, calibrateWorkspace.parameters()[itmPatternPose]);
   writePoseToNxLib(definedPatternPose, calibrateWorkspace.parameters()[itmDefinedPose]);
-  calibrateWorkspace.parameters()[itmTarget] = TARGET_FRAME_LINK + "_" + serial;
+  calibrateWorkspace.parameters()[itmTarget] = TARGET_FRAME_LINK + "_" + params.serial;
   calibrateWorkspace.execute();
 
   if (goal->write_calibration_to_eeprom)
   {
     // Save the new calibration link to the camera's EEPROM.
-    NxLibCommand storeCalibration(cmdStoreCalibration, serial);
-    storeCalibration.parameters()[itmCameras] = serial;
+    NxLibCommand storeCalibration(cmdStoreCalibration, params.serial);
+    storeCalibration.parameters()[itmCameras] = params.serial;
     storeCalibration.parameters()[itmLink] = true;
     storeCalibration.execute();
   }
@@ -939,7 +930,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   }
 
   tf2::Transform transform;
-  std::string publishingFrame = useViewPose ? targetFrame : goal->frame;
+  std::string publishingFrame = useViewPose ? params.targetFrame : goal->frame;
 
   if (useViewPose)
   {
@@ -947,7 +938,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   }
   else
   {
-    transform = getLatestTransform(tfBuffer, targetFrame, goal->frame);
+    transform = getLatestTransform(tfBuffer, params.targetFrame, goal->frame);
   }
 
   int pixelScale = goal->pixel_scale != 0. ? goal->pixel_scale : 1;
@@ -955,15 +946,15 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   int sizeWidth = goal->size_width != 0 ? goal->size_width : 1024;
   int sizeHeight = goal->size_height != 0. ? goal->size_height : 768;
   bool useOpenGL = goal->use_opengl == 1;
-  RenderPointMapParamsTelecentric params(useOpenGL, pixelScale, scaling, sizeWidth, sizeHeight, transform);
+  RenderPointMapParamsTelecentric renderParams(useOpenGL, pixelScale, scaling, sizeWidth, sizeHeight, transform);
 
-  NxLibCommand renderPointMap(cmdRenderPointMap, serial);
+  NxLibCommand renderPointMap(cmdRenderPointMap, params.serial);
 
   for (int i = 0; i < static_cast<int>(goal->serials.size()); i++)
   {
     renderPointMap.parameters()[itmCameras][i] = goal->serials[i];
   }
-  setRenderParams(renderPointMap.parameters(), nxLibVersion, &params);
+  setRenderParams(renderPointMap.parameters(), nxLibVersion, &renderParams);
 
   renderPointMap.execute();
 
@@ -1044,21 +1035,21 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
   bool useOpenGL = goal->use_opengl == 1;
   bool withTexture = true;
 
-  RenderPointMapParamsProjection params(useOpenGL, farPlane, nearPlane, withTexture);
+  RenderPointMapParamsProjection renderParams(useOpenGL, farPlane, nearPlane, withTexture);
 
-  NxLibCommand renderPointMap(cmdRenderPointMap, serial);
+  NxLibCommand renderPointMap(cmdRenderPointMap, params.serial);
   for (int i = 0; i < static_cast<int>(goal->serials.size()); i++)
   {
     renderPointMap.parameters()[itmCameras][i] = goal->serials[i];
   }
   renderPointMap.parameters()[itmCamera] = goal->mono_serial;
-  setRenderParams(renderPointMap.parameters(), nxLibVersion, &params);
+  setRenderParams(renderPointMap.parameters(), nxLibVersion, &renderParams);
 
   renderPointMap.execute();
 
   if (goal->publish_results || goal->include_results_in_response)
   {
-    auto cloudColored = retrieveTexturedPointCloud(renderPointMap.result(), nxLibVersion, targetFrame);
+    auto cloudColored = retrieveTexturedPointCloud(renderPointMap.result(), nxLibVersion, params.targetFrame);
     if (goal->publish_results)
     {
       pointCloudPublisherColor.publish(cloudColored);
@@ -1128,8 +1119,8 @@ void StereoCamera::loadParameterSet(std::string name, ProjectorState projector)
 
   if (changedParameters)
   {
-    NxLibCommand synchronize(cmdSynchronize, serial);
-    synchronize.parameters()[itmCameras] = serial;
+    NxLibCommand synchronize(cmdSynchronize, params.serial);
+    synchronize.parameters()[itmCameras] = params.serial;
     synchronize.execute();
   }
 }
@@ -1137,11 +1128,11 @@ void StereoCamera::loadParameterSet(std::string name, ProjectorState projector)
 ros::Time StereoCamera::capture() const
 {
   // Update virtual objects. Ignore failures with a simple warning.
-  if (virtualObjectHandler)
+  if (params.virtualObjectHandler)
   {
     try
     {
-      virtualObjectHandler->updateObjectLinks();
+      params.virtualObjectHandler->updateObjectLinks();
     }
     catch (const std::exception& e)
     {
@@ -1151,18 +1142,18 @@ ros::Time StereoCamera::capture() const
 
   ROS_DEBUG("Capturing an image...");
 
-  NxLibCommand capture(cmdCapture, serial);
-  capture.parameters()[itmCameras] = serial;
-  if (captureTimeout > 0)
+  NxLibCommand capture(cmdCapture, params.serial);
+  capture.parameters()[itmCameras] = params.serial;
+  if (params.captureTimeout > 0)
   {
-    capture.parameters()[itmTimeout] = captureTimeout;
+    capture.parameters()[itmTimeout] = params.captureTimeout;
   }
   capture.execute();
 
   NxLibItem imageNode = cameraNode[itmImages][itmRaw];
   imageNode = imageNode[itmLeft];
 
-  if (isFileCamera)
+  if (params.isFileCamera)
   {
     // This workaround is needed, because the timestamp of captures from file cameras will not change over time. When
     // looking up the current tf tree, this will result in errors, because the time of the original timestamp is
@@ -1177,13 +1168,13 @@ std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuf
 {
   if (clearBuffer)
   {
-    NxLibCommand(cmdDiscardPatterns, serial).execute();
+    NxLibCommand(cmdDiscardPatterns, params.serial).execute();
   }
 
-  NxLibCommand collectPattern(cmdCollectPattern, serial);
-  collectPattern.parameters()[itmCameras] = serial;
+  NxLibCommand collectPattern(cmdCollectPattern, params.serial);
+  collectPattern.parameters()[itmCameras] = params.serial;
   collectPattern.parameters()[itmDecodeData] = true;
-  collectPattern.parameters()[itmFilter][itmCameras] = serial;
+  collectPattern.parameters()[itmFilter][itmCameras] = params.serial;
   bool useModel = true;
   collectPattern.parameters()[itmFilter][itmUseModel] = useModel;
   collectPattern.parameters()[itmFilter][itmType] = valStatic;
@@ -1219,7 +1210,7 @@ std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuf
   }
 
   // Extract the pattern's image points from the result.
-  NxLibItem pattern = collectPattern.result()[itmPatterns][0][serial];
+  NxLibItem pattern = collectPattern.result()[itmPatterns][0][params.serial];
   if (pattern[itmLeft].count() > 1 || pattern[itmRight].count() > 1)
   {
     // We cannot tell which of the patterns in the two cameras belong together, because that would need a comparison

@@ -21,8 +21,7 @@ private:
   image_transport::CameraPublisher rectifiedImagePublisher;
 
 public:
-  MonoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
-             std::string targetFrame, std::string linkFrame);
+  MonoCamera(ros::NodeHandle nh, CameraParameters params);
 
   void init() override;
 

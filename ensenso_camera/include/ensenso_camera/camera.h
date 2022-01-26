@@ -168,29 +168,98 @@ struct ParameterSet
   ParameterSet(std::string const& name, NxLibItem const& defaultParameters);
 };
 
+/**
+ * The camera parameters that can be used for different camera types (Monocular, Stereo and StructuredLight).
+ */
+struct CameraParameters
+{
+  /**
+   * The camera serial.
+   */
+  std::string serial;
+
+  /**
+   * Whether the camera is a file camera.
+   *
+   */
+  bool isFileCamera;
+
+  /**
+   * The path to the data of the file camera.
+   */
+  std::string fileCameraPath;
+
+  /**
+   * Whether the camera is fixed in the world or moves with a robot.
+   */
+  bool fixed;
+
+  /**
+   * The tf frame in which the data is captured by the camera.
+   */
+  std::string cameraFrame;
+
+  /**
+   * A helper tf frame.
+   *
+   * If the linkFrame parameter is not given, it defaults to targetFrame, if targetFrame is given, otherwise linkFrame
+   * will be the same as the cameraFrame.
+   * If the linkFrame parameter is given, it represents the internal camera link, which is stored for each of the
+   * cameras in the NxLib. This camera link stores e.g. the transformation of the hand-eye calibration (fixed) from the
+   * camera to the robot base. It can also store a transformation to another camera or the transformation to the
+   * workspace, which is received by a workspace calibration. This internal camera link is static and will be published
+   * with tf.
+   */
+  std::string linkFrame;
+
+  /**
+   * The tf frame in which the user wants to receive the data from the camera. All data is automatically transformed
+   * using the current tf transformation between linkFrame and targetFrame (this includes the point cloud as well as
+   * poses of calibration patterns). By default, targetFrame is the same as cameraFrame, if not defined.
+   */
+  std::string targetFrame;
+
+  /**
+   * Optional tf frame of the robot's base for a hand-eye calibration of a stereo camera. For a fixed camera, this
+   * defaults to cameraFrame, for a moving camera it needs to be specified if you want to perform a hand-eye
+   * calibration.
+   */
+  std::string robotFrame = "";
+
+  /**
+   * Optional tf frame of the robot's wrist for a hand-eye calibration of a stereo camera. For a moving camera, this
+   * defaults to cameraFrame, for a fixed camera it needs to be specified if you want to perform a hand-eye calibration.
+   */
+  std::string wristFrame = "";
+
+  /**
+   * Optional capture timeout for a stereo camera.
+   */
+  int captureTimeout = 0;
+
+  /**
+   * Optional VirtualObjectHandler for a stereo camera.
+   */
+  std::unique_ptr<ensenso_camera::VirtualObjectHandler> virtualObjectHandler = nullptr;
+
+  CameraParameters(ros::NodeHandle const& nh, std::string const& cameraType, std::string serial);
+};
+
 class Camera
 {
 protected:
-  bool isFileCamera;
-  std::string fileCameraPath;
+  CameraParameters params;
+
   // Whether the camera is a file camera and was created by this node. If it was/ created by this node, it will be
   // deleted after it got closed.
   bool createdFileCamera = false;
 
   VersionInfo nxLibVersion;
 
-  std::string serial;
   NxLibItem cameraNode;
 
   // Controls parallel access to the NxLib.
   mutable std::mutex nxLibMutex;
-
-  // Whether the camera is fixed in the world or moves with a robot.
-  bool fixed;
-
-  std::string cameraFrame;
-  std::string linkFrame;
-  std::string targetFrame;
 
   ros::NodeHandle nh;
 
@@ -218,8 +287,7 @@ protected:
   std::string currentParameterSet;
 
 public:
-  Camera(ros::NodeHandle const& n, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
-         std::string targetFrame, std::string linkFrame);
+  Camera(ros::NodeHandle& nh, CameraParameters params);
 
   /**
    * Open the camera.
@@ -344,7 +412,7 @@ protected:
    * The target frame is node's target frame by default. When the useCachedTransformation flag is set, the
    * transformation is not updated from the TF server and a cached tranformation is used instead.
    */
-  void updateGlobalLink(ros::Time time = ros::Time::now(), std::string frame = "",
+  void updateGlobalLink(ros::Time time = ros::Time::now(), std::string targetFrame = "",
                         bool useCachedTransformation = false) const;
 
   /**

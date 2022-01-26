@@ -4,10 +4,7 @@
 
 #include <sensor_msgs/distortion_models.h>
 
-MonoCamera::MonoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed,
-                       std::string cameraFrame, std::string targetFrame, std::string linkFrame)
-  : Camera(nh, std::move(serial), std::move(fileCameraPath), fixed, std::move(cameraFrame), std::move(targetFrame),
-           std::move(linkFrame))
+MonoCamera::MonoCamera(ros::NodeHandle nh, CameraParameters params) : Camera(nh, std::move(params))
 {
   cameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
@@ -39,8 +36,8 @@ ros::Time MonoCamera::capture() const
 {
   ROS_DEBUG("Capturing an image...");
 
-  NxLibCommand capture(cmdCapture, serial);
-  capture.parameters()[itmCameras] = serial;
+  NxLibCommand capture(cmdCapture, params.serial);
+  capture.parameters()[itmCameras] = params.serial;
   capture.execute();
 
   NxLibItem imageNode = cameraNode[itmImages][itmRaw];
@@ -49,7 +46,7 @@ ros::Time MonoCamera::capture() const
     imageNode = imageNode[0];
   }
 
-  if (isFileCamera)
+  if (params.isFileCamera)
   {
     // This workaround is needed, because the timestamp of captures from file cameras will not change over time. When
     // looking up the current tf tree, this will result in errors, because the time of the original timestamp is
@@ -129,9 +126,9 @@ void MonoCamera::onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr 
 
   if (goal->request_raw_images)
   {
-    auto rawImages = imagesFromNxLibNode(cameraNode[itmImages][itmRaw], cameraFrame);
+    auto rawImages = imagesFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame);
     cameraInfo->header.stamp = rawImages[0]->header.stamp;
-    cameraInfo->header.frame_id = cameraFrame;
+    cameraInfo->header.frame_id = params.cameraFrame;
     if (goal->include_results_in_response)
     {
       for (auto const& image : rawImages)
@@ -150,13 +147,13 @@ void MonoCamera::onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr 
 
   if (requestRectified)
   {
-    NxLibCommand rectify(cmdRectifyImages, serial);
-    rectify.parameters()[itmCameras] = serial;
+    NxLibCommand rectify(cmdRectifyImages, params.serial);
+    rectify.parameters()[itmCameras] = params.serial;
     rectify.execute();
 
-    auto rectifiedImages = imagesFromNxLibNode(cameraNode[itmImages][itmRectified], cameraFrame);
+    auto rectifiedImages = imagesFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame);
     rectifiedCameraInfo->header.stamp = rectifiedImages[0]->header.stamp;
-    rectifiedCameraInfo->header.frame_id = cameraFrame;
+    rectifiedCameraInfo->header.frame_id = params.cameraFrame;
     if (goal->include_results_in_response)
     {
       for (auto const& image : rectifiedImages)
@@ -196,8 +193,8 @@ void MonoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr co
   }
 
   // Synchronize to make sure that we read back the correct values.
-  NxLibCommand synchronize(cmdSynchronize, serial);
-  synchronize.parameters()[itmCameras] = serial;
+  NxLibCommand synchronize(cmdSynchronize, params.serial);
+  synchronize.parameters()[itmCameras] = params.serial;
   synchronize.execute();
 
   saveParameterSet(goal->parameter_set);
@@ -276,7 +273,7 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  std::string patternFrame = targetFrame;
+  std::string patternFrame = params.targetFrame;
   if (!goal->target_frame.empty())
   {
     patternFrame = goal->target_frame;
@@ -326,11 +323,11 @@ std::vector<MonoCalibrationPattern> MonoCamera::collectPattern(bool clearBuffer)
 {
   if (clearBuffer)
   {
-    NxLibCommand(cmdDiscardPatterns, serial).execute();
+    NxLibCommand(cmdDiscardPatterns, params.serial).execute();
   }
 
-  NxLibCommand collectPattern(cmdCollectPattern, serial);
-  collectPattern.parameters()[itmCameras] = serial;
+  NxLibCommand collectPattern(cmdCollectPattern, params.serial);
+  collectPattern.parameters()[itmCameras] = params.serial;
   collectPattern.parameters()[itmDecodeData] = true;
   try
   {
@@ -351,13 +348,13 @@ std::vector<MonoCalibrationPattern> MonoCamera::collectPattern(bool clearBuffer)
 
   std::vector<MonoCalibrationPattern> result;
 
-  for (int i = 0; i < collectPattern.result()[itmPatterns][0][serial].count(); i++)
+  for (int i = 0; i < collectPattern.result()[itmPatterns][0][params.serial].count(); i++)
   {
-    result.emplace_back(collectPattern.result()[itmPatterns][0][serial][i][itmPattern]);
+    result.emplace_back(collectPattern.result()[itmPatterns][0][params.serial][i][itmPattern]);
   }
 
   // Extract the pattern's image points from the result.
-  NxLibItem pattern = collectPattern.result()[itmPatterns][0][serial];
+  NxLibItem pattern = collectPattern.result()[itmPatterns][0][params.serial];
 
   for (size_t i = 0; i < result.size(); i++)
   {
@@ -381,7 +378,7 @@ geometry_msgs::TransformStamped MonoCamera::estimatePatternPose(ros::Time imageT
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
-  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, serial);
+  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, params.serial);
   estimatePatternPose.parameters()[itmType] = itmMonocular;
   if (latestPatternOnly)
   {
@@ -399,7 +396,7 @@ geometry_msgs::TransformStamped MonoCamera::estimatePatternPose(ros::Time imageT
 
   ROS_ASSERT(estimatePatternPose.result()[itmPatterns].count() == 1);
 
-  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], cameraFrame, targetFrame);
+  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], params.cameraFrame, targetFrame);
 }
 
 std::vector<geometry_msgs::TransformStamped> MonoCamera::estimatePatternPoses(ros::Time imageTimestamp,
@@ -407,10 +404,10 @@ std::vector<geometry_msgs::TransformStamped> MonoCamera::estimatePatternPoses(ro
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
-  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, serial);
+  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, params.serial);
   estimatePatternPose.parameters()[itmAverage] = false;
   estimatePatternPose.parameters()[itmType] = itmMonocular;
-  estimatePatternPose.parameters()[itmFilter][itmCameras] = serial;
+  estimatePatternPose.parameters()[itmFilter][itmCameras] = params.serial;
 
   estimatePatternPose.execute();
 
@@ -422,7 +419,7 @@ std::vector<geometry_msgs::TransformStamped> MonoCamera::estimatePatternPoses(ro
   for (int i = 0; i < numberOfPatterns; i++)
   {
     result.push_back(
-        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], targetFrame, cameraFrame));
+        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], targetFrame, params.cameraFrame));
   }
 
   return result;
