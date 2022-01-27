@@ -191,4 +191,30 @@
     <link name="${name}_left_lens_frame"/>
   </xacro:macro>
 
+  <xacro:macro name="ensenso_XQ" params="name margin:=0.03">
+    <link name="${name}">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://ensenso_description/stl_meshes/X3x-Q.stl"/>
+        </geometry>
+        <material name="Ensenso/Blue"/>
+      </visual>
+      <collision>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 ${margin/2 + 0.11}"/>
+        <geometry>
+          <box size="${margin+0.650} ${margin+0.616} ${margin+0.22}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Left lens -->
+    <joint name="${name}_left_lens_joint" type="fixed">
+      <parent link="${name}"/>
+      <child link="${name}_left_lens_frame"/>
+      <origin xyz="-0.22125 0 0.063" rpy="0 0 0"/>
+    </joint>
+    <link name="${name}_left_lens_frame"/>
+  </xacro:macro>
+
 </robot>
