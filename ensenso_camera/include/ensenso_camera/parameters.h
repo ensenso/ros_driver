@@ -43,11 +43,10 @@ struct ParameterMapping
 };
 
 /**
- * Map ROS parameters (as defined in ensenso_camera_msgs/Parameter) to NxLib
- * nodes.
- * Note that there are other parameters that cannot be mapped directly to an
- * NxLib node. These are handled in the parameter reading and writing methods
- * of the camera class.
+ * Map ROS parameters (as defined in ensenso_camera_msgs/Parameter) to NxLib nodes.
+ *
+ * Note that there are other parameters that cannot be mapped directly to an NxLib node. These are handled in the
+ * parameter reading and writing methods of the camera class.
  */
 std::map<std::string, ParameterMapping> const parameterInformation{
   // NOLINT

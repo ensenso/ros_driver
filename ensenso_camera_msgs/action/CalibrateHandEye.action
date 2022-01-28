@@ -1,4 +1,4 @@
-# This action does a hand eye calibration with the Ensenso SDK. It estimates the
+# This action does a hand-eye calibration with the Ensenso SDK. It estimates the
 # position of the camera relative to the robot wrist (for a camera that is
 # mounted on the robot arm) or relative to the robot base (for a fixed camera).
 #

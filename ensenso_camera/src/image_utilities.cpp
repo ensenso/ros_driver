@@ -87,9 +87,9 @@ std::string imageEncoding(bool isFloat, int channels, int bytesPerElement)
   return "";
 }
 
-sensor_msgs::ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame)
+ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame)
 {
-  auto image = boost::make_shared<sensor_msgs::Image>();
+  auto image = boost::make_shared<Image>();
 
   bool isFloat;
   int width, height, channels, bytesPerElement;
@@ -108,8 +108,7 @@ sensor_msgs::ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string cons
   return image;
 }
 
-std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr> imagePairFromNxLibNode(const NxLibItem& node,
-                                                                               std::string const& frame)
+ImagePtrPair imagePairFromNxLibNode(NxLibItem const& node, std::string const& frame)
 {
   auto leftImage = imageFromNxLibNode(node[itmLeft], frame);
   auto rightImage = imageFromNxLibNode(node[itmRight], frame);
@@ -117,10 +116,9 @@ std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr> imagePairFromNxLibNode(c
   return { leftImage, rightImage };
 }
 
-std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>> imagePairsFromNxLibNode(const NxLibItem& node,
-                                                                                             std::string const& frame)
+std::vector<ImagePtrPair> imagePairsFromNxLibNode(NxLibItem const& node, std::string const& frame)
 {
-  std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>> result;
+  std::vector<ImagePtrPair> result;
 
   if (node.isArray())
   {
@@ -137,9 +135,9 @@ std::vector<std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>> imagePairsF
   return result;
 }
 
-std::vector<sensor_msgs::ImagePtr> imagesFromNxLibNode(NxLibItem const& node, std::string const& frame)
+std::vector<ImagePtr> imagesFromNxLibNode(NxLibItem const& node, std::string const& frame)
 {
-  std::vector<sensor_msgs::ImagePtr> result;
+  std::vector<ImagePtr> result;
 
   if (node.isArray())
   {
@@ -156,7 +154,7 @@ std::vector<sensor_msgs::ImagePtr> imagesFromNxLibNode(NxLibItem const& node, st
   return result;
 }
 
-ros::Time timestampFromNxLibNode(const NxLibItem& node)
+ros::Time timestampFromNxLibNode(NxLibItem const& node)
 {
   double timestamp;
   node.getBinaryDataInfo(0, 0, 0, 0, 0, &timestamp);
@@ -164,7 +162,7 @@ ros::Time timestampFromNxLibNode(const NxLibItem& node)
   return ros::Time(timestamp - NXLIB_TIMESTAMP_OFFSET);
 }
 
-sensor_msgs::ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame)
+ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame)
 {
   double timestamp;
   cv::Mat pointMap;
@@ -173,10 +171,10 @@ sensor_msgs::ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string
   cv::Mat depthImage;
   cv::extractChannel(pointMap, depthImage, 2);
 
-  // convert units from millimeters to meters
+  // Convert units from millimeters to meters.
   depthImage /= 1000.0;
 
-  // convert cv mat to ros image
+  // Convert cv mat to ros image.
   cv_bridge::CvImage out_msg;
   out_msg.header.stamp.fromSec(timestamp - NXLIB_TIMESTAMP_OFFSET);
   out_msg.header.frame_id = frame;
