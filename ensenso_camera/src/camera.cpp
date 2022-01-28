@@ -8,8 +8,7 @@
 
 ParameterSet::ParameterSet(const std::string& name, const NxLibItem& defaultParameters)
 {
-  // Create a new NxLib node where we will store the parameters for this set and
-  // overwrite it with the default settings.
+  // Create a new NxLib node where we will store the parameters for this set and overwrite it with the default settings.
   node = NxLibItem()["rosParameterSets"][name];
   node << defaultParameters;
 }
@@ -154,8 +153,7 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
     result.json_value = item.asJson();
     try
     {
-      // This could load any image that does not belong to the node's camera,
-      // so we do not know its frame.
+      // This could load any image that does not belong to the node's camera, so we do not know its frame.
       result.binary_data = *imageFromNxLibNode(item, "");
     }
     catch (NxLibException&)
@@ -263,26 +261,25 @@ void Camera::updateGlobalLink(ros::Time time, std::string frame, bool useCachedT
     frame = targetFrame;
   }
 
-  // Transformation are represented in the NxLib as follows.
-  // The camera's link node contains the calibration data from e.g. the hand
-  // eye calibration. This is always used when it is present.
-  // The transformation between the link frame and the target frame (in
-  // which the data is returned) is fetched from TF and written to a global link node
-  // of the NxLib.
-  // The link in the camera node has to reference this global link, if it exists. (e.g. when the linkFrame
-  // is different from the targetFrame)
+  // Transformation are represented in the NxLib as follows:
+  //  - The camera's link node contains the calibration data from e.g. the hand-eye calibration. This is always used
+  //    when it is present.
+  //  - The transformation between the link frame and the target frame (in which the data is returned) is fetched from
+  //    TF and written to a global link node of the NxLib.
+  //  - The link in the camera node has to reference this global link, if it exists (e.g. when the linkFrame is
+  //    different from the targetFrame).
 
   if (linkFrame == frame)
   {
-    // The frame is the target frame already. So the camera does not need a reference to a global link.
+    // The given target frame is the target frame already. So the camera does not need a reference to a global link.
     cameraNode[itmLink][itmTarget] = "";
     return;
   }
 
   cameraNode[itmLink][itmTarget] = TARGET_FRAME_LINK + "_" + serial;
 
-  // Update the transformation to the target frame in the NxLib according to
-  // the current information from TF. Only if the link frame and target frame differs.
+  // Update the transformation to the target frame in the NxLib according to the current information from TF only if
+  // link and target frame differ.
   geometry_msgs::TransformStamped transform;
   if (useCachedTransformation && transformationCache.count(frame) != 0)
   {
@@ -290,7 +287,7 @@ void Camera::updateGlobalLink(ros::Time time, std::string frame, bool useCachedT
   }
   else
   {
-    transform = tfBuffer.lookupTransform(linkFrame, frame, time, ros::Duration(TRANSFORMATION_REQUEST_TIMEOUT));
+    transform = tfBuffer.lookupTransform(linkFrame, frame, time, ros::Duration(TF_REQUEST_TIMEOUT));
     transformationCache[frame] = transform;
   }
   tf2::Transform tfTrafo;
@@ -533,8 +530,7 @@ void Camera::loadParameterSet(std::string name)
 
   if (parameterSets.count(name) == 0)
   {
-    // The parameter set was never used before. Create it by copying the
-    // default settings.
+    // The parameter set was never used before. Create it by copying the default settings.
     parameterSets.insert(std::make_pair(name, ParameterSet(name, defaultParameters)));
   }
 
@@ -564,7 +560,7 @@ void Camera::publishCurrentLinks(ros::TimerEvent const& timerEvent)
 
 void Camera::publishCameraLink()
 {
-  // The camera link is the calibrated link from camera to link
+  // The camera link is the calibrated link from camera to link.
   if (cameraFrame == linkFrame)
   {
     return;
@@ -580,17 +576,16 @@ void Camera::publishCameraLink()
 
 geometry_msgs::TransformStamped Camera::stampedLinkToCamera()
 {
-  tf2::Transform transform = getCameraToLinkTransform();
-  // Need the inverse, because we want to publish the other way around
-  // E.g. Instead of camera->link, we want link->camera
-  // We also need the camera always to be the child frame
-  geometry_msgs::TransformStamped transformStamped = fromTfTransform(transform.inverse(), linkFrame, cameraFrame);
-  return transformStamped;
+  // Get the inverse of the camera to link transform, because we want to publish the other way around (e.g. instead of
+  // camera->link, we want link->camera).
+  tf2::Transform cameraToLinkInverse = getCameraToLinkTransform().inverse();
+  // The camera always needs to be the child frame in this transformation.
+  return fromTfTransform(cameraToLinkInverse, linkFrame, cameraFrame);
 }
 
 tf2::Transform Camera::getCameraToLinkTransform()
 {
-  // The Nxlib will always give the transfrom from the Camera to the Link target in Camera Coordinates.
+  // The NxLib will always give the transfrom from the camera to the link target in camera coordinates.
   tf2::Transform transform;
   try
   {

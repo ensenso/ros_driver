@@ -125,7 +125,7 @@ void Nodelet::onInit()
   std::string objectsFile;
   if (nhLocal.getParam("objects_file", objectsFile) && !objectsFile.empty())
   {
-    // Get objects frame, default to target
+    // Get objects frame, default to target.
     std::string objectsFrame = targetFrame;
     nhLocal.getParam("objects_frame", objectsFrame);
 

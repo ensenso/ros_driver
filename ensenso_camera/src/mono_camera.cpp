@@ -1,6 +1,7 @@
 #include "ensenso_camera/mono_camera.h"
 
 #include "ensenso_camera/pose_utilities.h"
+
 #include <sensor_msgs/distortion_models.h>
 
 MonoCamera::MonoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed,
@@ -19,6 +20,19 @@ MonoCamera::MonoCamera(ros::NodeHandle nh, std::string serial, std::string fileC
   image_transport::ImageTransport imageTransport(nh);
   rawImagePublisher = imageTransport.advertiseCamera("raw/image", 1);
   rectifiedImagePublisher = imageTransport.advertiseCamera("rectified/image", 1);
+}
+
+void MonoCamera::init()
+{
+  startServers();
+  initTfPublishTimer();
+}
+
+void MonoCamera::startServers() const
+{
+  Camera::startServers();
+  requestDataServer->start();
+  locatePatternServer->start();
 }
 
 ros::Time MonoCamera::capture() const
@@ -44,15 +58,6 @@ ros::Time MonoCamera::capture() const
   }
 
   return timestampFromNxLibNode(imageNode);
-}
-
-bool MonoCamera::open()
-{
-  Camera::open();
-
-  updateCameraInfo();
-
-  return true;
 }
 
 void MonoCamera::updateCameraInfo()
@@ -94,13 +99,6 @@ void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info,
       }
     }
   }
-}
-
-void MonoCamera::startServers() const
-{
-  Camera::startServers();
-  requestDataServer->start();
-  locatePatternServer->start();
 }
 
 void MonoCamera::onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr const& goal)
@@ -263,8 +261,8 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
 
     if (patterns.size() > 1)
     {
-      // Cannot average multiple shots of multiple patterns. We will cancel the
-      // capturing and estimate the pose of each pattern individually.
+      // Cannot average multiple shots of multiple patterns. We will cancel the capturing and estimate the pose of each
+      // pattern individually.
       break;
     }
   }
@@ -299,8 +297,7 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
   }
   else
   {
-    // Estimate the pose of a single pattern, averaging over the different
-    // shots.
+    // Estimate the pose of a single pattern, averaging over the different shots.
     auto patternPose = estimatePatternPose(imageTimestamp, patternFrame);
 
     result.mono_pattern_poses.resize(1);
@@ -316,9 +313,7 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
     }
     else
     {
-      ROS_WARN(
-          "Cannot publish the pattern pose in TF, because there are "
-          "multiple patterns!");
+      ROS_WARN("Cannot publish the pattern pose in TF, because there are multiple patterns!");
     }
   }
 

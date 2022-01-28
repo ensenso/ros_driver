@@ -24,44 +24,43 @@ public:
   MonoCamera(ros::NodeHandle nh, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
              std::string targetFrame, std::string linkFrame);
 
-  bool open() override;
+  void init() override;
 
-  void startServers() const override;
+  ros::Time capture() const override;
+
+  void onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal) override;
 
   /**
    * Callback for the `request_data` action.
    */
   void onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr const& goal);
 
+  /**
+   * Callback for the `locate_pattern` action.
+   */
   void onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConstPtr const& goal);
 
-  void onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal) override;
-
-  ros::Time capture() const override;
-
 private:
+  void startServers() const override;
+
   void updateCameraInfo() override;
-  void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool rectified = false);
 
-  std::vector<MonoCalibrationPattern> collectPattern(bool clearBuffer = false) const;
-
-  /**
-   * Estimate the pose of a pattern in the given TF frame. The pattern must
-   * already be contained in the pattern buffer (that is, you should call
-   * collectPattern before this function).
-   *
-   * When the latestPatternOnly flag is set, the estimated position will be
-   * the one of the latest pattern in the buffer. Otherwise the function
-   * assumes that all observations are of the same pattern. It will then
-   * average their positions to increase the accuracy of the pose estimation.
-   */
   geometry_msgs::TransformStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
                                                       std::string const& targetFrame = "",
                                                       bool latestPatternOnly = false) const override;
 
-  /**
-   * Estimate the pose of each pattern in the pattern buffer for mono cameras.
-   */
   std::vector<geometry_msgs::TransformStamped> estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(),
                                                                     std::string const& targetFrame = "") const override;
+
+  /**
+   * Read the camera calibration from the NxLib and write it into a CameraInfo message.
+   */
+  void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool rectified = false);
+
+  /**
+   * Runs the NxLib's collectPattern command and returns a vector of MonoCalibrationPatterns. The result is empty if no
+   * pattern was found or if the pattern is / patterns are not decodable. Otherwise the result contains the found
+   * patterns.
+   */
+  std::vector<MonoCalibrationPattern> collectPattern(bool clearBuffer = false) const;
 };

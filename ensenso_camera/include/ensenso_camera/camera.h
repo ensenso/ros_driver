@@ -8,10 +8,11 @@
 #include "ensenso_camera_msgs/GetParameterAction.h"
 #include "ensenso_camera_msgs/SetParameterAction.h"
 #include "ensenso_camera/calibration_pattern.h"
-#include "ensenso_camera/point_cloud_utilities.h"
-#include "ensenso_camera/queued_action_server.h"
 #include "ensenso_camera/image_utilities.h"
 #include "ensenso_camera/nxLibVersionInfo.h"
+#include "ensenso_camera/point_cloud_utilities.h"
+#include "ensenso_camera/queued_action_server.h"
+#include "ensenso_camera/virtual_object_handler.h"
 
 #include "nxLib.h"
 
@@ -34,8 +35,7 @@
 #include <fstream>
 
 /**
- * The interval at which we publish diagnostic messages containing the camera
- * status.
+ * The interval at which we publish diagnostic messages containing the camera status.
  */
 double const STATUS_INTERVAL = 3.0;  // Seconds.
 
@@ -48,11 +48,10 @@ double const POSE_TF_INTERVAL = 1;  // Seconds.
 /**
  * The maximum time that we wait for a tf transformation to become available.
  */
-double const TRANSFORMATION_REQUEST_TIMEOUT = 10.;  // Seconds.
+double const TF_REQUEST_TIMEOUT = 10.;  // Seconds.
 
 /**
- * The name of the parameter set that is used when an action was not given a
- * parameter set explicitly.
+ * The name of the parameter set that is used when an action was not given a parameter set explicitly.
  */
 std::string const DEFAULT_PARAMETER_SET = "default";
 
@@ -61,8 +60,8 @@ std::string const DEFAULT_PARAMETER_SET = "default";
  */
 std::string const TARGET_FRAME_LINK = "Workspace";
 
-// The ROS node gives back error codes from the NxLib. Additionally, we use the
-// following error codes to indicate errors from the ROS node itself.
+// The ROS node gives back error codes from the NxLib. Additionally, we use the following error codes to indicate errors
+// from the ROS node itself.
 int const ERROR_CODE_UNKNOWN_EXCEPTION = 100;
 int const ERROR_CODE_TF = 101;
 
@@ -81,12 +80,9 @@ int const ERROR_CODE_TF = 101;
   } /* NOLINT */                                                                                                       \
   ROS_DEBUG("Current NxLib tree: %s", NxLibItem().asJson(true).c_str());
 
-// The following macros are called at the beginning and end of each action
-// handler that uses the NxLib. In case of an NxLib exception they
-// automatically abort the action and return the corresponding error code and
-// message.
-// This assumes that all of our actions have the property error that represents
-// an NxLibException.
+// The following macros are called at the beginning and end of each action handler that uses the NxLib. In case of an
+// NxLib exception they automatically abort the action and return the corresponding error code and message.
+// This assumes that all of our actions have the property error that represents an NxLibException.
 
 #define START_NXLIB_ACTION(ACTION_NAME, ACTION_SERVER)                                                                 \
   ROS_DEBUG("Received a " #ACTION_NAME " request.");                                                                   \
@@ -144,14 +140,12 @@ using GetParameterServer = QueuedActionServer<ensenso_camera_msgs::GetParameterA
 using SetParameterServer = QueuedActionServer<ensenso_camera_msgs::SetParameterAction>;
 
 /**
- * A set of parameters that can be used by the different actions of the camera
- * node.
+ * A set of parameters that can be used by the different actions of the camera node.
  */
 struct ParameterSet
 {
   /**
-   * An NxLib node in which we store the NxLib camera parameters for this
-   * parameter set.
+   * An NxLib node in which we store the NxLib camera parameters for this parameter set.
    */
   NxLibItem node;
 
@@ -161,15 +155,13 @@ struct ParameterSet
   bool useROI = false;
 
   /**
-   * A 3D region of interest by which the point cloud is filtered before it is
-   * published.
+   * A 3D region of interest by which the point cloud is filtered before it is published.
    */
   PointCloudROI roi;
 
   /**
-   * Whether projector and front light are managed automatically for this
-   * parameter set. This gets disabled as soon as either the projector or the
-   * front light are set manually.
+   * Whether projector and front light are managed automatically for this parameter set. This gets disabled as soon as
+   * either the projector or the front light are set manually.
    */
   bool autoProjector = true;
 
@@ -181,8 +173,8 @@ class Camera
 protected:
   bool isFileCamera;
   std::string fileCameraPath;
-  // Whether the camera was created by this node. If that is the case, we will
-  // delete it again after it got closed.
+  // Whether the camera is a file camera and was created by this node. If it was/ created by this node, it will be
+  // deleted after it got closed.
   bool createdFileCamera = false;
 
   VersionInfo nxLibVersion;
@@ -216,7 +208,7 @@ protected:
   std::unique_ptr<GetParameterServer> getParameterServer;
   std::unique_ptr<SetParameterServer> setParameterServer;
 
-  // saves the latest transforms for a specific frame
+  // Saves the latest transforms for a specific frame.
   mutable std::map<std::string, geometry_msgs::TransformStamped> transformationCache;
 
   // Contains a parameter tree that is used for creating new parameter sets.
@@ -229,29 +221,30 @@ public:
   Camera(ros::NodeHandle const& n, std::string serial, std::string fileCameraPath, bool fixed, std::string cameraFrame,
          std::string targetFrame, std::string linkFrame);
 
-  virtual bool open();
+  /**
+   * Open the camera.
+   */
+  bool open();
+
+  /**
+   * Initialize the camera.
+   */
+  virtual void init() = 0;
+
+  /**
+   * Close the camera.
+   */
   void close();
 
   /**
-   * Start publishing the camera links to tf
-   */
-  virtual void initTfPublishTimer();
-
-  /**
-   * Initialize the status Timer
-   */
-  virtual void initStatusTimer();
-
-  /**
-   * Start the action servers. The camera must already be open, otherwise
-   * the actions might access parts of the NxLib that are not initialized yet.
+   * Start the action servers. The camera must already be opened, otherwise the actions might access parts of the NxLib
+   * that are not initialized yet.
    */
   virtual void startServers() const;
 
   /**
-   * Load the camera settings from the given JSON file. The resulting
-   * parameters will also be saved as the default values for new parameter
-   * sets.
+   * Load the camera settings from the given JSON file. The resulting parameters will also be saved as the default
+   * values for new parameter sets.
    *
    * Returns true if the settings could be applied successfully.
    */
@@ -279,11 +272,20 @@ public:
 
 protected:
   /**
+   * Start publishing the camera links to tf
+   */
+  virtual void initTfPublishTimer();
+
+  /**
+   * Initialize the status Timer
+   */
+  virtual void initStatusTimer();
+
+  /**
    * Save the current settings to the parameter set with the given name.
    *
-   * If the projector or front light have been enabled or disabled manually,
-   * the flag should be set. It then disabled the automatic control of the
-   * projector and front light for this parameter set.
+   * If the projector or front light have been enabled or disabled manually, the flag should be set. It then disabled
+   * the automatic control of the projector and front light for this parameter set.
    */
   void saveParameterSet(std::string name);
 
@@ -298,20 +300,18 @@ protected:
   bool cameraIsOpen() const;
 
   /**
-   * Publish a diagnostic message indicating whether the camera is still open
-   * and usable in the NxLib.
+   * Publish a diagnostic message indicating whether the camera is still open and usable in the NxLib.
    */
   virtual void publishStatus(ros::TimerEvent const& event) const;
 
   /**
-   * Read the current parameters from the camera node and store them as the
-   * default parameter set that will later be used for creating new parameter
-   * sets.
+   * Read the current parameters from the camera node and store them as the default parameter set that will later be
+   * used for creating new parameter sets.
    */
   void saveDefaultParameterSet();
   /**
-   * Load the parameter set with the given name. If it does not exist yet,
-   * it will be created by copying the current default parameters.
+   * Load the parameter set with the given name. If it does not exist yet, it will be created by copying the current
+   * default parameters.
    */
   void loadParameterSet(std::string name);
 
@@ -321,14 +321,12 @@ protected:
   virtual ros::Time capture() const = 0;
 
   /**
-   * Estimate the pose of a pattern in the given TF frame. The pattern must
-   * already be contained in the pattern buffer (that is, you should call
-   * collectPattern before this function).
+   * Estimate the pose of a pattern in the given TF frame. The pattern must already be contained in the pattern buffer
+   * (that is, you should call collectPattern before this function).
    *
-   * When the latestPatternOnly flag is set, the estimated position will be
-   * the one of the latest pattern in the buffer. Otherwise the function
-   * assumes that all observations are of the same pattern. It will then
-   * average their positions to increase the accuracy of the pose estimation.
+   * When the latestPatternOnly flag is set, the estimated position will be the one of the latest pattern in the buffer.
+   * Otherwise the function assumes that all observations are of the same pattern. It will then average their positions
+   * to increase the accuracy of the pose estimation.
    */
   virtual geometry_msgs::TransformStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
                                                               std::string const& targetFrame = "",
@@ -341,51 +339,59 @@ protected:
                                                                             std::string const& targetFrame = "") const;
 
   /**
-   * Update the camera's link node and the transformations in the NxLib
-   * according to the current information from TF.
+   * Update the camera's link node and the transformations in the NxLib according to the current information from TF.
    *
-   * @param time                    The timestamp from which the transformation should be taken.
-   * @param frame             The TF frame in which the camera should return the data. Uses the node's target
-   *                                frame by default.
-   * @param useCachedTransformation Do not update the transformation from the TF server, but use a cached one.
+   * The target frame is node's target frame by default. When the useCachedTransformation flag is set, the
+   * transformation is not updated from the TF server and a cached tranformation is used instead.
    */
   void updateGlobalLink(ros::Time time = ros::Time::now(), std::string frame = "",
                         bool useCachedTransformation = false) const;
 
   /**
-   * Update the camera's link node and the transformations in the NxLib
-   * to the given transformation. The given transformation should take data
-   * from the camera frame to some target frame.
+   * Update the camera's link node and the transformations in the NxLib to the given transformation. The given
+   * transformation should take data from the camera frame to some target frame.
    */
   void updateTransformations(tf2::Transform const& targetFrameTransformation) const;
 
   /**
-   * Read the camera calibration from the NxLib and write it into a CameraInfo
-   * message.
-   *
-   * @param info  The CameraInfo message to which the calibration should be
-   *              written.
-   * @param right Whether to use the calibration from the right camera instead
-   *              of the left one.
+   * Read the camera calibration from the NxLib and write it into a CameraInfo message.
    */
   void fillBasicCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info) const;
+
   /**
-   * Update the cached CameraInfo messages that will be published together
-   * with the images.
+   * Update the cached CameraInfo messages that will be published together with the images.
    */
   virtual void updateCameraInfo() = 0;
 
+  /**
+   * Read the parameter with the given key from the NxLib tree.
+   */
   virtual ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const;
 
+  /**
+   * Write the given parameter to the NxLib tree.
+   */
   virtual void writeParameter(ensenso_camera_msgs::Parameter const& parameter);
 
   /**
-   * Publishes both the internal calibrated link and, if exists, the global link from camera frame to global frame;
-   * @param timerEvent Defines the rate with which the trnsformations are getting published.
+   * Callback wrapper for publishCameraLink(). Can be used e.g. with ros::NodeHandle::createTimer().
+   *
+   * The timerEvent parameter defines the rate with which the transformations are getting published.
    */
   void publishCurrentLinks(ros::TimerEvent const& timerEvent = ros::TimerEvent());
+
+  /**
+   * Publish both the internal calibrated link and, if existing, the global link from the camera to the global frame.
+   */
   void publishCameraLink();
 
+  /**
+   * Create a stamped transform message from link to camera frame.
+   */
   geometry_msgs::TransformStamped stampedLinkToCamera();
+
+  /**
+   * Create a transform from camera to link frame.
+   */
   tf2::Transform getCameraToLinkTransform();
 };
