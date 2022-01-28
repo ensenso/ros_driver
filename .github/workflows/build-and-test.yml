@@ -1,0 +1,80 @@
+name: Build and Test
+on: [push, pull_request]
+jobs:
+
+  # Use skip-duplicate-actions to prevent duplicate workflow runs.
+  # This configuration sets the should_skip flag for a pull_request workflow run if there is a completed or ongoing
+  # workflow run on the exact same content (same tree hash).
+  skip_duplicate_workflow_check:
+    runs-on: ubuntu-latest
+    name: "skip-duplicate-workflow-check"
+    outputs:
+      should_skip: ${{steps.skip_check.outputs.should_skip}}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          concurrent_skipping: 'same_content_newer'
+          skip_after_successful_duplicate: 'true'
+          do_not_skip: '["push"]'
+
+  # Any *_CHECK argument causes industrial_ci to only perform the given check.
+  code_check:
+    needs: skip_duplicate_workflow_check
+    if: ${{needs.skip_duplicate_workflow_check.outputs.should_skip != 'true'}}
+    runs-on: ubuntu-latest
+    name: "code-check"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Industrial CI - C++ ClangFormat
+        uses: 'ros-industrial/industrial_ci@master'
+        env:
+          CLANG_FORMAT_CHECK: file
+          ROS_DISTRO: melodic
+
+      - name: Industrial CI - Python Black
+        uses: 'ros-industrial/industrial_ci@master'
+        env:
+          BLACK_CHECK: true
+          ROS_DISTRO: melodic
+
+  build_and_test:
+    needs: skip_duplicate_workflow_check
+    if: ${{needs.skip_duplicate_workflow_check.outputs.should_skip != 'true'}}
+    runs-on: ${{matrix.os}}
+    name: "${{matrix.os}}-ros${{matrix.ros_version}}-${{matrix.ros_distro}}-sdk-${{matrix.ensenso_sdk_version}}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        ros_distro: [noetic]
+        ros_version: [1]
+        ensenso_sdk_version: [3.2.489, 3.1.996, 3.0.311]
+        include:
+        # Ubuntu 18.04 - melodic
+          - os: ubuntu-18.04
+            ros_distro: melodic
+            ros_version: 1
+            ensenso_sdk_version: 3.2.489
+          - os: ubuntu-18.04
+            ros_distro: melodic
+            ros_version: 1
+            ensenso_sdk_version: 3.1.996
+          - os: ubuntu-18.04
+            ros_distro: melodic
+            ros_version: 1
+            ensenso_sdk_version: 3.0.311
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Industrial CI - Build and Test
+        uses: 'ros-industrial/industrial_ci@master'
+        env:
+          AFTER_INSTALL_TARGET_DEPENDENCIES: "./.github/ci/install_ensenso_sdk.sh"
+          CATKIN_LINT: true
+          CATKIN_LINT_ARGS: "--resolve-env"
+          DOCKER_RUN_OPTS: "-e ENSENSO_INSTALL=/opt/ensenso -e ENSENSO_SDK_VERSION=${{matrix.ensenso_sdk_version}}"
+          ROS_DISTRO: ${{matrix.ros_distro}}
