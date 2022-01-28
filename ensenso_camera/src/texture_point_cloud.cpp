@@ -13,9 +13,8 @@ using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
 using TexturedPointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
 
 /**
- * Texture the given point cloud from a rectified image. This assumes that the
- * point cloud has the same format as the image and we can therefore associate
- * points with image pixels by their coordinates.
+ * Texture the given point cloud from a rectified image. This assumes that the point cloud has the same format as the
+ * image and we can therefore associate points with image pixels by their coordinates.
  */
 TexturedPointCloud::Ptr texturePointCloudFromRectifiedImage(cv::Mat const& image,
                                                             PointCloud::ConstPtr const& pointCloud)

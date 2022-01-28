@@ -35,15 +35,15 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
 
 /**
  * Create a PCL point cloud with normals from the given NxLib nodes.
- *
- * @param pointMapNode The NxLib node that contains the point map.
- * @param normalNode   The NxLib node that contains the normal information.
  */
 pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem const& pointMapNode,
                                                                       NxLibItem const& normalNode,
                                                                       std::string const& frame,
                                                                       PointCloudROI const* roi = nullptr);
 
+/**
+ * Create a PCL point cloud with texture from the given NxLib nodes.
+ */
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudTexturedFromNxLib(NxLibItem const& imageNode,
                                                                    NxLibItem const& pointsNode,
                                                                    std::string const& frame,

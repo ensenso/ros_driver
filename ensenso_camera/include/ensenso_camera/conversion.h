@@ -6,8 +6,7 @@
 
 namespace ensenso_conversion
 {
-// Internally units are used with millimeters instead of meters, but ROS uses
-// meters most often.
+// Internally units are used with millimeters instead of meters, but ROS uses meters most often.
 const int conversionFactor = 1000;
 
 geometry_msgs::Point32 toRosPoint(NxLibItem const& itemArray, bool convertUnits = true);

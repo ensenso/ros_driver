@@ -15,8 +15,8 @@
 #include <thread>
 
 /**
- * An action server that remembers a queue of goals that still have to be
- * processed. This server will never reject or cancel any requests on its own.
+ * An action server that remembers a queue of goals that still have to be processed. This server will never reject or
+ * cancel any requests on its own.
  *
  * The API is the same as for the SimpleActionServer.
  */
@@ -30,11 +30,10 @@ public:
   using ExecuteCallback = boost::function<void(GoalConstPtr const&)>;
 
 public:
-  QueuedActionServer(ros::NodeHandle nodeHandle, std::string const& name, ExecuteCallback callback,
-                     bool autoStart = false)
-    : nodeHandle(nodeHandle), callback(callback)
+  QueuedActionServer(ros::NodeHandle nh, std::string const& name, ExecuteCallback callback, bool autoStart = false)
+    : nh(nh), callback(callback)
   {
-    actionServer = ::make_unique<actionlib::ActionServer<ActionSpec>>(nodeHandle, name, false);
+    actionServer = ::make_unique<actionlib::ActionServer<ActionSpec>>(nh, name, false);
     actionServer->registerGoalCallback(boost::bind(&QueuedActionServer::onGoalReceived, this, _1));
     actionServer->registerCancelCallback(boost::bind(&QueuedActionServer::onCancelReceived, this, _1));
 
@@ -120,15 +119,13 @@ private:
 
     if (goal == currentGoal)
     {
-      // The goal is already being executed. We set the preemption flag
-      // and the user is responsible for polling it and canceling his
-      // action handler.
+      // The goal is already being executed. We set the preemption flag and the user is responsible for polling it and
+      // canceling his action handler.
       preemptRequested = true;
     }
     else
     {
-      // The goal is in the queue. We cancel it and ignore it later, when
-      // we extract new goals from the queue.
+      // The goal is in the queue. We cancel it and ignore it later, when we extract new goals from the queue.
       goal.setCanceled(Result(), "Goal was canceled by the user.");
     }
   }
@@ -136,7 +133,7 @@ private:
   void loop()
   {
     std::unique_lock<std::mutex> lock(mutex);
-    while (nodeHandle.ok() && !shutdownRequested)
+    while (nh.ok() && !shutdownRequested)
     {
       if (!goalQueue.empty())
       {
@@ -153,8 +150,7 @@ private:
         }
         else if (currentGoal.getGoalStatus().status != actionlib_msgs::GoalStatus::PENDING)
         {
-          // The goal might have already been canceled by the cancel
-          // callback above.
+          // The goal might have already been canceled by the cancel callback above.
           continue;
         }
         else
@@ -172,12 +168,8 @@ private:
               currentGoal.getGoalStatus().status == actionlib_msgs::GoalStatus::PREEMPTING)
           {
             ROS_WARN_NAMED("actionlib",
-                           "Your action handler did not set the "
-                           "goal to a terminal state. Aborting it "
-                           "for now.");
-            setAborted(Result(),
-                       "Aborted, because the user did not set the "
-                       "goal to a terminal state.");
+                           "Your action handler did not set the goal to a terminal state. Aborting it for now.");
+            setAborted(Result(), "Aborted, because the user did not set the goal to a terminal state.");
           }
         }
       }
@@ -187,7 +179,7 @@ private:
   }
 
 private:
-  ros::NodeHandle nodeHandle;
+  ros::NodeHandle nh;
   std::unique_ptr<actionlib::ActionServer<ActionSpec>> actionServer;
 
   std::thread loopThread;
