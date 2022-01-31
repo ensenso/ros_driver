@@ -90,18 +90,18 @@ include_directories(
 )
 
 # Nodelet.
-add_library(
-  ensenso_camera_nodelet
-  src/nodelet.cpp
-  src/nodelet_mono.cpp
+add_library(ensenso_camera_nodelet
   src/calibration_pattern.cpp
   src/camera.cpp
+  src/camera_nodelet.cpp
   src/conversion.cpp
-  src/stereo_camera.cpp
-  src/mono_camera.cpp
   src/image_utilities.cpp
+  src/mono_camera.cpp
+  src/mono_camera_nodelet.cpp
   src/point_cloud_utilities.cpp
   src/pose_utilities.cpp
+  src/stereo_camera.cpp
+  src/stereo_camera_nodelet.cpp
   src/virtual_object_handler.cpp
 )
 target_link_libraries(

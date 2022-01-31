@@ -11,7 +11,7 @@
   <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
   <!-- Camera nodes running as nodelets -->
   <!-- The first camera is the root camera -->
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera1)" args="load ensenso_camera/nodelet /manager_" output="screen" ns="$(arg camera1_ns)">
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera1)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen" ns="$(arg camera1_ns)">
     <param name="serial" type="string" value="$(arg camera1)" />
 
     <!-- The target_frame defines, where the data is published -->
@@ -20,7 +20,7 @@
 
   <!-- The second camera is the camera linked to camera 1. Requires a link calibration in NxView beforehand. In the link
   calibration the first camera has to be the "root" camera for the link calibration -->
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera2)" args="load ensenso_camera/nodelet /manager_" output="screen" ns="$(arg camera2_ns)">
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera2)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen" ns="$(arg camera2_ns)">
     <param name="serial" type="string" value="$(arg camera2)" />
 
     <!-- The link_frame defines the parent TF-Frame of the published Camera Link.

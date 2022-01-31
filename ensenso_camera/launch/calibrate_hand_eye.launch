@@ -5,7 +5,7 @@
   <arg name="is_fixed" doc="whether the handeye calibration is fixed or a moving one" />
 
   <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera_serial)" args="load ensenso_camera/nodelet /manager_" output="screen">
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera_serial)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
     <param name="serial" type="string" value="$(arg camera_serial)" />
     <param name="robot_frame" type="string" value="$(arg robot_frame)" />
     <param name="wrist_frame" type="string" value="$(arg wrist_frame)" />

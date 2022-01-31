@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   }
 
   nodelet::Loader nodelet;
-  nodelet.load(ros::this_node::getName(), "ensenso_camera/nodelet", remappings, arguments);
+  nodelet.load(ros::this_node::getName(), "ensenso_camera/stereo_camera_nodelet", remappings, arguments);
 
   ros::spin();
 
