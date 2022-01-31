@@ -1,8 +1,16 @@
 <library path="lib/libensenso_camera_nodelet">
-  <class name="ensenso_camera/nodelet" type="ensenso_camera::Nodelet" base_class_type="nodelet::Nodelet">
-    <description>The Ensenso camera driver as a nodelet</description>
+  <!-- For legacy purposes also provide the nodelets with the old names. -->
+  <class name="ensenso_camera/nodelet" type="ensenso_camera::StereoCameraNodelet" base_class_type="nodelet::Nodelet">
+    <description>The Ensenso camera driver as nodelet for stereo cameras</description>
   </class>
-  <class name="ensenso_camera/nodelet_mono" type="ensenso_camera::NodeletMono" base_class_type="nodelet::Nodelet">
-    <description>The Ensenso camera driver as a nodelet for mono cameras</description>
+  <class name="ensenso_camera/nodelet_mono" type="ensenso_camera::MonoCameraNodelet" base_class_type="nodelet::Nodelet">
+    <description>The Ensenso camera driver as nodelet for mono cameras</description>
+  </class>
+
+  <class name="ensenso_camera/stereo_camera_nodelet" type="ensenso_camera::StereoCameraNodelet" base_class_type="nodelet::Nodelet">
+    <description>The Ensenso camera driver as nodelet for stereo cameras </description>
+  </class>
+  <class name="ensenso_camera/mono_camera_nodelet" type="ensenso_camera::MonoCameraNodelet" base_class_type="nodelet::Nodelet">
+    <description>The Ensenso camera driver as nodelet for mono cameras</description>
   </class>
 </library>

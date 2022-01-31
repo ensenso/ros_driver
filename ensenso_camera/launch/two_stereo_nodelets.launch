@@ -10,14 +10,14 @@
 
   <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
   <!-- Camera nodes running as nodelets -->
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera1)" args="load ensenso_camera/nodelet /manager_" output="screen" ns="$(arg camera1_ns)">
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera1)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen" ns="$(arg camera1_ns)">
     <param name="serial" type="string" value="$(arg camera1)" />
 
     <!-- The target_frame defines, where the data is published -->
     <param name="target_frame" type="string" value="$(arg frame_to_publish)" />
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera2)" args="load ensenso_camera/nodelet /manager_" output="screen" ns="$(arg camera2_ns)">
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera2)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen" ns="$(arg camera2_ns)">
     <param name="serial" type="string" value="$(arg camera2)" />
 
     <!-- The target_frame defines, where the data is published -->

@@ -1,6 +1,7 @@
 <launch>
   <arg name="parameter_set" default="texture_point_cloud"/>
   <arg name="image_stream" value="texturing_image"/>
+
   <group>
     <remap from="image" to="$(arg image_stream)"/>
     <node pkg="ensenso_camera" type="texture_point_cloud" name="texture_point_cloud"></node>
