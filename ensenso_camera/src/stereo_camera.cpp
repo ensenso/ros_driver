@@ -12,6 +12,8 @@
 #include <pcl_ros/point_cloud.h>
 #include <sensor_msgs/distortion_models.h>
 
+#define MAKE_SERVER(TYPE, TAG) ::make_unique<TYPE##Server>(nh, #TAG, boost::bind(&StereoCamera::on##TYPE, this, _1))
+
 StereoCamera::StereoCamera(ros::NodeHandle nh, CameraParameters params) : Camera(nh, std::move(params))
 {
   leftCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
@@ -19,25 +21,15 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, CameraParameters params) : Camera
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
 
-  fitPrimitiveServer =
-      ::make_unique<FitPrimitiveServer>(nh, "fit_primitive", boost::bind(&StereoCamera::onFitPrimitive, this, _1));
-  setParameterServer =
-      ::make_unique<SetParameterServer>(nh, "set_parameter", boost::bind(&StereoCamera::onSetParameter, this, _1));
-
-  requestDataServer =
-      ::make_unique<RequestDataServer>(nh, "request_data", boost::bind(&StereoCamera::onRequestData, this, _1));
-  locatePatternServer =
-      ::make_unique<LocatePatternServer>(nh, "locate_pattern", boost::bind(&StereoCamera::onLocatePattern, this, _1));
-  projectPatternServer = ::make_unique<ProjectPatternServer>(nh, "project_pattern",
-                                                             boost::bind(&StereoCamera::onProjectPattern, this, _1));
-  calibrateHandEyeServer = ::make_unique<CalibrateHandEyeServer>(
-      nh, "calibrate_hand_eye", boost::bind(&StereoCamera::onCalibrateHandEye, this, _1));
-  calibrateWorkspaceServer = ::make_unique<CalibrateWorkspaceServer>(
-      nh, "calibrate_workspace", boost::bind(&StereoCamera::onCalibrateWorkspace, this, _1));
-  telecentricProjectionServer = ::make_unique<TelecentricProjectionServer>(
-      nh, "project_telecentric", boost::bind(&StereoCamera::onTelecentricProjection, this, _1));
-  texturedPointCloudServer = ::make_unique<TexturedPointCloudServer>(
-      nh, "texture_point_cloud", boost::bind(&StereoCamera::onTexturedPointCloud, this, _1));
+  fitPrimitiveServer = MAKE_SERVER(FitPrimitive, fit_primitive);
+  setParameterServer = MAKE_SERVER(SetParameter, set_parameter);
+  requestDataServer = MAKE_SERVER(RequestData, request_data);
+  locatePatternServer = MAKE_SERVER(LocatePattern, locate_pattern);
+  projectPatternServer = MAKE_SERVER(ProjectPattern, project_pattern);
+  calibrateHandEyeServer = MAKE_SERVER(CalibrateHandEye, calibrate_hand_eye);
+  calibrateWorkspaceServer = MAKE_SERVER(CalibrateWorkspace, calibrate_workspace);
+  telecentricProjectionServer = MAKE_SERVER(TelecentricProjection, project_telecentric);
+  texturedPointCloudServer = MAKE_SERVER(TexturedPointCloud, texture_point_cloud);
 
   image_transport::ImageTransport imageTransport(nh);
   leftRawImagePublisher = imageTransport.advertiseCamera("raw/left/image", 1);

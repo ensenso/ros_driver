@@ -6,6 +6,8 @@
 
 #include <sensor_msgs/distortion_models.h>
 
+#define MAKE_SERVER(TYPE, TAG) ::make_unique<TYPE##Server>(nh, #TAG, boost::bind(&Camera::on##TYPE, this, _1))
+
 ParameterSet::ParameterSet(const std::string& name, const NxLibItem& defaultParameters)
 {
   // Create a new NxLib node where we will store the parameters for this set and overwrite it with the default settings.
@@ -82,13 +84,10 @@ Camera::Camera(ros::NodeHandle& nh, CameraParameters _params) : params(std::move
   transformListener = make_unique<tf2_ros::TransformListener>(tfBuffer);
   transformBroadcaster = make_unique<tf2_ros::TransformBroadcaster>();
 
-  accessTreeServer = ::make_unique<AccessTreeServer>(nh, "access_tree", boost::bind(&Camera::onAccessTree, this, _1));
-  executeCommandServer =
-      ::make_unique<ExecuteCommandServer>(nh, "execute_command", boost::bind(&Camera::onExecuteCommand, this, _1));
-  getParameterServer =
-      ::make_unique<GetParameterServer>(nh, "get_parameter", boost::bind(&Camera::onGetParameter, this, _1));
-  setParameterServer =
-      ::make_unique<SetParameterServer>(nh, "set_parameter", boost::bind(&Camera::onSetParameter, this, _1));
+  accessTreeServer = MAKE_SERVER(AccessTree, access_tree);
+  executeCommandServer = MAKE_SERVER(ExecuteCommand, execute_command);
+  getParameterServer = MAKE_SERVER(GetParameter, get_parameter);
+  setParameterServer = MAKE_SERVER(SetParameter, set_parameter);
 
   statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
 
