@@ -36,6 +36,8 @@ private:
   sensor_msgs::CameraInfoPtr rightCameraInfo;
   sensor_msgs::CameraInfoPtr leftRectifiedCameraInfo;
   sensor_msgs::CameraInfoPtr rightRectifiedCameraInfo;
+  sensor_msgs::CameraInfoPtr disparityMapCameraInfo;
+  sensor_msgs::CameraInfoPtr depthImageCameraInfo;
 
   std::unique_ptr<RequestDataServer> requestDataServer;
   std::unique_ptr<CalibrateHandEyeServer> calibrateHandEyeServer;
@@ -50,7 +52,7 @@ private:
   image_transport::CameraPublisher rightRawImagePublisher;
   image_transport::CameraPublisher leftRectifiedImagePublisher;
   image_transport::CameraPublisher rightRectifiedImagePublisher;
-  image_transport::Publisher disparityMapPublisher;
+  image_transport::CameraPublisher disparityMapPublisher;
   image_transport::CameraPublisher depthImagePublisher;
   image_transport::Publisher projectedImagePublisher;
 
@@ -147,6 +149,12 @@ private:
   void loadParameterSet(std::string name, ProjectorState projector = projectorDontCare);
 
   /**
+   * Grab the timestamp of the last captured (raw) image. Handle the different image sources across different camera
+   * models (file camera, S-Series, XR-Series or normal stereo camera).
+   */
+  ros::Time timestampOfCapturedImage() const;
+
+  /**
    * Try to collect patterns on the current images. For the command to be successful, the patterns must be decodable and
    * visible in both cameras.
    */
@@ -166,12 +174,32 @@ private:
   bool isSSeries() const;
 
   /**
+   * Return whether this camera is an XR-Series camera.
+   */
+  bool isXrSeries() const;
+
+  /**
    * Return whether this camera has a right camera sensor.
    */
   bool hasRightCamera() const;
 
   /**
+   * Return whether this cameras has/stores raw images.
+   */
+  bool hasRawImages() const;
+
+  /**
+   * Return whether this camera downloads the raw/rectified images.
+   */
+  bool hasDownloadedImages() const;
+
+  /**
    * Return whether this camera has a disparity map.
    */
   bool hasDisparityMap() const;
+
+  /**
+   * Add the NxLib internal disparity map offset to the given camera info.
+   */
+  void addDisparityMapOffset(sensor_msgs::CameraInfoPtr const& info) const;
 };

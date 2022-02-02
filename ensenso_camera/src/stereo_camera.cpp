@@ -20,6 +20,8 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, CameraParameters params) : Camera
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
+  disparityMapCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
+  depthImageCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
 
   fitPrimitiveServer = MAKE_SERVER(FitPrimitive, fit_primitive);
   setParameterServer = MAKE_SERVER(SetParameter, set_parameter);
@@ -38,6 +40,7 @@ void StereoCamera::updateCameraTypeSpecifics()
   {
     rightCameraInfo = nullptr;
     rightRectifiedCameraInfo = nullptr;
+    disparityMapCameraInfo = nullptr;
   }
 }
 
@@ -53,7 +56,7 @@ void StereoCamera::advertiseTopics()
   }
   if (hasDisparityMap())
   {
-    disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
+    disparityMapPublisher = imageTransport.advertiseCamera("disparity_map", 1);
   }
   depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
   projectedImagePublisher = imageTransport.advertise("depth/projected_depth_map", 1);
@@ -215,6 +218,12 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     publishResults = true;
   }
 
+  // Automatically disable requesting raw images if the camera does not have any.
+  bool requestRawImages = goal->request_raw_images && hasRawImages() && hasDownloadedImages();
+
+  // Automatically disable requesting rectified images if the camera does not have any.
+  bool requestRectifiedImages = goal->request_rectified_images && hasDownloadedImages();
+
   // Automatically request point cloud if no data set is explicitly selected.
   bool requestPointCloud = goal->request_point_cloud || goal->request_depth_image;
   if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_disparity_map &&
@@ -230,12 +239,17 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
   ros::Time imageTimestamp = capture();
 
+  if (isXrSeries() && !hasDownloadedImages())
+  {
+    ROS_WARN("XR: Downloading raw/rectified images is disabled.");
+  }
+
   PREEMPT_ACTION_IF_REQUESTED
 
   feedback.images_acquired = true;
   requestDataServer->publishFeedback(feedback);
 
-  if (goal->request_raw_images)
+  if (requestRawImages)
   {
     auto rawImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame);
 
@@ -274,11 +288,21 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     }
   }
 
+  if (isXrSeries() && hasRawImages())
+  {
+    ROS_WARN(
+        "XR: Capture mode \"Raw\", skipping all 3D data requests! Only raw images are captured and they can only be "
+        "used for calibration actions. Rectifying these images afterwards is not possible and they cannot be used to "
+        "compute 3D data. If you want to retrieve 3D data, set capture mode to \"Rectified\".");
+    server->setAborted();
+    return;
+  }
+
   PREEMPT_ACTION_IF_REQUESTED
 
   // Only call cmdRectifyImages if just the rectified images are requested. Otherwise the rectification is implicitly
   // invoked by cmdComputeDisparityMap, which is more efficient when using CUDA.
-  if (goal->request_rectified_images && !computeDisparityMap)
+  if (requestRectifiedImages && !computeDisparityMap)
   {
     NxLibCommand rectify(cmdRectifyImages, params.serial);
     rectify.parameters()[itmCameras] = params.serial;
@@ -295,7 +319,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     disparityMapCommand.execute();
   }
 
-  if (goal->request_rectified_images)
+  if (requestRectifiedImages)
   {
     auto rectifiedImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame);
 
@@ -338,13 +362,21 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   {
     auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame);
 
+    disparityMapCameraInfo->header.stamp = disparityMap->header.stamp;
+    disparityMapCameraInfo->header.frame_id = params.cameraFrame;
+
+    if (isXrSeries())
+    {
+      addDisparityMapOffset(disparityMapCameraInfo);
+    }
+
     if (goal->include_results_in_response)
     {
       result.disparity_map = *disparityMap;
     }
     if (publishResults)
     {
-      disparityMapPublisher.publish(disparityMap);
+      disparityMapPublisher.publish(disparityMap, disparityMapCameraInfo);
     }
   }
 
@@ -381,7 +413,14 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       if (params.cameraFrame == params.targetFrame)
       {
         auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.targetFrame);
-        leftRectifiedCameraInfo->header.stamp = depthImage->header.stamp;
+
+        depthImageCameraInfo->header.stamp = depthImage->header.stamp;
+        depthImageCameraInfo->header.frame_id = params.cameraFrame;
+
+        if (isXrSeries())
+        {
+          addDisparityMapOffset(depthImageCameraInfo);
+        }
 
         if (goal->include_results_in_response)
         {
@@ -390,7 +429,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
         if (publishResults)
         {
-          depthImagePublisher.publish(depthImage, leftRectifiedCameraInfo);
+          depthImagePublisher.publish(depthImage, depthImageCameraInfo);
         }
       }
       else
@@ -1162,6 +1201,33 @@ void StereoCamera::loadParameterSet(std::string name, ProjectorState projector)
   }
 }
 
+ros::Time StereoCamera::timestampOfCapturedImage() const
+{
+  // For file cameras this workaround is needed, because the timestamp of captures from file cameras will not change
+  // over time. When looking up the current tf tree, this will result in errors, because the time of the original
+  // timestamp is requested, which lies in the past (and most often longer than the tfBuffer will store the transform!).
+  if (params.isFileCamera)
+  {
+    return ros::Time::now();
+  }
+  // For stereo cameras with only one sensor (S-Series) the image is stored in the raw node.
+  else if (isSSeries())
+  {
+    return timestampFromNxLibNode(cameraNode[itmImages][itmRaw]);
+  }
+  // For XR cameras the image node depends on the capture mode. In Raw mode it behaves like a normal stereo camera.
+  else if (isXrSeries() && !hasRawImages())
+  {
+    ROS_WARN_ONCE("XR: Using timestamp of first left rectified image in capture mode \"Rectified\".");
+    return timestampFromNxLibNode(cameraNode[itmImages][itmRectified][itmLeft]);
+  }
+  // For stereo cameras with left and right sensor the timestamp of the left sensor is taken as the reference.
+  else
+  {
+    return timestampFromNxLibNode(cameraNode[itmImages][itmRaw][itmLeft]);
+  }
+}
+
 ros::Time StereoCamera::capture() const
 {
   // Update virtual objects. Ignore failures with a simple warning.
@@ -1187,21 +1253,7 @@ ros::Time StereoCamera::capture() const
   }
   capture.execute();
 
-  if (params.isFileCamera)
-  {
-    // This workaround is needed, because the timestamp of captures from file cameras will not change over time. When
-    // looking up the current tf tree, this will result in errors, because the time of the original timestamp is
-    // requested, which lies in the past (and most often longer than the tfBuffer will store the transform!).
-    return ros::Time::now();
-  }
-
-  NxLibItem imageNode = cameraNode[itmImages][itmRaw];
-  if (hasRightCamera())
-  {
-    imageNode = imageNode[itmLeft];
-  }
-
-  return timestampFromNxLibNode(imageNode);
+  return timestampOfCapturedImage();
 }
 
 std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuffer) const
@@ -1362,7 +1414,9 @@ void StereoCamera::updateCameraInfo()
   {
     fillCameraInfoFromNxLib(rightCameraInfo, true);
     fillCameraInfoFromNxLib(rightRectifiedCameraInfo, true, true);
+    fillCameraInfoFromNxLib(disparityMapCameraInfo, false, true);
   }
+  fillCameraInfoFromNxLib(depthImageCameraInfo, false, true);
 }
 
 ensenso_camera_msgs::ParameterPtr StereoCamera::readParameter(std::string const& key) const
@@ -1447,9 +1501,20 @@ void StereoCamera::writeParameter(ensenso_camera_msgs::Parameter const& paramete
   }
 }
 
+bool startswith(std::string const& lhs, std::string const& rhs)
+{
+  return lhs.rfind(rhs, 0) == 0;
+}
+
 bool StereoCamera::isSSeries() const
 {
   return cameraNode[itmType].asString() == "StructuredLight";
+}
+
+bool StereoCamera::isXrSeries() const
+{
+  std::string modelName = cameraNode[itmModelName].asString();
+  return startswith(modelName, "XR");
 }
 
 bool StereoCamera::hasRightCamera() const
@@ -1457,7 +1522,40 @@ bool StereoCamera::hasRightCamera() const
   return (!isSSeries());
 }
 
+bool StereoCamera::hasRawImages() const
+{
+  std::string captureMode = cameraNode[itmParameters][itmCapture][itmMode].asString();
+  return captureMode == "Raw";
+}
+
+bool StereoCamera::hasDownloadedImages() const
+{
+  return isXrSeries() ? cameraNode[itmParameters][itmCapture][itmDownloadImages].asBool() : true;
+}
+
 bool StereoCamera::hasDisparityMap() const
 {
   return (!isSSeries());
+}
+
+void StereoCamera::addDisparityMapOffset(sensor_msgs::CameraInfoPtr const& info) const
+{
+  double imageWidth = cameraNode[itmSensor][itmSize][0].asDouble();
+  double disparityMapOffset = cameraNode[itmCalibration][itmDynamic][itmStereo][itmDisparityMapOffset].asDouble();
+
+  // Adjust the disparity map width, which differs from the image width if it has a non-zero disparity map offset.
+  info->width = imageWidth - disparityMapOffset;
+
+  // Get the original unscaled instrinsic calibration values in x direction from NxLib.
+  double fx = cameraNode[itmCalibration][itmStereo][itmLeft][itmCamera][0][0].asDouble();
+  double cx = cameraNode[itmCalibration][itmStereo][itmLeft][itmCamera][2][0].asDouble();
+
+  // Calculate the scaling factor in x direction that needs to be applied to both fx and cx.
+  double scaleX = imageWidth / (double)info->width;
+
+  info->K[0] = scaleX * fx;
+  info->K[2] = scaleX * (cx - disparityMapOffset);
+
+  info->P[0] = info->K[0];
+  info->P[2] = info->K[2];
 }
