@@ -2,6 +2,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include "ensenso_camera/image_utilities.h"
 
+#include "ensenso_camera/conversion.h"
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -9,8 +11,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/distortion_models.h>
-
-double const NXLIB_TIMESTAMP_OFFSET = 11644473600;
 
 std::string imageEncoding(bool isFloat, int channels, int bytesPerElement)
 {
@@ -96,7 +96,7 @@ ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame)
   double timestamp;
   node.getBinaryDataInfo(&width, &height, &channels, &bytesPerElement, &isFloat, &timestamp);
 
-  image->header.stamp.fromSec(timestamp - NXLIB_TIMESTAMP_OFFSET);
+  image->header.stamp.fromSec(ensenso_conversion::nxLibToRosTimestamp(timestamp));
   image->header.frame_id = frame;
   image->width = width;
   image->height = height;
@@ -110,8 +110,20 @@ ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame)
 
 ImagePtrPair imagePairFromNxLibNode(NxLibItem const& node, std::string const& frame)
 {
-  auto leftImage = imageFromNxLibNode(node[itmLeft], frame);
-  auto rightImage = imageFromNxLibNode(node[itmRight], frame);
+  ImagePtr leftImage;
+  ImagePtr rightImage;
+
+  if (node[itmLeft].exists() && node[itmRight].exists())
+  {
+    leftImage = imageFromNxLibNode(node[itmLeft], frame);
+    rightImage = imageFromNxLibNode(node[itmRight], frame);
+  }
+  else
+  {
+    // Create a dummy pair with an empty right image in case of an S-series camera.
+    leftImage = imageFromNxLibNode(node, frame);
+    rightImage = nullptr;
+  }
 
   return { leftImage, rightImage };
 }
@@ -159,7 +171,7 @@ ros::Time timestampFromNxLibNode(NxLibItem const& node)
   double timestamp;
   node.getBinaryDataInfo(0, 0, 0, 0, 0, &timestamp);
 
-  return ros::Time(timestamp - NXLIB_TIMESTAMP_OFFSET);
+  return ros::Time(ensenso_conversion::nxLibToRosTimestamp(timestamp));
 }
 
 ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame)
@@ -176,7 +188,7 @@ ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame
 
   // Convert cv mat to ros image.
   cv_bridge::CvImage out_msg;
-  out_msg.header.stamp.fromSec(timestamp - NXLIB_TIMESTAMP_OFFSET);
+  out_msg.header.stamp.fromSec(ensenso_conversion::nxLibToRosTimestamp(timestamp));
   out_msg.header.frame_id = frame;
   out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
   out_msg.image = depthImage;

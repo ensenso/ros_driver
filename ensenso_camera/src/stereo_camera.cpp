@@ -30,13 +30,31 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, CameraParameters params) : Camera
   calibrateWorkspaceServer = MAKE_SERVER(CalibrateWorkspace, calibrate_workspace);
   telecentricProjectionServer = MAKE_SERVER(TelecentricProjection, project_telecentric);
   texturedPointCloudServer = MAKE_SERVER(TexturedPointCloud, texture_point_cloud);
+}
 
+void StereoCamera::updateCameraTypeSpecifics()
+{
+  if (!hasRightCamera())
+  {
+    rightCameraInfo = nullptr;
+    rightRectifiedCameraInfo = nullptr;
+  }
+}
+
+void StereoCamera::advertiseTopics()
+{
   image_transport::ImageTransport imageTransport(nh);
   leftRawImagePublisher = imageTransport.advertiseCamera("raw/left/image", 1);
-  rightRawImagePublisher = imageTransport.advertiseCamera("raw/right/image", 1);
   leftRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/left/image", 1);
-  rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
-  disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
+  if (hasRightCamera())
+  {
+    rightRawImagePublisher = imageTransport.advertiseCamera("raw/right/image", 1);
+    rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
+  }
+  if (hasDisparityMap())
+  {
+    disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
+  }
   depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
   projectedImagePublisher = imageTransport.advertise("depth/projected_depth_map", 1);
 
@@ -47,6 +65,7 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, CameraParameters params) : Camera
 
 void StereoCamera::init()
 {
+  advertiseTopics();
   startServers();
   initTfPublishTimer();
   initStatusTimer();
@@ -222,31 +241,43 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
     leftCameraInfo->header.stamp = rawImages[0].first->header.stamp;
     leftCameraInfo->header.frame_id = params.cameraFrame;
-    rightCameraInfo->header.stamp = leftCameraInfo->header.stamp;
-    rightCameraInfo->header.frame_id = params.cameraFrame;
+    if (hasRightCamera())
+    {
+      rightCameraInfo->header.stamp = leftCameraInfo->header.stamp;
+      rightCameraInfo->header.frame_id = params.cameraFrame;
+    }
 
     if (goal->include_results_in_response)
     {
       for (auto const& imagePair : rawImages)
       {
         result.left_raw_images.push_back(*imagePair.first);
-        result.right_raw_images.push_back(*imagePair.second);
+        if (hasRightCamera())
+        {
+          result.right_raw_images.push_back(*imagePair.second);
+        }
       }
       result.left_camera_info = *leftCameraInfo;
-      result.right_camera_info = *rightCameraInfo;
+      if (hasRightCamera())
+      {
+        result.right_camera_info = *rightCameraInfo;
+      }
     }
     if (publishResults)
     {
       // We only publish one of the images on the topic, even if FlexView is enabled.
       leftRawImagePublisher.publish(rawImages[0].first, leftCameraInfo);
-      rightRawImagePublisher.publish(rawImages[0].second, rightCameraInfo);
+      if (hasRightCamera())
+      {
+        rightRawImagePublisher.publish(rawImages[0].second, rightCameraInfo);
+      }
     }
   }
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  // If we need the disparity map, we do the rectification implicitly in cmdComputeDisparityMap. This is more efficient
-  // when using CUDA.
+  // Only call cmdRectifyImages if just the rectified images are requested. Otherwise the rectification is implicitly
+  // invoked by cmdComputeDisparityMap, which is more efficient when using CUDA.
   if (goal->request_rectified_images && !computeDisparityMap)
   {
     NxLibCommand rectify(cmdRectifyImages, params.serial);
@@ -255,6 +286,10 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   }
   else if (computeDisparityMap)
   {
+    // Since the S-series currently uses cmdComputeDisparityMap instead of cmdComputePointMap to get the point map, the
+    // global link has to be updated here before cmdComputeDisparityMap is executed.
+    updateGlobalLink(imageTimestamp, "", goal->use_cached_transformation);
+
     NxLibCommand disparityMapCommand(cmdComputeDisparityMap, params.serial);
     disparityMapCommand.parameters()[itmCameras] = params.serial;
     disparityMapCommand.execute();
@@ -266,28 +301,40 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
     leftRectifiedCameraInfo->header.stamp = rectifiedImages[0].first->header.stamp;
     leftRectifiedCameraInfo->header.frame_id = params.cameraFrame;
-    rightRectifiedCameraInfo->header.stamp = leftRectifiedCameraInfo->header.stamp;
-    rightRectifiedCameraInfo->header.frame_id = params.cameraFrame;
+    if (hasRightCamera())
+    {
+      rightRectifiedCameraInfo->header.stamp = leftRectifiedCameraInfo->header.stamp;
+      rightRectifiedCameraInfo->header.frame_id = params.cameraFrame;
+    }
 
     if (goal->include_results_in_response)
     {
       for (auto const& imagePair : rectifiedImages)
       {
         result.left_rectified_images.push_back(*imagePair.first);
-        result.right_rectified_images.push_back(*imagePair.second);
+        if (hasRightCamera())
+        {
+          result.right_rectified_images.push_back(*imagePair.second);
+        }
       }
       result.left_rectified_camera_info = *leftRectifiedCameraInfo;
-      result.right_rectified_camera_info = *rightRectifiedCameraInfo;
+      if (hasRightCamera())
+      {
+        result.right_rectified_camera_info = *rightRectifiedCameraInfo;
+      }
     }
     if (publishResults)
     {
       // We only publish one of the images on the topic, even if FlexView is enabled.
       leftRectifiedImagePublisher.publish(rectifiedImages[0].first, leftRectifiedCameraInfo);
-      rightRectifiedImagePublisher.publish(rectifiedImages[0].second, rightRectifiedCameraInfo);
+      if (hasRightCamera())
+      {
+        rightRectifiedImagePublisher.publish(rectifiedImages[0].second, rightRectifiedCameraInfo);
+      }
     }
   }
 
-  if (goal->request_disparity_map)
+  if (hasDisparityMap() && goal->request_disparity_map)
   {
     auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame);
 
@@ -311,8 +358,6 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   if (computePointCloud)
   {
-    updateGlobalLink(imageTimestamp, "", goal->use_cached_transformation);
-
     NxLibCommand computePointMap(cmdComputePointMap, params.serial);
     computePointMap.parameters()[itmCameras] = params.serial;
     computePointMap.execute();
@@ -1142,15 +1187,18 @@ ros::Time StereoCamera::capture() const
   }
   capture.execute();
 
-  NxLibItem imageNode = cameraNode[itmImages][itmRaw];
-  imageNode = imageNode[itmLeft];
-
   if (params.isFileCamera)
   {
     // This workaround is needed, because the timestamp of captures from file cameras will not change over time. When
     // looking up the current tf tree, this will result in errors, because the time of the original timestamp is
     // requested, which lies in the past (and most often longer than the tfBuffer will store the transform!).
     return ros::Time::now();
+  }
+
+  NxLibItem imageNode = cameraNode[itmImages][itmRaw];
+  if (hasRightCamera())
+  {
+    imageNode = imageNode[itmLeft];
   }
 
   return timestampFromNxLibNode(imageNode);
@@ -1309,9 +1357,12 @@ void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& inf
 void StereoCamera::updateCameraInfo()
 {
   fillCameraInfoFromNxLib(leftCameraInfo, false);
-  fillCameraInfoFromNxLib(rightCameraInfo, true);
   fillCameraInfoFromNxLib(leftRectifiedCameraInfo, false, true);
-  fillCameraInfoFromNxLib(rightRectifiedCameraInfo, true, true);
+  if (hasRightCamera())
+  {
+    fillCameraInfoFromNxLib(rightCameraInfo, true);
+    fillCameraInfoFromNxLib(rightRectifiedCameraInfo, true, true);
+  }
 }
 
 ensenso_camera_msgs::ParameterPtr StereoCamera::readParameter(std::string const& key) const
@@ -1394,4 +1445,19 @@ void StereoCamera::writeParameter(ensenso_camera_msgs::Parameter const& paramete
   {
     Camera::writeParameter(parameter);
   }
+}
+
+bool StereoCamera::isSSeries() const
+{
+  return cameraNode[itmType].asString() == "StructuredLight";
+}
+
+bool StereoCamera::hasRightCamera() const
+{
+  return (!isSSeries());
+}
+
+bool StereoCamera::hasDisparityMap() const
+{
+  return (!isSSeries());
 }
