@@ -2,7 +2,7 @@
   <arg name="rate" value="1"/>
   <include file="$(find ensenso_camera)/launch/file_camera.launch">
     <arg name="serial" value="req_cam"/>
-    <arg name="path" value="$(find ensenso_camera_test)/data/camera.zip"/>
+    <arg name="path" value="$(find ensenso_camera_test)/data/stereo_camera/camera.zip"/>
   </include>
   <node pkg="ensenso_camera" type="request_data" name="request_data">
     <param name="rate" value="$(arg rate)"/>
@@ -12,25 +12,25 @@
     <param name="~hz" value="$(arg rate)"/>
     <param name="~hzerror" value="0.5"/>
     <param name="~test_duration" value="10"/>
-	<test pkg="rostest" type="hztest" test-name="raw_left_image_test">
+	<test pkg="rostest" type="hztest" test-name="stereo_raw_left_image_test">
       <param name="topic" value="raw/left/image"/>
 	</test>
-	<test pkg="rostest" type="hztest" test-name="raw_right_image_test">
+	<test pkg="rostest" type="hztest" test-name="stereo_raw_right_image_test">
       <param name="topic" value="raw/right/image"/>
 	</test>
-	<test pkg="rostest" type="hztest" test-name="rectified_left_image_test">
+	<test pkg="rostest" type="hztest" test-name="stereo_rectified_left_image_test">
       <param name="topic" value="rectified/left/image"/>
 	</test>
-	<test pkg="rostest" type="hztest" test-name="rectified_right_image_test">
+	<test pkg="rostest" type="hztest" test-name="stereo_rectified_right_image_test">
       <param name="topic" value="rectified/right/image"/>
 	</test>
-	<test pkg="rostest" type="hztest" test-name="disparity_map_test">
+	<test pkg="rostest" type="hztest" test-name="stereo_disparity_map_test">
       <param name="topic" value="disparity_map"/>
 	</test>
-	<test pkg="rostest" type="hztest" test-name="point_cloud_test">
+	<test pkg="rostest" type="hztest" test-name="stereo_point_cloud_test">
       <param name="topic" value="point_cloud"/>
 	</test>
-	<test pkg="rostest" type="hztest" test-name="depth_image_test">
+	<test pkg="rostest" type="hztest" test-name="stereo_depth_image_test">
       <param name="topic" value="depth/image"/>
     </test>
   </group>

@@ -12,10 +12,10 @@
     <param name="~hz" value="$(arg rate)"/>
     <param name="~hzerror" value="0.5"/>
     <param name="~test_duration" value="10"/>
-	<test pkg="rostest" type="hztest" test-name="raw_image_test">
+	<test pkg="rostest" type="hztest" test-name="mono_raw_image_test">
       <param name="topic" value="raw/image"/>
 	</test>
-	<test pkg="rostest" type="hztest" test-name="rectified_image_test">
+	<test pkg="rostest" type="hztest" test-name="mono_rectified_image_test">
       <param name="topic" value="rectified/image"/>
 	</test>
   </group>

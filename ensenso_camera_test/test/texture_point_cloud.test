@@ -2,16 +2,16 @@
   <arg name="rate" value="1"/>
   <include file="$(find ensenso_camera)/launch/file_camera.launch">
     <arg name="serial" value="text_cam"/>
-    <arg name="path" value="$(find ensenso_camera_test)/data/camera.zip"/>
+    <arg name="path" value="$(find ensenso_camera_test)/data/stereo_camera/camera.zip"/>
   </include>
   <include file="$(find ensenso_camera)/launch/texture_point_cloud.launch">
   </include>
   <node pkg="ensenso_camera" type="request_data" name="request_data">
     <param name="rate" value="$(arg rate)"/>
-	<param name="raw_images" value="false"/>
-	<param name="rectified_images" value="false"/>
-	<param name="disparity_map" value="false"/>
-	<param name="normals" value="false"/>
+    <param name="raw_images" value="false"/>
+    <param name="rectified_images" value="false"/>
+    <param name="disparity_map" value="false"/>
+    <param name="normals" value="false"/>
   </node>
   <test pkg="rostest" type="hztest" test-name="texture_point_cloud_test">
     <param name="hz" value="$(arg rate)"/>

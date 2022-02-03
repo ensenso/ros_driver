@@ -1,7 +1,7 @@
 <launch>
   <include file="$(find ensenso_camera)/launch/file_camera.launch">
     <arg name="serial" value="proj_pat_cam"/>
-    <arg name="path" value="$(find ensenso_camera_test)/data/camera.zip"/>
+    <arg name="path" value="$(find ensenso_camera_test)/data/stereo_camera/camera.zip"/>
   </include>
   <test pkg="ensenso_camera_test" type="project_pattern.py" test-name="project_pattern_test"></test>
 </launch>
