@@ -1,0 +1,28 @@
+<launch>
+  <arg name="rate" value="1"/>
+  <include file="$(find ensenso_camera)/launch/file_camera.launch">
+    <arg name="serial" value="req_cam"/>
+    <arg name="path" value="$(find ensenso_camera_test)/data/structured_light_camera/camera.zip"/>
+  </include>
+  <node pkg="ensenso_camera" type="request_data" name="request_data">
+    <param name="rate" value="$(arg rate)"/>
+  </node>
+
+  <group>
+    <param name="~hz" value="$(arg rate)"/>
+    <param name="~hzerror" value="0.5"/>
+    <param name="~test_duration" value="10"/>
+	<test pkg="rostest" type="hztest" test-name="structured_light_raw_left_image_test">
+      <param name="topic" value="raw/left/image"/>
+	</test>
+	<test pkg="rostest" type="hztest" test-name="structured_light_rectified_left_image_test">
+      <param name="topic" value="rectified/left/image"/>
+	</test>
+	<test pkg="rostest" type="hztest" test-name="structured_light_point_cloud_test">
+      <param name="topic" value="point_cloud"/>
+	</test>
+	<test pkg="rostest" type="hztest" test-name="structured_light_depth_image_test">
+      <param name="topic" value="depth/image"/>
+    </test>
+  </group>
+</launch>

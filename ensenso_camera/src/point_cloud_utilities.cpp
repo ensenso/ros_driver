@@ -1,13 +1,13 @@
 #include "ensenso_camera/point_cloud_utilities.h"
 
+#include "ensenso_camera/conversion.h"
+
 #include <pcl/point_types.h>
 
 #include <limits>
 #include <string>
 #include <vector>
 #include <ros/ros.h>
-
-double const NXLIB_TIMESTAMP_OFFSET = 11644473600;
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
                                                         PointCloudROI const* roi)
@@ -22,7 +22,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
   auto cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
   // PCL timestamp is in microseconds and Unix time.
-  cloud->header.stamp = (timestamp - NXLIB_TIMESTAMP_OFFSET) * 1e6;
+  cloud->header.stamp = ensenso_conversion::nxLibToPclTimestamp(timestamp);
   cloud->header.frame_id = frame;
 
   cloud->width = width;
@@ -63,7 +63,7 @@ pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem 
   auto cloud = boost::make_shared<pcl::PointCloud<pcl::PointNormal>>();
 
   // PCL timestamp is in microseconds and Unix time.
-  cloud->header.stamp = (timestamp - NXLIB_TIMESTAMP_OFFSET) * 1e6;
+  cloud->header.stamp = ensenso_conversion::nxLibToPclTimestamp(timestamp);
   cloud->header.frame_id = frame;
 
   cloud->width = width;
@@ -109,7 +109,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudTexturedFromNxLib(NxLibItem con
   auto cloud_colored = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
 
   // PCL timestamp is in microseconds and Unix time.
-  cloud_colored->header.stamp = (timestamp - NXLIB_TIMESTAMP_OFFSET) * 1e6;
+  cloud_colored->header.stamp = ensenso_conversion::nxLibToPclTimestamp(timestamp);
   cloud_colored->header.frame_id = frame;
 
   cloud_colored->width = width;

@@ -6,6 +6,12 @@
 
 namespace ensenso_conversion
 {
+double fixTimestamp(double const& timestamp);
+
+double nxLibToRosTimestamp(double const& timestamp);
+
+double nxLibToPclTimestamp(double const& timestamp);
+
 // Internally units are used with millimeters instead of meters, but ROS uses meters most often.
 const int conversionFactor = 1000;
 

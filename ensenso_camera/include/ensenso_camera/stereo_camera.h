@@ -112,6 +112,8 @@ public:
   void onTelecentricProjection(ensenso_camera_msgs::TelecentricProjectionGoalConstPtr const& goal);
 
 private:
+  void updateCameraTypeSpecifics() override;
+
   void startServers() const override;
 
   void updateCameraInfo() override;
@@ -121,6 +123,11 @@ private:
   ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const override;
 
   void writeParameter(ensenso_camera_msgs::Parameter const& parameter) override;
+
+  /**
+   * Advertise all camera topics.
+   */
+  void advertiseTopics();
 
   /**
    * Save the current settings to the parameter set with the given name.
@@ -152,4 +159,19 @@ private:
    * The rectified flag indicates whether the images are already rectified.
    */
   void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool rectified = false) const;
+
+  /**
+   * Return whether this camera is an S-series camera.
+   */
+  bool isSSeries() const;
+
+  /**
+   * Return whether this camera has a right camera sensor.
+   */
+  bool hasRightCamera() const;
+
+  /**
+   * Return whether this camera has a disparity map.
+   */
+  bool hasDisparityMap() const;
 };

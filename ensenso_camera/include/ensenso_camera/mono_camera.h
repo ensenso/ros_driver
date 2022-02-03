@@ -52,6 +52,11 @@ private:
                                                                     std::string const& targetFrame = "") const override;
 
   /**
+   * Advertise all camera topics.
+   */
+  void advertiseTopics();
+
+  /**
    * Read the camera calibration from the NxLib and write it into a CameraInfo message.
    */
   void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool rectified = false);
