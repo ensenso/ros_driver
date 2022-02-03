@@ -1525,7 +1525,7 @@ bool StereoCamera::hasRightCamera() const
 bool StereoCamera::hasRawImages() const
 {
   std::string captureMode = cameraNode[itmParameters][itmCapture][itmMode].asString();
-  return captureMode == "Raw";
+  return captureMode == valRaw;
 }
 
 bool StereoCamera::hasDownloadedImages() const
