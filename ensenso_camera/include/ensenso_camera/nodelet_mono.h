@@ -8,14 +8,16 @@
 
 namespace ensenso_camera
 {
-class NodeletMono : public nodelet::Nodelet
+class MonoCameraNodelet : public nodelet::Nodelet
 {
-private:
-  std::unique_ptr<MonoCamera> camera;
-
 public:
-  void onInit() override;
-  ~NodeletMono() override;
-};
+  MonoCameraNodelet();
+  ~MonoCameraNodelet();
 
+  void onInit() override;
+
+private:
+  std::string cameraType;
+  std::unique_ptr<MonoCamera> camera;
+};
 }  // namespace ensenso_camera

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 
 #include <tf2_ros/transform_listener.h>

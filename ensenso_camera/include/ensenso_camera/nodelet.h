@@ -8,14 +8,16 @@
 
 namespace ensenso_camera
 {
-class Nodelet : public nodelet::Nodelet
+class StereoCameraNodelet : public nodelet::Nodelet
 {
-private:
-  std::unique_ptr<StereoCamera> camera;
-
 public:
-  void onInit() override;
-  ~Nodelet() override;
-};
+  StereoCameraNodelet();
+  ~StereoCameraNodelet();
 
+  void onInit() override;
+
+private:
+  std::string cameraType;
+  std::unique_ptr<StereoCamera> camera;
+};
 }  // namespace ensenso_camera
