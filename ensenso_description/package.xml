@@ -15,7 +15,8 @@
   <url type="bugtracker">https://github.com/ensenso/ros_driver/issues</url>
 
   <author>Ensenso</author>
-  <maintainer email="yasin.guenduez@ensenso.com">yasin</maintainer>
+  <maintainer email="daniel.saier@ensenso.com">Daniel Saier</maintainer>
+  <maintainer email="benjamin.thiemann@ensenso.com">Benjamin Thiemann</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
   <exec_depend>xacro</exec_depend>
