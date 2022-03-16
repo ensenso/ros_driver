@@ -12,6 +12,7 @@
 
   <author>Ensenso</author>
   <maintainer email="daniel.saier@ensenso.com">Daniel Saier</maintainer>
+  <maintainer email="benjamin.thiemann@ensenso.com">Benjamin Thiemann</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
 
