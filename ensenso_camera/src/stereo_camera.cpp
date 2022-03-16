@@ -219,30 +219,61 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   }
 
   // Automatically disable requesting raw images if the camera does not have any.
-  bool requestRawImages = goal->request_raw_images && hasRawImages() && hasDownloadedImages();
+  bool requestRawImages = goal->request_raw_images;
+  if (isXrSeries() && !hasRawImages() && requestRawImages)
+  {
+    ROS_WARN("XR: Capture mode \"Rectified\", skipping raw images request.");
+    requestRawImages = false;
+  }
 
   // Automatically disable requesting rectified images if the camera does not have any.
-  bool requestRectifiedImages = goal->request_rectified_images && hasDownloadedImages();
+  bool requestRectifiedImages = goal->request_rectified_images;
+  if (isXrSeries() && hasRawImages() && requestRectifiedImages)
+  {
+    ROS_WARN("XR: Capture mode \"Raw\", skipping rectified images request.");
+    requestRectifiedImages = false;
+  }
+
+  // Automatically disable requesting raw/rectified images if the camera does not have downloaded any.
+  if (isXrSeries() && !hasDownloadedImages() && (requestRawImages || requestRectifiedImages))
+  {
+    ROS_WARN("XR: Downloading raw/rectified images is disabled, skipping the raw/rectified images request.");
+    requestRawImages = false;
+    requestRectifiedImages = false;
+  }
+
+  bool requestDisparityMap = goal->request_disparity_map;
 
   // Automatically request point cloud if no data set is explicitly selected.
   bool requestPointCloud = goal->request_point_cloud || goal->request_depth_image;
   if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_disparity_map &&
-      !goal->request_depth_image && !goal->request_point_cloud && goal->request_normals)
+      !goal->request_point_cloud && !goal->request_depth_image && !goal->request_normals)
   {
     requestPointCloud = true;
   }
 
+  bool requestNormals = goal->request_normals;
+
   // Normals require computePointCloud and computePointCloud requires computeDisparityMap to be called first.
-  bool computePointCloud = requestPointCloud || goal->request_normals;
-  bool computeDisparityMap = goal->request_disparity_map || computePointCloud;
+  bool computePointCloud = requestPointCloud || requestNormals;
+  bool computeDisparityMap = requestDisparityMap || computePointCloud;
+
+  // Automatically disable requesting 3d data if the camera is an XR and only has raw images.
+  if (isXrSeries() && hasRawImages() && (computeDisparityMap || computePointCloud))
+  {
+    ROS_WARN(
+        "XR: Capture mode \"Raw\", skipping all 3D data requests! Only raw images are captured and they can only be "
+        "used for calibration actions. Rectifying these images afterwards is not possible and they cannot be used to "
+        "compute 3D data. If you want to retrieve 3D data, set capture mode to \"Rectified\".");
+    requestDisparityMap = false;
+    requestNormals = false;
+    requestPointCloud = false;
+    computePointCloud = false;
+    computeDisparityMap = false;
+  }
 
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
   ros::Time imageTimestamp = capture();
-
-  if (isXrSeries() && !hasDownloadedImages())
-  {
-    ROS_WARN("XR: Downloading raw/rectified images is disabled.");
-  }
 
   PREEMPT_ACTION_IF_REQUESTED
 
@@ -286,16 +317,6 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
         rightRawImagePublisher.publish(rawImages[0].second, rightCameraInfo);
       }
     }
-  }
-
-  if (isXrSeries() && hasRawImages())
-  {
-    ROS_WARN(
-        "XR: Capture mode \"Raw\", skipping all 3D data requests! Only raw images are captured and they can only be "
-        "used for calibration actions. Rectifying these images afterwards is not possible and they cannot be used to "
-        "compute 3D data. If you want to retrieve 3D data, set capture mode to \"Rectified\".");
-    server->setAborted();
-    return;
   }
 
   PREEMPT_ACTION_IF_REQUESTED
@@ -358,7 +379,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     }
   }
 
-  if (hasDisparityMap() && goal->request_disparity_map)
+  if (hasDisparityMap() && requestDisparityMap)
   {
     auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame);
 
@@ -394,7 +415,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     computePointMap.parameters()[itmCameras] = params.serial;
     computePointMap.execute();
 
-    if (requestPointCloud && !goal->request_normals)
+    if (requestPointCloud && !requestNormals)
     {
       auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], params.targetFrame, pointCloudROI);
 
@@ -445,7 +466,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  if (goal->request_normals)
+  if (requestNormals)
   {
     NxLibCommand computeNormals(cmdComputeNormals, params.serial);
     computeNormals.execute();
