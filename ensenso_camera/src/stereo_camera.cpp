@@ -288,11 +288,9 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     auto rawImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame);
 
     leftCameraInfo->header.stamp = rawImages[0].first->header.stamp;
-    leftCameraInfo->header.frame_id = params.cameraFrame;
     if (hasRightCamera())
     {
       rightCameraInfo->header.stamp = leftCameraInfo->header.stamp;
-      rightCameraInfo->header.frame_id = params.cameraFrame;
     }
 
     if (goal->include_results_in_response)
@@ -348,11 +346,9 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     auto rectifiedImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame);
 
     leftRectifiedCameraInfo->header.stamp = rectifiedImages[0].first->header.stamp;
-    leftRectifiedCameraInfo->header.frame_id = params.cameraFrame;
     if (hasRightCamera())
     {
       rightRectifiedCameraInfo->header.stamp = leftRectifiedCameraInfo->header.stamp;
-      rightRectifiedCameraInfo->header.frame_id = params.cameraFrame;
     }
 
     if (goal->include_results_in_response)
@@ -391,7 +387,6 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame);
 
     depthImageCameraInfo->header.stamp = disparityMap->header.stamp;
-    depthImageCameraInfo->header.frame_id = params.cameraFrame;
 
     if (goal->include_results_in_response)
     {
@@ -439,7 +434,6 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
         auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.targetFrame);
 
         depthImageCameraInfo->header.stamp = depthImage->header.stamp;
-        depthImageCameraInfo->header.frame_id = params.cameraFrame;
 
         if (goal->include_results_in_response)
         {
