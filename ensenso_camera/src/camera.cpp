@@ -652,8 +652,10 @@ geometry_msgs::TransformStamped Camera::stampedLinkToCamera()
 
 tf2::Transform Camera::getCameraToLinkTransform()
 {
-  // The NxLib will always give the transfrom from the camera to the link target in camera coordinates.
-  tf2::Transform transform;
+  // The NxLib will always give the transform from the camera to the link target in camera coordinates.
+  // Always initialize transform otherwise the transform will be invalid
+  tf2::Transform transform = tf2::Transform::getIdentity();
+
   try
   {
     transform = poseFromNxLib(cameraNode[itmLink]);
@@ -666,7 +668,6 @@ tf2::Transform Camera::getCameraToLinkTransform()
 
   if (!isValid(transform))
   {
-    transform.setIdentity();
     ROS_WARN("Did not find a good transform from %s to %s. Transform has been set to identity",
              params.cameraFrame.c_str(), params.linkFrame.c_str());
   }
