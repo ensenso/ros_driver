@@ -22,6 +22,7 @@ CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const&
   isFileCamera = !fileCameraPath.empty();
 
   nh.param("fixed", fixed, false);
+  nh.param("wait_for_camera", wait_for_camera, false);
 
   if (!nh.getParam("camera_frame", cameraFrame))
   {
@@ -514,7 +515,16 @@ bool Camera::open()
     ROS_ERROR("The camera '%s' could not be found", params.serial.c_str());
     return false;
   }
-  if (!cameraIsAvailable())
+
+  if (params.wait_for_camera)
+  {
+    while (!cameraIsAvailable() && ros::ok())
+    {
+      ROS_INFO("Waiting for camera '%s' to become available", params.serial.c_str());
+      ros::Duration(0.5).sleep();
+    }
+  }
+  else if (!cameraIsAvailable())
   {
     ROS_ERROR("The camera '%s' is already in use", params.serial.c_str());
     return false;

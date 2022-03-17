@@ -4,16 +4,20 @@
   <arg name="stereo_ns" doc="Namespace for the stereo camera" />
   <arg name="mono_ns" doc="Namespace for the mono camera" />
   <arg name="target_frame_name" value="Workspace" doc="The root the tf tree"/>
+  <arg name="wait_for_camera" doc="whether the node should wait for the camera to become available" />
 
   <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
   <!-- Camera nodes running as nodelets -->
   <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_stereo)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen" ns="$(arg stereo_ns)">
     <param name="serial" type="string" value="$(arg serial_stereo)" />
     <param name="target_frame" type="string" value="$(arg target_frame_name)" />
+    <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
+
   </node>
 
   <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_mono)" args="load ensenso_camera/mono_camera_nodelet /manager_" output="screen" ns="$(arg mono_ns)">
     <param name="serial" type="string" value="$(arg serial_mono)" />
     <param name="link_frame" value="$(arg serial_stereo)_optical_frame" />
+    <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
   </node>
 </launch>
