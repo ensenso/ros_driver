@@ -36,7 +36,6 @@ private:
   sensor_msgs::CameraInfoPtr rightCameraInfo;
   sensor_msgs::CameraInfoPtr leftRectifiedCameraInfo;
   sensor_msgs::CameraInfoPtr rightRectifiedCameraInfo;
-  sensor_msgs::CameraInfoPtr disparityMapCameraInfo;
   sensor_msgs::CameraInfoPtr depthImageCameraInfo;
 
   std::unique_ptr<RequestDataServer> requestDataServer;

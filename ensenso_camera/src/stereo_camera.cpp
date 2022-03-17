@@ -20,7 +20,6 @@ StereoCamera::StereoCamera(ros::NodeHandle nh, CameraParameters params) : Camera
   rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
-  disparityMapCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
   depthImageCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
 
   fitPrimitiveServer = MAKE_SERVER(FitPrimitive, fit_primitive);
@@ -40,7 +39,6 @@ void StereoCamera::updateCameraTypeSpecifics()
   {
     rightCameraInfo = nullptr;
     rightRectifiedCameraInfo = nullptr;
-    disparityMapCameraInfo = nullptr;
   }
 }
 
@@ -383,21 +381,22 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   {
     auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame);
 
-    disparityMapCameraInfo->header.stamp = disparityMap->header.stamp;
-    disparityMapCameraInfo->header.frame_id = params.cameraFrame;
+    depthImageCameraInfo->header.stamp = disparityMap->header.stamp;
+    depthImageCameraInfo->header.frame_id = params.cameraFrame;
 
     if (isXrSeries())
     {
-      addDisparityMapOffset(disparityMapCameraInfo);
+      addDisparityMapOffset(depthImageCameraInfo);
     }
 
     if (goal->include_results_in_response)
     {
       result.disparity_map = *disparityMap;
+      result.disparity_map_info = *depthImageCameraInfo;
     }
     if (publishResults)
     {
-      disparityMapPublisher.publish(disparityMap, disparityMapCameraInfo);
+      disparityMapPublisher.publish(disparityMap, depthImageCameraInfo);
     }
   }
 
@@ -446,6 +445,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
         if (goal->include_results_in_response)
         {
           result.depth_image = *depthImage;
+          result.depth_image_info = *depthImageCameraInfo;
         }
 
         if (publishResults)
@@ -1435,7 +1435,6 @@ void StereoCamera::updateCameraInfo()
   {
     fillCameraInfoFromNxLib(rightCameraInfo, true);
     fillCameraInfoFromNxLib(rightRectifiedCameraInfo, true, true);
-    fillCameraInfoFromNxLib(disparityMapCameraInfo, false, true);
   }
   fillCameraInfoFromNxLib(depthImageCameraInfo, false, true);
 }
@@ -1561,22 +1560,12 @@ bool StereoCamera::hasDisparityMap() const
 
 void StereoCamera::addDisparityMapOffset(sensor_msgs::CameraInfoPtr const& info) const
 {
-  double imageWidth = cameraNode[itmSensor][itmSize][0].asDouble();
   double disparityMapOffset = cameraNode[itmCalibration][itmDynamic][itmStereo][itmDisparityMapOffset].asDouble();
 
-  // Adjust the disparity map width, which differs from the image width if it has a non-zero disparity map offset.
-  info->width = imageWidth - disparityMapOffset;
+  // Adjust the width, which differs from the image width if it has a non-zero disparity map offset.
+  info->width -= disparityMapOffset;
 
-  // Get the original unscaled instrinsic calibration values in x direction from NxLib.
-  double fx = cameraNode[itmCalibration][itmStereo][itmLeft][itmCamera][0][0].asDouble();
-  double cx = cameraNode[itmCalibration][itmStereo][itmLeft][itmCamera][2][0].asDouble();
-
-  // Calculate the scaling factor in x direction that needs to be applied to both fx and cx.
-  double scaleX = imageWidth / (double)info->width;
-
-  info->K[0] = scaleX * fx;
-  info->K[2] = scaleX * (cx - disparityMapOffset);
-
-  info->P[0] = info->K[0];
-  info->P[2] = info->K[2];
+  // Adjust origin cx.
+  info->K[2] -= disparityMapOffset;
+  info->P[2] -= disparityMapOffset;
 }
