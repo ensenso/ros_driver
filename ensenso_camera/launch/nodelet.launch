@@ -1,10 +1,13 @@
 <launch>
   <arg name="camera" value="150580" />
   <arg name="target_frame" value="Workspace" />
+  <arg name="wait_for_camera" doc="whether the node should wait for the camera to become available" />
+
 
   <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
   <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
     <param name="serial" type="string" value="$(arg camera)" />
     <param name="target_frame" type="string" value="$(arg target_frame)" />
+    <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
   </node>
 </launch>
