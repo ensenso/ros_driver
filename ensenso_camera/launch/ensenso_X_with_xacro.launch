@@ -11,15 +11,15 @@
   <arg name="collision_margin" default="0.04" />
 
   <arg name="type" doc="Can be X200, X200_xFA, X400, X400_xFA" default="X200" />
-  <!-- a static transform from the camera_optical_frame (left lens) to the xacro reference frame (camera mount) -->
+  <!-- a static transform from the optical_frame_camera (left lens) to the xacro reference frame (camera mount) -->
   <!-- Switch between baselines (200mm or 400mm in the models) -->
   <!-- The first argument of (x-Value) differs between the different baselines -->
   <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_model_broadcaster"
-    args="0.1 0.036 0.033 0.7071068 0 0 0.7071068 $(arg camera)_optical_frame $(arg xacro_reference_frame)"
+    args="0.1 0.036 0.033 0.7071068 0 0 0.7071068 optical_frame_$(arg camera) $(arg xacro_reference_frame)"
     if="$(eval type == 'X200' or type == 'X200_xFA')"/> <!-- fits for 200 mm baseline -->
 
   <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_model_broadcaster"
-    args="0.2 0.036 0.033 0.7071068 0 0 0.7071068 $(arg camera)_optical_frame $(arg xacro_reference_frame)"
+    args="0.2 0.036 0.033 0.7071068 0 0 0.7071068 optical_frame_$(arg camera) $(arg xacro_reference_frame)"
     if="$(eval type == 'X400' or type == 'X400_xFA')"/> <!-- fits for 400 mm baseline -->
 
   <!-- Use the xacro and surpass parameters  -->
