@@ -53,7 +53,7 @@ void StereoCamera::advertiseTopics()
   }
   if (hasDisparityMap())
   {
-    disparityMapPublisher = imageTransport.advertise("disparity_map", 1);
+    disparityMapPublisher = imageTransport.advertiseCamera("disparity_map", 1);
   }
   depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
   projectedImagePublisher = imageTransport.advertise("depth/projected_depth_map", 1);
@@ -215,17 +215,65 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     publishResults = true;
   }
 
+  // Automatically disable requesting raw images if the camera does not have any.
+  bool requestRawImages = goal->request_raw_images;
+  if (isXrSeries() && !hasRawImages() && requestRawImages)
+  {
+    ROS_WARN("XR: Capture mode \"Rectified\", skipping raw images request.");
+    requestRawImages = false;
+  }
+
+  // Automatically disable requesting rectified images if the camera does not have any.
+  bool requestRectifiedImages = goal->request_rectified_images;
+  if (isXrSeries() && hasRawImages() && requestRectifiedImages)
+  {
+    ROS_WARN("XR: Capture mode \"Raw\", skipping rectified images request.");
+    requestRectifiedImages = false;
+  }
+
+  // Automatically disable requesting raw/rectified images if the camera does not have downloaded any.
+  if (isXrSeries() && !hasDownloadedImages() && (requestRawImages || requestRectifiedImages))
+  {
+    ROS_WARN("XR: Downloading raw/rectified images is disabled, skipping the raw/rectified images request.");
+    requestRawImages = false;
+    requestRectifiedImages = false;
+  }
+
+  bool requestDisparityMap = goal->request_disparity_map;
+
   // Automatically request point cloud if no data set is explicitly selected.
   bool requestPointCloud = goal->request_point_cloud || goal->request_depth_image;
   if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_disparity_map &&
-      !goal->request_depth_image && !goal->request_point_cloud && goal->request_normals)
+      !goal->request_point_cloud && !goal->request_depth_image && !goal->request_normals)
   {
     requestPointCloud = true;
   }
 
+  bool requestNormals = goal->request_normals;
+
   // Normals require computePointCloud and computePointCloud requires computeDisparityMap to be called first.
-  bool computePointCloud = requestPointCloud || goal->request_normals;
-  bool computeDisparityMap = goal->request_disparity_map || computePointCloud;
+  bool computePointCloud = requestPointCloud || requestNormals;
+  bool computeDisparityMap = requestDisparityMap || computePointCloud;
+
+  // Automatically disable requesting the disparity map if the camera does not have one.
+  if (!hasDisparityMap())
+  {
+    requestDisparityMap = false;
+  }
+
+  // Automatically disable requesting 3d data if the camera is an XR and only has raw images.
+  if (isXrSeries() && hasRawImages() && (computeDisparityMap || computePointCloud))
+  {
+    ROS_WARN(
+        "XR: Capture mode \"Raw\", skipping all 3D data requests! Only raw images are captured and they can only be "
+        "used for calibration actions. Rectifying these images afterwards is not possible and they cannot be used to "
+        "compute 3D data. If you want to retrieve 3D data, set capture mode to \"Rectified\".");
+    requestDisparityMap = false;
+    requestNormals = false;
+    requestPointCloud = false;
+    computePointCloud = false;
+    computeDisparityMap = false;
+  }
 
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
   ros::Time imageTimestamp = capture();
@@ -235,7 +283,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   feedback.images_acquired = true;
   requestDataServer->publishFeedback(feedback);
 
-  if (goal->request_raw_images)
+  if (requestRawImages)
   {
     auto rawImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame);
 
@@ -278,7 +326,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   // Only call cmdRectifyImages if just the rectified images are requested. Otherwise the rectification is implicitly
   // invoked by cmdComputeDisparityMap, which is more efficient when using CUDA.
-  if (goal->request_rectified_images && !computeDisparityMap)
+  if (requestRectifiedImages && !computeDisparityMap)
   {
     NxLibCommand rectify(cmdRectifyImages, params.serial);
     rectify.parameters()[itmCameras] = params.serial;
@@ -295,7 +343,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     disparityMapCommand.execute();
   }
 
-  if (goal->request_rectified_images)
+  if (requestRectifiedImages)
   {
     auto rectifiedImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame);
 
@@ -334,17 +382,25 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     }
   }
 
-  if (hasDisparityMap() && goal->request_disparity_map)
+  auto depthImageCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>(*leftRectifiedCameraInfo);
+
+  addDisparityMapOffset(depthImageCameraInfo);
+
+  if (requestDisparityMap)
   {
     auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame);
+
+    depthImageCameraInfo->header.stamp = disparityMap->header.stamp;
+    depthImageCameraInfo->header.frame_id = params.cameraFrame;
 
     if (goal->include_results_in_response)
     {
       result.disparity_map = *disparityMap;
+      result.disparity_map_info = *depthImageCameraInfo;
     }
     if (publishResults)
     {
-      disparityMapPublisher.publish(disparityMap);
+      disparityMapPublisher.publish(disparityMap, depthImageCameraInfo);
     }
   }
 
@@ -362,7 +418,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     computePointMap.parameters()[itmCameras] = params.serial;
     computePointMap.execute();
 
-    if (requestPointCloud && !goal->request_normals)
+    if (requestPointCloud && !requestNormals)
     {
       auto pointCloud = pointCloudFromNxLib(cameraNode[itmImages][itmPointMap], params.targetFrame, pointCloudROI);
 
@@ -381,16 +437,19 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       if (params.cameraFrame == params.targetFrame)
       {
         auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.targetFrame);
-        leftRectifiedCameraInfo->header.stamp = depthImage->header.stamp;
+
+        depthImageCameraInfo->header.stamp = depthImage->header.stamp;
+        depthImageCameraInfo->header.frame_id = params.cameraFrame;
 
         if (goal->include_results_in_response)
         {
           result.depth_image = *depthImage;
+          result.depth_image_info = *depthImageCameraInfo;
         }
 
         if (publishResults)
         {
-          depthImagePublisher.publish(depthImage, leftRectifiedCameraInfo);
+          depthImagePublisher.publish(depthImage, depthImageCameraInfo);
         }
       }
       else
@@ -406,7 +465,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  if (goal->request_normals)
+  if (requestNormals)
   {
     NxLibCommand computeNormals(cmdComputeNormals, params.serial);
     computeNormals.execute();
@@ -1162,6 +1221,33 @@ void StereoCamera::loadParameterSet(std::string name, ProjectorState projector)
   }
 }
 
+ros::Time StereoCamera::timestampOfCapturedImage() const
+{
+  // For file cameras this workaround is needed, because the timestamp of captures from file cameras will not change
+  // over time. When looking up the current tf tree, this will result in errors, because the time of the original
+  // timestamp is requested, which lies in the past (and most often longer than the tfBuffer will store the transform!).
+  if (params.isFileCamera)
+  {
+    return ros::Time::now();
+  }
+  // For stereo cameras with only one sensor (S-Series) the image is stored in the raw node.
+  else if (isSSeries())
+  {
+    return timestampFromNxLibNode(cameraNode[itmImages][itmRaw]);
+  }
+  // For XR cameras the image node depends on the capture mode. In Raw mode it behaves like a normal stereo camera.
+  else if (isXrSeries() && !hasRawImages())
+  {
+    ROS_WARN_ONCE("XR: Using timestamp of first left rectified image in capture mode \"Rectified\".");
+    return timestampFromNxLibNode(cameraNode[itmImages][itmRectified][itmLeft]);
+  }
+  // For stereo cameras with left and right sensor the timestamp of the left sensor is taken as the reference.
+  else
+  {
+    return timestampFromNxLibNode(cameraNode[itmImages][itmRaw][itmLeft]);
+  }
+}
+
 ros::Time StereoCamera::capture() const
 {
   // Update virtual objects. Ignore failures with a simple warning.
@@ -1187,21 +1273,7 @@ ros::Time StereoCamera::capture() const
   }
   capture.execute();
 
-  if (params.isFileCamera)
-  {
-    // This workaround is needed, because the timestamp of captures from file cameras will not change over time. When
-    // looking up the current tf tree, this will result in errors, because the time of the original timestamp is
-    // requested, which lies in the past (and most often longer than the tfBuffer will store the transform!).
-    return ros::Time::now();
-  }
-
-  NxLibItem imageNode = cameraNode[itmImages][itmRaw];
-  if (hasRightCamera())
-  {
-    imageNode = imageNode[itmLeft];
-  }
-
-  return timestampFromNxLibNode(imageNode);
+  return timestampOfCapturedImage();
 }
 
 std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuffer) const
@@ -1447,9 +1519,20 @@ void StereoCamera::writeParameter(ensenso_camera_msgs::Parameter const& paramete
   }
 }
 
+bool startswith(std::string const& lhs, std::string const& rhs)
+{
+  return lhs.rfind(rhs, 0) == 0;
+}
+
 bool StereoCamera::isSSeries() const
 {
   return cameraNode[itmType].asString() == "StructuredLight";
+}
+
+bool StereoCamera::isXrSeries() const
+{
+  std::string modelName = cameraNode[itmModelName].asString();
+  return startswith(modelName, "XR");
 }
 
 bool StereoCamera::hasRightCamera() const
@@ -1457,7 +1540,34 @@ bool StereoCamera::hasRightCamera() const
   return (!isSSeries());
 }
 
+bool StereoCamera::hasRawImages() const
+{
+  std::string captureMode = cameraNode[itmParameters][itmCapture][itmMode].asString();
+  return captureMode == valRaw;
+}
+
+bool StereoCamera::hasDownloadedImages() const
+{
+  return isXrSeries() ? cameraNode[itmParameters][itmCapture][itmDownloadImages].asBool() : true;
+}
+
 bool StereoCamera::hasDisparityMap() const
 {
   return (!isSSeries());
+}
+
+void StereoCamera::addDisparityMapOffset(sensor_msgs::CameraInfoPtr const& info) const
+{
+  double disparityMapOffset = 0.0;
+  if (cameraNode[itmCalibration][itmDynamic][itmStereo][itmDisparityMapOffset].exists())
+  {
+    disparityMapOffset = cameraNode[itmCalibration][itmDynamic][itmStereo][itmDisparityMapOffset].asDouble();
+  }
+
+  // Adjust the width, which differs from the image width if it has a non-zero disparity map offset.
+  info->width -= disparityMapOffset;
+
+  // Adjust origin cx.
+  info->K[2] -= disparityMapOffset;
+  info->P[2] -= disparityMapOffset;
 }
