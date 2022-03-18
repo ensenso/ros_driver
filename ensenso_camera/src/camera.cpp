@@ -26,7 +26,7 @@ CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const&
 
   if (!nh.getParam("camera_frame", cameraFrame))
   {
-    cameraFrame = this->serial + "_optical_frame";
+    cameraFrame = "optical_frame_" + this->serial;
   }
 
   nh.getParam("link_frame", linkFrame);

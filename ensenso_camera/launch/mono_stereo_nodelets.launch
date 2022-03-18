@@ -17,7 +17,7 @@
 
   <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_mono)" args="load ensenso_camera/mono_camera_nodelet /manager_" output="screen" ns="$(arg mono_ns)">
     <param name="serial" type="string" value="$(arg serial_mono)" />
-    <param name="link_frame" value="$(arg serial_stereo)_optical_frame" />
+    <param name="link_frame" value="optical_frame_$(arg serial_stereo)" />
     <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
   </node>
 </launch>
