@@ -33,9 +33,11 @@ sensor_msgs/PointCloud2 point_cloud
 
 # The disparity map as it is represented in the NxLib.
 sensor_msgs/Image disparity_map
+sensor_msgs/CameraInfo disparity_map_info
 
-# The rectified depth image
+# The rectified depth image.
 sensor_msgs/Image depth_image
+sensor_msgs/CameraInfo depth_image_info
 
 # The raw images of the left and right camera respectively. A single image if
 # FlexView is disabled.
