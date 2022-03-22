@@ -310,10 +310,15 @@ void Camera::fillBasicCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info
   }
 }
 
+std::string Camera::getNxLibTargetFrameName() const
+{
+  return TARGET_FRAME_LINK + "_" + params.serial;
+}
+
 void Camera::updateTransformations(tf2::Transform const& targetFrameTransformation) const
 {
-  cameraNode[itmLink][itmTarget] = TARGET_FRAME_LINK + "_" + params.serial;
-  writePoseToNxLib(targetFrameTransformation, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + params.serial]);
+  cameraNode[itmLink][itmTarget] = getNxLibTargetFrameName();
+  writePoseToNxLib(targetFrameTransformation, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
 }
 
 void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useCachedTransformation) const
@@ -338,7 +343,7 @@ void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useC
     return;
   }
 
-  cameraNode[itmLink][itmTarget] = TARGET_FRAME_LINK + "_" + params.serial;
+  cameraNode[itmLink][itmTarget] = getNxLibTargetFrameName();
 
   // Update the transformation to the target frame in the NxLib according to the current information from tf only if
   // link and target frame differ.
@@ -354,9 +359,9 @@ void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useC
   }
   tf2::Transform tfTrafo;
   tf2::convert(transform.transform, tfTrafo);
-  NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + params.serial].setNull();
+  NxLibItem()[itmLinks][getNxLibTargetFrameName()].setNull();
   NxLibItem()[itmLinks].setNull();
-  writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][TARGET_FRAME_LINK + "_" + params.serial]);
+  writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
 }
 
 std::vector<geometry_msgs::TransformStamped> Camera::estimatePatternPoses(ros::Time imageTimestamp,
