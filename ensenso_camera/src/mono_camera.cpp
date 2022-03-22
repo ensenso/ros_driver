@@ -27,6 +27,7 @@ void MonoCamera::init()
   advertiseTopics();
   startServers();
   initTfPublishTimer();
+  initStatusTimer();
 }
 
 void MonoCamera::startServers() const
