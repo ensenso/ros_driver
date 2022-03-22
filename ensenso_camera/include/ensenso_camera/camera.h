@@ -428,6 +428,11 @@ protected:
                         bool useCachedTransformation = false) const;
 
   /**
+   * Return the target frame name for links in the NxLib.
+   */
+  std::string getNxLibTargetFrameName() const;
+
+  /**
    * Update the camera's link node and the transformations in the NxLib to the given transformation. The given
    * transformation should take data from the camera frame to some target frame.
    */

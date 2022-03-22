@@ -864,7 +864,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     NxLibCommand calibrateHandEye(cmdCalibrateHandEye, params.serial);
     calibrateHandEye.parameters()[itmSetup] = params.fixed ? valFixed : valMoving;
     // The target node will be reset anyway before we calculate data for the next time.
-    calibrateHandEye.parameters()[itmTarget] = TARGET_FRAME_LINK + "_" + params.serial;
+    calibrateHandEye.parameters()[itmTarget] = getNxLibTargetFrameName();
     if (isValid(link))
     {
       writePoseToNxLib(link.inverse(), calibrateHandEye.parameters()[itmLink]);
@@ -990,7 +990,7 @@ void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceG
   calibrateWorkspace.parameters()[itmCameras] = params.serial;
   writePoseToNxLib(patternTransformation, calibrateWorkspace.parameters()[itmPatternPose]);
   writePoseToNxLib(definedPatternPose, calibrateWorkspace.parameters()[itmDefinedPose]);
-  calibrateWorkspace.parameters()[itmTarget] = TARGET_FRAME_LINK + "_" + params.serial;
+  calibrateWorkspace.parameters()[itmTarget] = getNxLibTargetFrameName();
   calibrateWorkspace.execute();
 
   if (goal->write_calibration_to_eeprom)
