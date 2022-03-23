@@ -49,11 +49,15 @@ CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const&
 
     if (fixed && robotFrame.empty())
     {
-      robotFrame = cameraFrame;
+      robotFrame = targetFrame;
     }
     if (!fixed && wristFrame.empty())
     {
-      wristFrame = cameraFrame;
+      wristFrame = linkFrame;
+      if (robotFrame.empty())
+      {
+        robotFrame = targetFrame;
+      }
     }
 
     nh.param("capture_timeout", captureTimeout, 0);
