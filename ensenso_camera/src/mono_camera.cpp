@@ -315,7 +315,7 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
     }
     else
     {
-      ROS_WARN("Cannot publish the pattern pose in TF, because there are multiple patterns!");
+      ROS_WARN("Cannot publish the pattern pose in tf, because there are multiple patterns!");
     }
   }
 

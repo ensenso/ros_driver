@@ -3,6 +3,6 @@
 # In addition, we use the following error codes to indicate errors from
 # the ROS interface:
 #   100: Unknown exception
-#   101: TF exception
+#   101: tf exception
 uint8 code
 string message

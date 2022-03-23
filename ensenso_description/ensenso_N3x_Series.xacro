@@ -11,7 +11,7 @@
   <xacro:arg name="margin" default="0.03" />
   <xacro:property name="margin" value="$(arg margin)" />
 
-  <!-- Tf Frame, that references to the cameras mounting frame -->
+  <!-- tf frame that references to the cameras mounting frame -->
   <xacro:arg name="corresponding_frame_name" default="base_link" />
   <xacro:property name="corresponding_frame_name" value="$(arg corresponding_frame_name)" />
 
@@ -24,6 +24,6 @@
 
   <link name="${corresponding_frame_name}" />
 </robot>
-<!-- example usage with: 
+<!-- example usage with:
   roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_description`/ensenso_N3x_Series.xacro gui:=true
 -->

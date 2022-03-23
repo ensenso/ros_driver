@@ -9,7 +9,7 @@
 #   This deletes all previous observations of calibration patterns.
 # * Move the robot into a position where the calibration pattern is visible
 #   and call it with command = CAPTURE_PATTERN. The corresponding robot pose
-#   is automatically fetched from TF, based on the robot and wrist frame that
+#   is automatically fetched from tf, based on the robot and wrist frame that
 #   are given in the node's parameters.
 #   It is important that you do not move the robot until the action is done.
 #   Otherwise it is possible that the captured pattern and the corresponding

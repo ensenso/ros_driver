@@ -14,8 +14,8 @@ uint32 number_of_shots
 # will be the same frame that is used for the point cloud.
 string target_frame
 
-# Publish the pattern pose as TF transformation from the target frame to the
-# frame given here. If this is empty, the pose will not be published on TF.
+# Publish the pattern pose as tf transformation from the target frame to the
+# frame given here. If this is empty, the pose will not be published on tf.
 # Note: When there is more than one visible pattern, it is not clear which pose
 # should be published. In that case, the node will not publish any
 # transformation.

@@ -1,10 +1,10 @@
 # In Order to use this action, a point cloud has to be requested beforehand.
 
-# The TF frame, to which the point cloud should be rendered.
+# The tf frame, to which the point cloud should be rendered.
 string frame
 
 # Optional: If you define a view_pose yourself, the view_pose will be used for rendering.
-# Otherwise TF will look for the transform between the frame and the used camera.
+# Otherwise tf will look for the transform between the frame and the used camera.
 geometry_msgs/Transform view_pose
 
 # Enable these flags for every type of data that you want to receive after running the
