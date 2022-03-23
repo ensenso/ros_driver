@@ -110,7 +110,7 @@ int const ERROR_CODE_TF = 101;
   } /* NOLINT */                                                                                                       \
   catch (tf2::TransformException & e)                                                                                  \
   {                                                                                                                    \
-    ROS_ERROR("TF Exception: %s", e.what());                                                                           \
+    ROS_ERROR("tf Exception: %s", e.what());                                                                           \
     ensenso_camera_msgs::ACTION_NAME##Result result;                                                                   \
     result.error.code = ERROR_CODE_TF;                                                                                 \
     result.error.message = e.what();                                                                                   \
@@ -401,7 +401,7 @@ protected:
   virtual ros::Time capture() const = 0;
 
   /**
-   * Estimate the pose of a pattern in the given TF frame. The pattern must already be contained in the pattern buffer
+   * Estimate the pose of a pattern in the given tf frame. The pattern must already be contained in the pattern buffer
    * (that is, you should call collectPattern before this function).
    *
    * When the latestPatternOnly flag is set, the estimated position will be the one of the latest pattern in the buffer.
@@ -419,10 +419,10 @@ protected:
                                                                             std::string const& targetFrame = "") const;
 
   /**
-   * Update the camera's link node and the transformations in the NxLib according to the current information from TF.
+   * Update the camera's link node and the transformations in the NxLib according to the current information from tf.
    *
    * The target frame is node's target frame by default. When the useCachedTransformation flag is set, the
-   * transformation is not updated from the TF server and a cached tranformation is used instead.
+   * transformation is not updated from the tf server and a cached tranformation is used instead.
    */
   void updateGlobalLink(ros::Time time = ros::Time::now(), std::string targetFrame = "",
                         bool useCachedTransformation = false) const;

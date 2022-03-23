@@ -23,8 +23,8 @@
   <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera2)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen" ns="$(arg camera2_ns)">
     <param name="serial" type="string" value="$(arg camera2)" />
 
-    <!-- The link_frame defines the parent TF-Frame of the published Camera Link.
-    The child TF-Frame will be the camera_frame of this camera. This parameter is needed for all
+    <!-- The link_frame defines the parent tf-Frame of the published Camera Link.
+    The child tf-Frame will be the camera_frame of this camera. This parameter is needed for all
     cameras except the "root" camera above, if you want to have a multi camera setup with linked cameras -->
     <param name="link_frame" type="string" value="$(arg camera1)_optical_frame" />
 

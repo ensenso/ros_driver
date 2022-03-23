@@ -15,8 +15,8 @@ bool publish_results
 # of this action (see below).
 bool include_results_in_response
 
-# When this flag is enabled, the TF transformation between camera and target
-# frame will not be updated from the TF server, but fetched from a cache. This
+# When this flag is enabled, the tf transformation between camera and target
+# frame will not be updated from the tf server, but fetched from a cache. This
 # can be used to save some time when the camera and the target frame did not
 # move since the last data request.
 bool use_cached_transformation

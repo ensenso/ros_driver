@@ -638,7 +638,7 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
     }
     else
     {
-      ROS_WARN("Cannot publish the pattern pose in TF, because there are multiple patterns!");
+      ROS_WARN("Cannot publish the pattern pose in tf, because there are multiple patterns!");
     }
   }
 
@@ -790,7 +790,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     }
     catch (tf2::TransformException& e)
     {
-      result.error_message = std::string("Could not look up the robot pose due to the TF error: ") + e.what();
+      result.error_message = std::string("Could not look up the robot pose due to the tf error: ") + e.what();
       ROS_ERROR("%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(result);
       return;

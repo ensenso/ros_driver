@@ -8,7 +8,7 @@ int32 grid_size_y
 # Optional:
 # A transformation between the camera frame and the camera's target frame. If
 # this is given, it replaces the transformation that would normally be fetched
-# from TF. This can be used to check whether a pattern would be visible at a
+# from tf. This can be used to check whether a pattern would be visible at a
 # hypothetical camera position.
 geometry_msgs/Pose target_frame_transformation
 

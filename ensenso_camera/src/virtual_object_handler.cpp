@@ -61,7 +61,7 @@ void VirtualObjectHandler::updateObjectLinks()
   }
   catch (const tf2::TransformException& e)
   {
-    ROS_WARN("Could not look up the virtual object pose due to the TF error: %s", e.what());
+    ROS_WARN("Could not look up the virtual object pose due to the tf error: %s", e.what());
     return;
   }
 
