@@ -40,7 +40,7 @@
 double const STATUS_INTERVAL = 3.0;  // Seconds.
 
 /**
- * The interval at which we publish the current tf transfrom from the camera to the target frame, if a target frame is
+ * The interval at which we publish the current tf transform from the camera to the target frame, if a target frame is
  * available.
  */
 double const POSE_TF_INTERVAL = 1;  // Seconds.
@@ -195,7 +195,7 @@ struct CameraParameters
   bool fixed;
 
   /**
-   * Whether the node should wait for the camera to become available
+   * Whether the node should wait for the camera to become available.
    */
   bool wait_for_camera = false;
 
@@ -207,7 +207,7 @@ struct CameraParameters
   /**
    * A helper tf frame.
    *
-   * If the linkFrame parameter is not given, it defaults to targetFrame, if targetFrame is given, otherwise linkFrame
+   * If the linkFrame parameter is not given, it defaults to targetFrame if targetFrame is given, otherwise linkFrame
    * will be the same as the cameraFrame.
    * If the linkFrame parameter is given, it represents the internal camera link, which is stored for each of the
    * cameras in the NxLib. This camera link stores e.g. the transformation of the hand-eye calibration (fixed) from the

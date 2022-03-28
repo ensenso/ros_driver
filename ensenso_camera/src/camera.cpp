@@ -1,8 +1,8 @@
 #include "ensenso_camera/camera.h"
 
+#include "ensenso_camera/conversion.h"
 #include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
-#include "ensenso_camera/conversion.h"
 
 #include <sensor_msgs/distortion_models.h>
 
@@ -323,18 +323,18 @@ void Camera::updateTransformations(tf2::Transform const& targetFrameTransformati
 
 void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useCachedTransformation) const
 {
+  // Transformations are represented in the NxLib as follows:
+  //  - The camera's link node might contain calibration data from e.g. a hand-eye calibration. This is always used if
+  //    is present.
+  //  - The transformation between the link frame and the target frame (in which the data is returned) is fetched from
+  //    tf and written to the global link node of the NxLib.
+  //  - The link in the camera node has to reference this global link if it exists (e.g. if the linkFrame is different
+  //    from the targetFrame).
+
   if (targetFrame.empty())
   {
     targetFrame = params.targetFrame;
   }
-
-  // Transformation are represented in the NxLib as follows:
-  //  - The camera's link node contains the calibration data from e.g. the hand-eye calibration. This is always used
-  //    when it is present.
-  //  - The transformation between the link frame and the target frame (in which the data is returned) is fetched from
-  //    tf and written to a global link node of the NxLib.
-  //  - The link in the camera node has to reference this global link, if it exists (e.g. when the linkFrame is
-  //    different from the targetFrame).
 
   if (params.linkFrame == targetFrame)
   {
@@ -668,7 +668,7 @@ geometry_msgs::TransformStamped Camera::stampedLinkToCamera()
 tf2::Transform Camera::getCameraToLinkTransform()
 {
   // The NxLib will always give the transform from the camera to the link target in camera coordinates.
-  // Always initialize transform otherwise the transform will be invalid
+  // Always initialize transform otherwise the transform will be invalid.
   tf2::Transform transform = tf2::Transform::getIdentity();
 
   try
@@ -677,7 +677,7 @@ tf2::Transform Camera::getCameraToLinkTransform()
   }
   catch (NxLibException const& e)
   {
-    ROS_WARN("Link does not exists.Therefore we cannot publish a transform to any target. Error message: %s",
+    ROS_WARN("Link does not exist. Therefore we cannot publish a transform to any target. Error message: %s",
              e.getErrorText().c_str());
   }
 
