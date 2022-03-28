@@ -269,6 +269,11 @@ bool Camera::cameraIsOpen() const
          cameraNode[itmStatus][itmOpen].asBool();
 }
 
+bool Camera::hasLink() const
+{
+  return !isIdentity(poseFromNxLib(cameraNode[itmLink]));
+}
+
 void Camera::publishStatus(ros::TimerEvent const& event) const
 {
   std::lock_guard<std::mutex> lock(nxLibMutex);
@@ -558,6 +563,17 @@ bool Camera::open()
   updateCameraInfo();
 
   ROS_INFO("Opened camera with serial number '%s'.", params.serial.c_str());
+
+  if (hasLink() && params.cameraFrame == params.targetFrame)
+  {
+    ROS_WARN_ONCE(
+        "Camera %s has an internal link (i.e. it is either extrinsically calibrated (workspace- or hand-eye) or has a "
+        "link to another camera), but camera and target frame are equal, which means that neither a link nor a target "
+        "frame has been provided. The images and 3d data retreived from the camera are transformed by the NxLib with "
+        "the transform stored in the camera's link node, however, this transform is not known to tf. Please provide "
+        "a link or target frame in order for the transform to be published.",
+        params.serial.c_str());
+  }
   return true;
 }
 
@@ -642,18 +658,12 @@ void Camera::publishCurrentLinks(ros::TimerEvent const& timerEvent)
 
 void Camera::publishCameraLink()
 {
-  // The camera link is the calibrated link from camera to link.
-  if (params.cameraFrame == params.linkFrame)
+  if (!hasLink() || params.cameraFrame == params.linkFrame)
   {
     return;
   }
 
-  bool cameraLinkExists = cameraNode[itmLink][itmTarget].exists();
-
-  if (cameraLinkExists)
-  {
-    transformBroadcaster->sendTransform(stampedLinkToCamera());
-  }
+  transformBroadcaster->sendTransform(stampedLinkToCamera());
 }
 
 geometry_msgs::TransformStamped Camera::stampedLinkToCamera()
