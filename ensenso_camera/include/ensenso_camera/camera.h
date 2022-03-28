@@ -380,6 +380,11 @@ protected:
   bool cameraIsOpen() const;
 
   /**
+   * Check whether the camera has an internal link.
+   */
+  bool hasLink() const;
+
+  /**
    * Publish a diagnostic message indicating whether the camera is still open and usable in the NxLib.
    */
   virtual void publishStatus(ros::TimerEvent const& event) const;
