@@ -1,23 +1,37 @@
+<!-- Open both an Ensenso stereo camera and a mono camera within the same
+nodelet manager. -->
+
 <launch>
-  <arg name="serial_stereo" doc="Serial of the Ensenso stereo camera" />
-  <arg name="serial_mono" doc="Serial of the mono mamera" />
-  <arg name="stereo_ns" doc="Namespace for the stereo camera" />
-  <arg name="mono_ns" doc="Namespace for the mono camera" />
-  <arg name="target_frame_name" value="Workspace" doc="The root the tf tree"/>
-  <arg name="wait_for_camera" doc="whether the node should wait for the camera to become available" />
+  <arg name="serial_stereo" doc="Serial of the stereo camera (default: first found stereo camera)" default="" />
+  <arg name="serial_mono" doc="Serial of the mono mamera (default: first found mono camera)" default="" />
+  <arg name="settings_stereo" doc="JSON file with stereo camera parameters" default="" />
+  <arg name="settings_mono" doc="JSON file with mono camera parameters" default="" />
+  <arg name="stereo_ns" doc="Namespace of the stereo camera" default="stereo" />
+  <arg name="mono_ns" doc="Namespace of the mono camera" default="mono" />
+  <arg name="camera_frame" doc="The stereo camera's tf frame (default: optical_frame_SERIAL_STEREO)" default="" />
+  <arg name="link_frame" doc="The stereo camera's link tf frame (default: camera_frame)" default="" />
+  <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="" />
+  <arg name="threads" doc="The number of threads used by the NxLib for this node (-1=autoDetect)" default="-1" />
+  <arg name="wait_for_camera" doc="Whether this node should wait for the camera to become available" default="false" />
 
-  <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
-  <!-- Camera nodes running as nodelets -->
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_stereo)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen" ns="$(arg stereo_ns)">
+  <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
+
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_stereo)" ns="$(arg stereo_ns)"
+        args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
     <param name="serial" type="string" value="$(arg serial_stereo)" />
-    <param name="target_frame" type="string" value="$(arg target_frame_name)" />
+    <param name="settings" type="string" value="$(arg settings_stereo)" />
+    <param name="camera_frame" type="string" value="$(arg camera_frame)" />
+    <param name="link_frame" type="string" value="$(arg link_frame)" />
+    <param name="target_frame" type="string" value="$(arg target_frame)" />
+    <param name="threads" type="int" value="$(arg threads)" />
     <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
-
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_mono)" args="load ensenso_camera/mono_camera_nodelet /manager_" output="screen" ns="$(arg mono_ns)">
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_mono)" ns="$(arg mono_ns)"
+        args="load ensenso_camera/mono_camera_nodelet /manager_" output="screen">
     <param name="serial" type="string" value="$(arg serial_mono)" />
-    <param name="link_frame" value="optical_frame_$(arg serial_stereo)" />
+    <param name="settings" type="string" value="$(arg settings_mono)" />
+    <param name="link_frame" type="string" value="$(arg link_frame)" />
     <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
   </node>
 </launch>

@@ -1,12 +1,29 @@
-<launch>
-  <arg name="camera_serial" doc="Serial of the stereo camera to calibrate with." />
-  <arg name="robot_frame" doc="The robots base frame - base_link in the most cases." />
-  <arg name="wrist_frame" doc="The frame on which the camera is mounted - defaults to the camera frame."/>
-  <arg name="is_fixed" doc="whether the handeye calibration is fixed or a moving one" />
+<!-- Open an Ensenso stereo camera to perform a hand-eye calibration with. -->
 
-  <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera_serial)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
-    <param name="serial" type="string" value="$(arg camera_serial)" />
+<launch>
+  <arg name="serial" doc="Serial of the stereo camera(default: first found camera)" default="" />
+  <arg name="settings" doc="JSON file with camera parameters" default="" />
+  <arg name="camera_frame" doc="The camera's tf frame (default: optical_frame_SERIAL)" default="" />
+  <arg name="link_frame" doc="The camera's link tf frame (default: camera_frame)" default="" />
+  <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="" />
+  <arg name="threads" doc="The number of threads used by the NxLib for this node (-1=autoDetect)" default="-1" />
+  <arg name="wait_for_camera" doc="Whether this node should wait for the camera to become available" default="false" />
+  <!-- Required to be set by user. -->
+  <arg name="robot_frame" doc="The robot's base tf frame" />
+  <arg name="wrist_frame" doc="The robot's wrist tf frame" />
+  <arg name="is_fixed" doc="The hand-eye calibration type: fixed or moving" />
+
+  <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
+
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial)"
+        args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
+    <param name="serial" type="string" value="$(arg serial)" />
+    <param name="settings" type="string" value="$(arg settings)" />
+    <param name="camera_frame" type="string" value="$(arg camera_frame)" />
+    <param name="link_frame" type="string" value="$(arg link_frame)" />
+    <param name="target_frame" type="string" value="$(arg target_frame)" />
+    <param name="threads" type="int" value="$(arg threads)" />
+    <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
     <param name="robot_frame" type="string" value="$(arg robot_frame)" />
     <param name="wrist_frame" type="string" value="$(arg wrist_frame)" />
     <param name="fixed" type="bool" value="$(arg is_fixed)" />

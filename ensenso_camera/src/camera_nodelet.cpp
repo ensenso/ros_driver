@@ -35,7 +35,7 @@ void initNxLib(ros::NodeHandle& nh)
   }
 
   int threads;
-  if (nh.getParam("threads", threads))
+  if (nh.getParam("threads", threads) && threads > 0)
   {
     NxLibItem()[itmParameters][itmThreads] = threads;
   }
