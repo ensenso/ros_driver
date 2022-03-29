@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>ensenso_description</name>
-  <version>1.6.3</version>
+  <version>1.7.0</version>
   <description>Description package for Ensenso stereo cameras. This package consists of all current supported camera models.
     The Xacro macros, which import the mesh files as stl, accept the following parameters:
       - camera name
