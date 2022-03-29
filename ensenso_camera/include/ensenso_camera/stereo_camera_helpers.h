@@ -8,16 +8,6 @@
 #include <string>
 #include <vector>
 
-/**
- * Check whether the NxLib has at least the given version.
- */
-bool checkNxLibVersion(int major, int minor)
-{
-  int nxLibMajor = NxLibItem()[itmVersion][itmMajor].asInt();
-  int nxLibMinor = NxLibItem()[itmVersion][itmMinor].asInt();
-  return (nxLibMajor > major) || (nxLibMajor == major && nxLibMinor >= minor);
-}
-
 class RenderPointMapParams
 {
 protected:
@@ -175,21 +165,21 @@ void setRenderParams(NxLibItem const& paramItem, RenderPointMapParams const* par
   }
 }
 
-inline void rosWarnOnceAboutDeprSDKVersion(std::string const& notSupportedMsg, VersionInfo const& version)
+void printUnsupportedFeatureWarning(std::string const& featureMsg, NxLibVersion const& version)
 {
-  ROS_WARN_ONCE("This EnsensoSDK Version does not support: %s. Version used: %i.%i.%i", notSupportedMsg.c_str(),
-                version.majorV, version.minorV, version.buildV);
+  ROS_WARN_ONCE("This Ensenso SDK Version does not support: %s. Version used: %i.%i.%i", featureMsg.c_str(),
+                version.major, version.minor, version.build);
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr retrieveRenderedPointCloud(NxLibItem const& cmdResult,
-                                                               VersionInfo const& nxLibVersion,
+                                                               NxLibVersion const& nxLibVersion,
                                                                std::string const& frame)
 {
   // Because the Ensenso SDK 2.2.x has its Rendered Point Maps in a global image node, we try to get the rendered point
   // cloud from this image node. Of course this is NOT Multi Threading friendly.
-  if (nxLibVersion.majorV == 2 && nxLibVersion.minorV <= 2)
+  if (!nxLibVersion.meetsMinimumRequirement(2, 3))
   {
-    rosWarnOnceAboutDeprSDKVersion("Multi threaded Rendering of Point map", nxLibVersion);
+    printUnsupportedFeatureWarning("Multi threading of cmdRenderPointMap", nxLibVersion);
     auto const& globalResults = NxLibItem()[itmImages];
     return pointCloudFromNxLib(globalResults[itmRenderPointMap], frame);
   }
@@ -198,12 +188,12 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr retrieveRenderedPointCloud(NxLibItem const& 
 }
 
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr retrieveTexturedPointCloud(NxLibItem const& cmdResult,
-                                                                  VersionInfo const& nxLibVersion,
+                                                                  NxLibVersion const& nxLibVersion,
                                                                   std::string const& targetFrame)
 {
-  if (nxLibVersion.majorV == 2 && nxLibVersion.minorV <= 2)
+  if (!nxLibVersion.meetsMinimumRequirement(2, 3))
   {
-    rosWarnOnceAboutDeprSDKVersion("Multi threaded Rendering of Point map", nxLibVersion);
+    printUnsupportedFeatureWarning("Multi threading of cmdRenderPointMap", nxLibVersion);
     auto const& globalResults = NxLibItem()[itmImages];
     return pointCloudTexturedFromNxLib(globalResults[itmRenderPointMapTexture], globalResults[itmRenderPointMap],
                                        targetFrame);
@@ -213,9 +203,9 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr retrieveTexturedPointCloud(NxLibItem cons
                                      cmdResult[itmImages][itmRenderPointMap], targetFrame);
 }
 
-NxLibItem retrieveResultPath(NxLibItem const& cmdResult, VersionInfo const& nxLibVersion)
+NxLibItem retrieveResultPath(NxLibItem const& cmdResult, NxLibVersion const& nxLibVersion)
 {
-  if (nxLibVersion.majorV == 2 && nxLibVersion.minorV <= 2)
+  if (!nxLibVersion.meetsMinimumRequirement(2, 3))
   {
     return NxLibItem()[itmImages][itmRenderPointMap];
   }
@@ -223,13 +213,13 @@ NxLibItem retrieveResultPath(NxLibItem const& cmdResult, VersionInfo const& nxLi
   return cmdResult[itmImages][itmRenderPointMap];
 }
 
-sensor_msgs::ImagePtr retrieveRenderedDepthMap(NxLibItem const& cmdResult, VersionInfo const& nxLibVersion,
+sensor_msgs::ImagePtr retrieveRenderedDepthMap(NxLibItem const& cmdResult, NxLibVersion const& nxLibVersion,
                                                std::string const& frame)
 {
   sensor_msgs::ImagePtr renderedImage;
-  if (nxLibVersion.majorV == 2 && nxLibVersion.minorV <= 2)
+  if (!nxLibVersion.meetsMinimumRequirement(2, 3))
   {
-    rosWarnOnceAboutDeprSDKVersion("Multi threaded Rendering of Point map", nxLibVersion);
+    printUnsupportedFeatureWarning("Multi threading of cmdRenderPointMap", nxLibVersion);
     auto const& globalResults = NxLibItem()[itmImages];
     return depthImageFromNxLibNode(globalResults[itmRenderPointMap], frame);
   }
@@ -237,13 +227,13 @@ sensor_msgs::ImagePtr retrieveRenderedDepthMap(NxLibItem const& cmdResult, Versi
   return depthImageFromNxLibNode(cmdResult[itmImages][itmRenderPointMap], frame);
 }
 
-void setRenderParams(NxLibItem const& cmdParams, VersionInfo const& nxLibVersion, RenderPointMapParams const* params)
+void setRenderParams(NxLibItem const& cmdParams, NxLibVersion const& nxLibVersion, RenderPointMapParams const* params)
 {
   // Some Parameters are set in the global parameters node in 2.2.x. That is why we have to split the params
   // correspondingly to the global and the command parameter node.
-  if (nxLibVersion.majorV == 2 && nxLibVersion.minorV <= 2)
+  if (!nxLibVersion.meetsMinimumRequirement(2, 3))
   {
-    rosWarnOnceAboutDeprSDKVersion("Multi threaded Rendering of Point map", nxLibVersion);
+    printUnsupportedFeatureWarning("Multi threading of cmdRenderPointMap", nxLibVersion);
     auto globalParams = NxLibItem()[itmParameters][itmRenderPointMap];
     setRenderParams(globalParams, params);
   }
@@ -251,7 +241,7 @@ void setRenderParams(NxLibItem const& cmdParams, VersionInfo const& nxLibVersion
   {
     setRenderParams(cmdParams, params);
   }
-  // Some parameters are both in the cmd Parameters and the global parameter node
+  // Some parameters are both in the command parameters and the global parameter node.
   if (params->far())
   {
     cmdParams[itmFar] = *params->far();

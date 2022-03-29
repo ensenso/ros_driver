@@ -92,9 +92,9 @@ Camera::Camera(ros::NodeHandle& nh, CameraParameters _params) : params(std::move
 
   statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
 
-  cameraNode = NxLibItem()[itmCameras][itmBySerialNo][params.serial];
-  nxLibVersion = getCurrentNxLibVersion();
+  nxLibVersion.fillFromNxLib();
 
+  cameraNode = NxLibItem()[itmCameras][itmBySerialNo][params.serial];
   defaultParameters = NxLibItem()["rosDefaultParameters"];
 }
 
