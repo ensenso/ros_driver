@@ -23,9 +23,7 @@ TexturedPointCloud::Ptr texturePointCloudFromRectifiedImage(cv::Mat const& image
 
   if (static_cast<int>(pointCloud->width) != image.cols || static_cast<int>(pointCloud->height) != image.rows)
   {
-    ROS_ERROR(
-        "The point cloud does not have the same format as the rectified "
-        "image!");
+    ROS_ERROR("The point cloud does not have the same format as the rectified image!");
     return texturedPointCloud;
   }
 
