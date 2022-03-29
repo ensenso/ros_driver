@@ -3,9 +3,9 @@
 #include "ensenso_camera/conversion.h"
 #include "ensenso_camera/helper.h"
 #include "ensenso_camera/image_utilities.h"
-#include "ensenso_camera/nxLibHelpers.h"
 #include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
+#include "ensenso_camera/stereo_camera_helpers.h"
 
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <pcl_conversions/pcl_conversions.h>
