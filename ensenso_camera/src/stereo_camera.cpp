@@ -662,12 +662,6 @@ void StereoCamera::onProjectPattern(ensenso_camera_msgs::ProjectPatternGoalConst
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  if (!checkNxLibVersion(2, 1))
-  {
-    // In old NxLib versions, the project pattern command does not take the grid spacing as a parameter.
-    NxLibItem()[itmParameters][itmPattern][itmGridSpacing] = goal->grid_spacing * 1000;
-  }
-
   tf2::Transform patternPose = fromMsg(goal->pattern_pose);
 
   NxLibCommand projectPattern(cmdProjectPattern, params.serial);
@@ -1045,11 +1039,11 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   {
     renderPointMap.parameters()[itmCameras][i] = goal->serials[i];
   }
-  setRenderParams(renderPointMap.parameters(), nxLibVersion, &renderParams);
+  setRenderParams(renderPointMap.parameters(), &renderParams);
 
   renderPointMap.execute();
 
-  NxLibItem resultPath = retrieveResultPath(renderPointMap.result(), nxLibVersion);
+  NxLibItem resultPath = renderPointMap.result()[itmImages][itmRenderPointMap];
 
   if (!resultPath.exists())
   {
@@ -1063,7 +1057,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   {
     if (goal->request_point_cloud || (!goal->request_point_cloud && !goal->request_depth_image))
     {
-      auto pointCloud = retrieveRenderedPointCloud(renderPointMap.result(), nxLibVersion, goal->frame);
+      auto pointCloud = retrieveRenderedPointCloud(renderPointMap.result(), goal->frame);
 
       if (goal->publish_results)
       {
@@ -1082,7 +1076,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
 
     if (goal->request_depth_image)
     {
-      auto renderedImage = retrieveRenderedDepthMap(renderPointMap.result(), nxLibVersion, goal->frame);
+      auto renderedImage = retrieveRenderedDepthMap(renderPointMap.result(), goal->frame);
 
       if (goal->publish_results)
       {
@@ -1134,13 +1128,13 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
     renderPointMap.parameters()[itmCameras][i] = goal->serials[i];
   }
   renderPointMap.parameters()[itmCamera] = goal->mono_serial;
-  setRenderParams(renderPointMap.parameters(), nxLibVersion, &renderParams);
+  setRenderParams(renderPointMap.parameters(), &renderParams);
 
   renderPointMap.execute();
 
   if (goal->publish_results || goal->include_results_in_response)
   {
-    auto cloudColored = retrieveTexturedPointCloud(renderPointMap.result(), nxLibVersion, params.targetFrame);
+    auto cloudColored = retrieveTexturedPointCloud(renderPointMap.result(), params.targetFrame);
     if (goal->publish_results)
     {
       pointCloudPublisherColor.publish(cloudColored);
