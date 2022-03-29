@@ -11,6 +11,7 @@ nodelet manager and run the color_point_cloud Python node. -->
   <arg name="camera_frame" doc="The stereo camera's tf frame (default: optical_frame_SERIAL_STEREO)" default="" />
   <arg name="link_frame" doc="The stereo camera's link tf frame (default: camera_frame)" default="" />
   <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="" />
+  <arg name="tcp_port" doc="The TCP port to open on the NxLib (-1=off, 0=autoSelect, >0=portNumber)" default="-1" />
   <arg name="threads" doc="The number of threads used by the NxLib for this node (-1=autoDetect)" default="-1" />
   <arg name="wait_for_camera" doc="Whether this node should wait for the camera to become available" default="false" />
 
@@ -24,6 +25,7 @@ nodelet manager and run the color_point_cloud Python node. -->
     <arg name="camera_frame" value="$(arg camera_frame)" />
     <arg name="link_frame" value="$(arg link_frame)" />
     <arg name="target_frame" value="$(arg target_frame)" />
+    <arg name="tcp_port" value="$(arg tcp_port)" />
     <arg name="threads" value="$(arg threads)" />
     <arg name="wait_for_camera" value="$(arg wait_for_camera)" />
   </include>
