@@ -1,9 +1,11 @@
+<!-- Open an Ensenso stereo file camera in a node. -->
+
 <launch>
-  <arg name="serial" doc="The serial number of the created file camera."/>
-  <arg name="path" doc="The path that contains the camera images."/>
+  <arg name="serial" doc="Serial of the stereo file camera to be created" default="stereo_cam" />
+  <arg name="path" doc="The path to the stereo file camera directory or zip file" />
 
   <node pkg="ensenso_camera" type="ensenso_camera_node" name="ensenso_camera_node">
-    <param name="serial" value="$(arg serial)"/>
-    <param name="file_camera_path" value="$(arg path)"/>
+    <param name="serial" type="string" value="$(arg serial)"/>
+    <param name="file_camera_path" type="string" value="$(arg path)"/>
   </node>
 </launch>

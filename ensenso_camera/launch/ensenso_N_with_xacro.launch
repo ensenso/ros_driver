@@ -1,36 +1,51 @@
-<launch>
-  <!-- In this example the camera has been workspace calibrated a priori -->
-  <!-- Camera Parameters -->
-  <arg name="camera" doc="Camera Serial" />
-  <arg name="target_frame" value="Workspace" />
+<!-- Open a workspace calibrated Ensenso N-Series stereo camera and load the
+corresponding 3D model of the camera via xacro and publish a tf transform from
+the camera_frame to the xaxro's reference frame. -->
 
-  <!-- Xacro Parameters -->
-  <!-- From that attachment frame the xacro builds the camera frames -->
+<launch>
+  <!-- Camera parameters. -->
+  <arg name="serial" doc="Serial of the stereo camera (default: first found camera)" default="" />
+  <arg name="settings" doc="JSON file with camera parameters" default="" />
+  <arg name="camera_frame" doc="The camera's tf frame (default: optical_frame_SERIAL)" default="" />
+  <arg name="link_frame" doc="The camera's link tf frame (default: camera_frame)" default="" />
+  <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="Workspace" />
+  <arg name="threads" doc="The number of threads used by the NxLib for this node (-1=autoDetect)" default="-1" />
+  <arg name="wait_for_camera" doc="Whether this node should wait for the camera to become available" default="false" />
+
+  <!-- Xacro parameters. -->
+  <!-- From that attachment frame the xacro builds the camera frames. -->
   <arg name="xacro_reference_frame" default="xacro_ref" />
-  <!-- Margin for the the collision model of the camera -->
+  <!-- Margin for the the collision model of the camera. -->
   <arg name="collision_margin" default="0.04" />
 
-  <!-- a static transform from the optical_frame_camera (left lens) to the xacro reference frame (camera mount) -->
-  <!-- Fits for N Series -->
+  <!-- A static transform from the optical_frame_<serial> (left lens) to the
+  xacro reference frame (camera mount). Fits for the N-Series. -->
   <node pkg="tf2_ros" type="static_transform_publisher" name="camera_to_model_broadcaster"
-    args="0.05 0.0 -0.05 0.0 0.0 0.0 1.0 optical_frame_$(arg camera) $(arg xacro_reference_frame)" />
+        args="0.05 0.0 -0.05 0.0 0.0 0.0 1.0 optical_frame_$(arg serial) $(arg xacro_reference_frame)" />
 
-  <!-- Use the xacro and surpass parameters -->
+  <!-- Use the xacro and surpass parameters. -->
   <param name="ensenso_description"
     command="xacro '$(find ensenso_description)/ensenso_N3x_Series.xacro'
       corresponding_frame_name:=$(arg xacro_reference_frame)
-      camera:=$(arg camera)
+      camera:=$(arg serial)
       margin:=$(arg collision_margin)" />
 
-  <!-- publish the transforms between the defined frames in the xacro above -->
+  <!-- Publish the transforms between the defined frames in the xacro above. -->
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="camera_state_publisher" >
     <remap from="robot_description" to="ensenso_description" />
   </node>
 
-  <!-- Start the Ensenso Camera as Nodelet -->
-  <node pkg="nodelet" type="nodelet" name="manager_"  args="manager" output="screen" />
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg camera)" args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
-    <param name="serial" type="string" value="$(arg camera)" />
+  <!-- Start the Ensenso camera as nodelet. -->
+  <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
+
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial)"
+        args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
+    <param name="serial" type="string" value="$(arg serial)" />
+    <param name="settings" type="string" value="$(arg settings)" />
+    <param name="camera_frame" type="string" value="$(arg camera_frame)" />
+    <param name="link_frame" type="string" value="$(arg link_frame)" />
     <param name="target_frame" type="string" value="$(arg target_frame)" />
+    <param name="threads" type="int" value="$(arg threads)" />
+    <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
   </node>
 </launch>
