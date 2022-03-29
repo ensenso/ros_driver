@@ -568,6 +568,11 @@ bool Camera::open()
 
   ROS_INFO("Opened camera with serial number '%s'.", params.serial.c_str());
 
+  if (!nxLibVersion.meetsMinimumRequirement(3, 0))
+  {
+    ROS_WARN_ONCE("Ensenso SDK 3.0 or newer is required, you are using version %s.", nxLibVersion.toString().c_str());
+  }
+
   if (hasLink() && params.cameraFrame == params.targetFrame)
   {
     ROS_WARN_ONCE(
