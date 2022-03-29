@@ -241,6 +241,8 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   bool requestDisparityMap = goal->request_disparity_map;
 
+  bool requestDepthImage = goal->request_depth_image;
+
   // Automatically request point cloud if no data set is explicitly selected.
   bool requestPointCloud = goal->request_point_cloud || goal->request_depth_image;
   if (!goal->request_raw_images && !goal->request_rectified_images && !goal->request_disparity_map &&
@@ -269,8 +271,9 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
         "used for calibration actions. Rectifying these images afterwards is not possible and they cannot be used to "
         "compute 3D data. If you want to retrieve 3D data, set capture mode to \"Rectified\".");
     requestDisparityMap = false;
-    requestNormals = false;
+    requestDepthImage = false;
     requestPointCloud = false;
+    requestNormals = false;
     computePointCloud = false;
     computeDisparityMap = false;
   }
@@ -401,17 +404,17 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  PointCloudROI const* pointCloudROI = 0;
-  if (parameterSets.at(currentParameterSet).useROI)
-  {
-    pointCloudROI = &parameterSets.at(currentParameterSet).roi;
-  }
-
   if (computePointCloud)
   {
     NxLibCommand computePointMap(cmdComputePointMap, params.serial);
     computePointMap.parameters()[itmCameras] = params.serial;
     computePointMap.execute();
+
+    PointCloudROI const* pointCloudROI = 0;
+    if (parameterSets.at(currentParameterSet).useROI)
+    {
+      pointCloudROI = &parameterSets.at(currentParameterSet).roi;
+    }
 
     if (requestPointCloud && !requestNormals)
     {
@@ -426,54 +429,52 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
         pointCloudPublisher.publish(pointCloud);
       }
     }
-
-    if (goal->request_depth_image)
+    else
     {
-      if (params.cameraFrame == params.targetFrame)
+      NxLibCommand computeNormals(cmdComputeNormals, params.serial);
+      computeNormals.execute();
+
+      auto pointCloud = pointCloudWithNormalsFromNxLib(
+          cameraNode[itmImages][itmPointMap], cameraNode[itmImages][itmNormals], params.targetFrame, pointCloudROI);
+
+      if (goal->include_results_in_response)
       {
-        auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.targetFrame);
-
-        depthImageCameraInfo->header.stamp = depthImage->header.stamp;
-
-        if (goal->include_results_in_response)
-        {
-          result.depth_image = *depthImage;
-          result.depth_image_info = *depthImageCameraInfo;
-        }
-
-        if (publishResults)
-        {
-          depthImagePublisher.publish(depthImage, depthImageCameraInfo);
-        }
+        pcl::toROSMsg(*pointCloud, result.point_cloud);
       }
-      else
+      if (publishResults)
       {
-        ROS_WARN_ONCE(
-            "Currently it is not possible to determine the depth map once the stereo camera is extrinsically "
-            "calibrated because the point cloud is then transformed internally. If you want to have a depth "
-            "map, the camera must not be extrinsically calibrated (workspace-/ hand-eye calibration), or "
-            "have a link to another camera.");
+        pointCloudPublisher.publish(pointCloud);
       }
     }
   }
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  if (requestNormals)
+  if (requestDepthImage)
   {
-    NxLibCommand computeNormals(cmdComputeNormals, params.serial);
-    computeNormals.execute();
+    // In case camera and target frame are different, the point cloud is recomputed with the relative(toWorld)-flag,
+    // such that the resulting point cloud (and thus the depth image) is transformed by the NxLib with the transform
+    // stored in the stereo camera's link node.
+    if (params.cameraFrame != params.targetFrame)
+    {
+      NxLibCommand computePointMap(cmdComputePointMap, params.serial);
+      computePointMap.parameters()[itmCameras] = params.serial;
+      computePointMap.parameters()[itmRelative] = true;
+      computePointMap.execute();
+    }
 
-    auto pointCloud = pointCloudWithNormalsFromNxLib(
-        cameraNode[itmImages][itmPointMap], cameraNode[itmImages][itmNormals], params.targetFrame, pointCloudROI);
+    auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.targetFrame);
+
+    depthImageCameraInfo->header.stamp = depthImage->header.stamp;
 
     if (goal->include_results_in_response)
     {
-      pcl::toROSMsg(*pointCloud, result.point_cloud);
+      result.depth_image = *depthImage;
+      result.depth_image_info = *depthImageCameraInfo;
     }
     if (publishResults)
     {
-      pointCloudPublisher.publish(pointCloud);
+      depthImagePublisher.publish(depthImage, depthImageCameraInfo);
     }
   }
 
