@@ -30,6 +30,32 @@ bool isValid(geometry_msgs::Transform const& pose)
   return isValid(fromMsg(pose));
 }
 
+namespace
+{
+tf2Scalar fixZeroValue(double value, double epsilon = 0.00001)
+{
+  if (std::abs(value) <= epsilon)
+  {
+    return tf2Scalar(0.0);
+  }
+  return tf2Scalar(value);
+}
+}  // namespace
+
+bool isIdentity(tf2::Transform const& pose)
+{
+  tf2::Matrix3x3 basis(fixZeroValue(pose.getBasis().getRow(0).getX()), fixZeroValue(pose.getBasis().getRow(0).getY()),
+                       fixZeroValue(pose.getBasis().getRow(0).getZ()), fixZeroValue(pose.getBasis().getRow(1).getX()),
+                       fixZeroValue(pose.getBasis().getRow(1).getY()), fixZeroValue(pose.getBasis().getRow(1).getZ()),
+                       fixZeroValue(pose.getBasis().getRow(2).getX()), fixZeroValue(pose.getBasis().getRow(2).getY()),
+                       fixZeroValue(pose.getBasis().getRow(2).getZ()));
+
+  tf2::Vector3 origin(fixZeroValue(pose.getOrigin().getX()), fixZeroValue(pose.getOrigin().getY()),
+                      fixZeroValue(pose.getOrigin().getZ()));
+
+  return (basis == tf2::Matrix3x3::getIdentity() && origin.isZero());
+}
+
 void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
 {
   // Initialize the node to be empty. This is necessary, because there is a bug in some versions of the NxLib that
@@ -43,12 +69,12 @@ void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
 
   if (isValid(pose))
   {
+    // ROS transformation is in meters, NxLib expects it to be in millimeters.
     auto origin = pose.getOrigin();
-    node[itmTranslation][0] = origin.x() * 1000;  // ROS transformation is in
-                                                  // meters, NxLib expects it to
-                                                  // be in millimeters.
-    node[itmTranslation][1] = origin.y() * 1000;
-    node[itmTranslation][2] = origin.z() * 1000;
+    origin *= 1000;
+    node[itmTranslation][0] = origin.x();
+    node[itmTranslation][1] = origin.y();
+    node[itmTranslation][2] = origin.z();
 
     auto rotation = pose.getRotation();
     node[itmRotation][itmAngle] = rotation.getAngle();
@@ -60,7 +86,7 @@ void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
   }
   else
   {
-    ROS_ERROR("Given is pose is not valid for writing to the NxLib. Using identity transform");
+    ROS_ERROR("Given pose is not valid for writing to the NxLib, using identity transform instead");
     // Use an identity transformation as a reasonable default value.
     node[itmTranslation][0] = 0;
     node[itmTranslation][1] = 0;
@@ -73,22 +99,24 @@ void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
   }
 }
 
+tf2::Vector3 vector3FromNxLib(NxLibItem const& node)
+{
+  double x = node[0].asDouble();
+  double y = node[1].asDouble();
+  double z = node[2].asDouble();
+  return tf2::Vector3(tf2Scalar(x), tf2Scalar(y), tf2Scalar(z));
+}
+
 tf2::Transform poseFromNxLib(NxLibItem const& node)
 {
   tf2::Transform pose;
-  tf2::Vector3 origin;
-  origin.setX(node[itmTranslation][0].asDouble() / 1000);  // NxLib
-                                                           // transformation is
-                                                           // in millimeters, ROS
-                                                           // expects it to be in
-                                                           // meters.
-  origin.setY(node[itmTranslation][1].asDouble() / 1000);
-  origin.setZ(node[itmTranslation][2].asDouble() / 1000);
+
+  // NxLib transformation is in millimeters, ROS expects it to be in meters.
+  tf2::Vector3 origin = vector3FromNxLib(node[itmTranslation]);
+  origin /= 1000;
   pose.setOrigin(origin);
 
-  tf2::Vector3 rotationAxis(node[itmRotation][itmAxis][0].asDouble(), node[itmRotation][itmAxis][1].asDouble(),
-                            node[itmRotation][itmAxis][2].asDouble());
-  tf2::Quaternion rotation(rotationAxis, node[itmRotation][itmAngle].asDouble());
+  tf2::Quaternion rotation(vector3FromNxLib(node[itmRotation][itmAxis]), node[itmRotation][itmAngle].asDouble());
   pose.setRotation(rotation);
 
   return pose;

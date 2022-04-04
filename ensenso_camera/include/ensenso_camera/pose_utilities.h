@@ -21,6 +21,11 @@ bool isValid(geometry_msgs::Transform const& pose);
 bool isValid(tf2::Vector3 const& vector);
 
 /**
+ * Check whether the given tf pose is an identity transformation.
+ */
+bool isIdentity(tf2::Transform const& pose);
+
+/**
  * Convert the given tf pose to an NxLib transformation and write it into the given NxLib node.
  */
 void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node);
