@@ -36,30 +36,29 @@ def capture_pattern(hand_eye_client):
         pass
 
 
-def calibrate_hand_eye(hand_eye_client, store_calibration=True):
-    rospy.loginfo("Running the calibration. Will also store calibration: {}.".format(store_calibration))
+def calibrate_hand_eye(hand_eye_client):
+    rospy.loginfo("Running calibration and storing results in EEPROM.")
     goal = CalibrateHandEyeGoal()
     goal.command = CalibrateHandEyeGoal.START_CALIBRATION
-    goal.write_calibration_to_eeprom = store_calibration
+    goal.write_calibration_to_eeprom = True
     hand_eye_client.send_goal(goal)
     wait_for_result(hand_eye_client)
 
 
 def main():
     capture_wait = rospy.get_param("~capture_wait", 10.0)
-    count_poses = rospy.get_param("~count_poses", 6)
+    count_poses = max(rospy.get_param("~count_poses", 5), 6)
     timeout = rospy.get_param("~timeout", 60)
 
     hand_eye_calib_client = actionlib.SimpleActionClient("calibrate_hand_eye", CalibrateHandEyeAction)
     if not hand_eye_calib_client.wait_for_server(rospy.Duration(timeout)):
-        rospy.logerr("Could not reach the Action Server. The camera node is not running!")
+        rospy.logerr("The camera node is not running!")
         sys.exit()
 
     reset_patterns(hand_eye_calib_client)
+
     for i in range(count_poses):
-        #
-        # ----The Robot should stand still here.
-        #
+        # ---- Let the Robot stand still here.
         rospy.loginfo("Pattern number: {}".format(i + 1))
         now = rospy.get_time()
         capture_pattern(hand_eye_calib_client)
@@ -68,17 +67,15 @@ def main():
             rospy.loginfo("Finished capturing patterns")
             break
 
-        #
         # ---- Move the robot to the next position.
-        #
-        time_left_to_move_robot = capture_wait - (rospy.get_time() - now)
-        while time_left_to_move_robot > 0.8:
+        time_until_capture = capture_wait - (rospy.get_time() - now)
+        while time_until_capture > 0.8:
             start_loop = rospy.get_time()
-            rospy.loginfo("Capturing the next pattern in: {} seconds.".format(time_left_to_move_robot))
+            rospy.loginfo("Capturing next pattern in {}s.".format(time_until_capture))
             rospy.sleep(0.75)
             end_loop = rospy.get_time()
-            time_left_to_move_robot -= end_loop - start_loop
-        rospy.sleep(time_left_to_move_robot)
+            time_until_capture -= end_loop - start_loop
+        rospy.sleep(time_until_capture)
 
     calibrate_hand_eye(hand_eye_calib_client, True)
 

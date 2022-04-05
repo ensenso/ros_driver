@@ -9,6 +9,7 @@ from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
 
 def main():
     loop_rate = rospy.get_param("~rate", 0.5)
+    namespace = rospy.get_param("~namespace", None)
     timeout = rospy.get_param("~timeout", 60)
 
     goal = RequestDataGoal()
@@ -23,10 +24,14 @@ def main():
 
     goal.publish_results = True
 
-    request_data_client = actionlib.SimpleActionClient("request_data", RequestDataAction)
+    request_data_client_name = "request_data" if namespace is None else namespace.rstrip("/") + "/request_data"
+    request_data_client = actionlib.SimpleActionClient(request_data_client_name, RequestDataAction)
+
+    rospy.loginfo("Trying to connect to: {}".format(request_data_client_name))
     if not request_data_client.wait_for_server(rospy.Duration(timeout)):
         rospy.logerr("The camera node is not running!")
         sys.exit()
+    rospy.loginfo("Connected")
 
     rate = rospy.Rate(loop_rate)
     while not rospy.is_shutdown():
