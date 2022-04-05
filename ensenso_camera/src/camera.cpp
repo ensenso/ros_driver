@@ -99,7 +99,7 @@ Camera::Camera(ros::NodeHandle& nh, CameraParameters _params) : params(std::move
   nxLibVersion.fillFromNxLib();
 
   cameraNode = NxLibItem()[itmCameras][itmBySerialNo][params.serial];
-  defaultParameters = NxLibItem()["rosDefaultParameters"];
+  defaultParameters = NxLibItem()["rosDefaultParameters"][params.serial + "_" + DEFAULT_PARAMETER_SET];
 }
 
 void Camera::startServers() const
