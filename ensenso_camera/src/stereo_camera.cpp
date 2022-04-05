@@ -1508,11 +1508,6 @@ void StereoCamera::writeParameter(ensenso_camera_msgs::Parameter const& paramete
   }
 }
 
-bool startswith(std::string const& lhs, std::string const& rhs)
-{
-  return lhs.rfind(rhs, 0) == 0;
-}
-
 bool StereoCamera::isSSeries() const
 {
   return cameraNode[itmType].asString() == "StructuredLight";
