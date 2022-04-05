@@ -12,6 +12,7 @@
 #include "ensenso_camera/nxlib_version.h"
 #include "ensenso_camera/point_cloud_utilities.h"
 #include "ensenso_camera/queued_action_server.h"
+#include "ensenso_camera/string_helper.h"
 #include "ensenso_camera/virtual_object_handler.h"
 
 #include "nxLib.h"

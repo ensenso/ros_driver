@@ -114,9 +114,11 @@ void Camera::startServers() const
 bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParameters)
 {
   if (jsonFile.empty())
+  {
     return true;
+  }
 
-  std::ifstream file(jsonFile);
+  std::ifstream file(expandPath(jsonFile));
   if (file.is_open() && file.rdbuf())
   {
     std::stringstream buffer;
@@ -154,7 +156,11 @@ bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParamet
 
       updateCameraInfo();
       if (saveAsDefaultParameters)
+      {
         saveDefaultParameterSet();
+      }
+
+      ROS_INFO("Loaded settings from '%s'.", jsonFile.c_str());
     }
     catch (NxLibException& e)
     {
