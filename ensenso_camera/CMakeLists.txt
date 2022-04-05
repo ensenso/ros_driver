@@ -46,6 +46,7 @@ roslint_python(
   scripts/image_stream_mono
   scripts/pattern_marker
   scripts/request_data
+  scripts/request_data_linked
   scripts/request_data_mono
   scripts/set_origin
 )
@@ -161,6 +162,7 @@ catkin_install_python(
   scripts/image_stream_mono
   scripts/pattern_marker
   scripts/request_data
+  scripts/request_data_linked
   scripts/request_data_mono
   scripts/set_origin
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

@@ -1,0 +1,44 @@
+<!-- Open both an Ensenso stereo camera and a mono camera within the same
+nodelet manager, run the register_depth_image Python node and the
+depth_image_proc/register node in order to register the depth image from the
+stereo camera to the mono camera'a frame. -->
+
+<launch>
+  <arg name="serial_stereo" doc="Serial of the stereo camera (default: first found stereo camera)" default="" />
+  <arg name="serial_mono" doc="Serial of the mono mamera (default: first found mono camera)" default="" />
+  <arg name="stereo_ns" doc="Namespace of the stereo camera" default="stereo" />
+  <arg name="mono_ns" doc="Namespace of the mono camera" default="mono" />
+  <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="" />
+
+  <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
+
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_stereo)" ns="$(arg stereo_ns)"
+        args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
+    <param name="serial" type="string" value="$(arg serial_stereo)" />
+    <param name="target_frame" type="string" value="$(arg target_frame)" />
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_mono)" ns="$(arg mono_ns)"
+        args="load ensenso_camera/mono_camera_nodelet /manager_" output="screen">
+    <param name="serial" type="string" value="$(arg serial_mono)" />
+    <param name="link_frame" value="optical_frame_$(arg serial_stereo)" />
+  </node>
+
+  <node pkg="ensenso_camera" type="request_data_linked" name="Ensenso_request_data_linked">
+    <param name="stereo_ns" type="string" value="$(arg stereo_ns)" />
+    <param name="mono_ns" type="string" value="$(arg mono_ns)" />
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="DIP_Register"
+        args="load depth_image_proc/register /manager_" output="screen">
+    <!-- Inputs.  -->
+    <remap from="rgb/camera_info" to="mono/rectified/camera_info" />
+    <remap from="depth/camera_info" to="stereo/depth/camera_info" />
+    <remap from="depth/image_rect" to="stereo/depth/image" />
+    <!-- Outputs. -->
+    <remap from="depth_registered/camera_info" to="mono/depth/camera_info" />
+    <remap from="depth_registered/image_rect" to="mono/depth/image" />
+    <!-- Parameters. -->
+    <param name="queue_size" type="int" value="5" />
+  </node>
+</launch>
