@@ -8,7 +8,8 @@ from ensenso_camera_msgs.msg import RequestDataMonoAction, RequestDataMonoGoal
 
 
 def main():
-    loop_rate = rospy.get_param("~rate", 10)
+    loop_rate = rospy.get_param("~rate", 0.5)
+    namespace = rospy.get_param("~namespace", None)
     timeout = rospy.get_param("~timeout", 60)
 
     goal = RequestDataMonoGoal()
@@ -19,10 +20,14 @@ def main():
 
     goal.publish_results = True
 
-    request_data_client = actionlib.SimpleActionClient("request_data", RequestDataMonoAction)
+    request_data_client_name = "request_data" if namespace is None else namespace.rstrip("/") + "/request_data"
+    request_data_client = actionlib.SimpleActionClient(request_data_client_name, RequestDataMonoAction)
+
+    rospy.loginfo("Trying to connect to: {}".format(request_data_client_name))
     if not request_data_client.wait_for_server(rospy.Duration(timeout)):
         rospy.logerr("The camera node is not running!")
         sys.exit()
+    rospy.loginfo("Connected")
 
     rate = rospy.Rate(loop_rate)
     while not rospy.is_shutdown():
@@ -41,7 +46,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        rospy.init_node("ensenso_camera_request_data")
+        rospy.init_node("ensenso_camera_request_data_mono")
         main()
     except rospy.ROSInterruptException:
         pass
