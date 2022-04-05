@@ -197,6 +197,11 @@ void MonoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr co
     }
   }
 
+  for (auto const& parameter : goal->parameters)
+  {
+    writeParameter(parameter);
+  }
+
   // Synchronize to make sure that we read back the correct values.
   NxLibCommand synchronize(cmdSynchronize, params.serial);
   synchronize.parameters()[itmCameras] = params.serial;
@@ -204,7 +209,7 @@ void MonoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr co
 
   saveParameterSet(goal->parameter_set);
 
-  // Calibration could have changed after setting new parameters
+  // Calibration could have changed after setting new parameters.
   updateCameraInfo();
 
   // Read back the actual values.
