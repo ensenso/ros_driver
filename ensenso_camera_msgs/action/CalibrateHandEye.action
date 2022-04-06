@@ -38,10 +38,18 @@ string parameter_set
 # Optional for the step START_CALIBRATION:
 # The underlying robot geometry. By default a 6-DOF robot is assumed. In case
 # you are calibrating a 4- or 3-DOF robot, some of the axes have to be fixed.
-# With a 4-DOF robot you can either fix the camera pose Z-component or the
-# pattern pose Z-component in the robot or wrist frame.
-# With a 3-DOF robot you can either fix the camera pose or the pattern pose in
-# the robot or wrist frame.
+# We provide configurations for these (most common) robot geometries:
+#
+# * 4-DOF robot with XYZ translation and Z rotation:
+#   You can either fix the camera pose Z-component or the pattern pose
+#   Z-component in the robot or wrist frame.
+#
+# * 3-DOF robot with XYZ translation:
+#   You can either fix the camera pose or the pattern pose in the robot or wrist
+#   frame.
+#
+# Other geometries than these need their own configuration. For more information
+# see https://www.ensenso.com/manual/commands/calibratehandeye.html.
 uint8 DOF6 = 0
 uint8 DOF4_FIX_CAMERA_POSE_Z_COMPONENT = 1
 uint8 DOF4_FIX_PATTERN_POSE_Z_COMPONENT = 2
