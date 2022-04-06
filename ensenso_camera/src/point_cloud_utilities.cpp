@@ -2,12 +2,11 @@
 
 #include "ensenso_camera/conversion.h"
 
-#include <pcl/point_types.h>
+#include <ros/ros.h>
 
 #include <limits>
 #include <string>
 #include <vector>
-#include <ros/ros.h>
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
                                                         PointCloudROI const* roi)
