@@ -24,6 +24,6 @@
 
   <link name="${corresponding_frame_name}" />
 </robot>
-<!-- example usage with:
-  roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_description`/ensenso_X400_xFA_Series.xacro gui:=true
+<!-- Example usage with:
+roslaunch urdf_tutorial display.launch model:=`rospack find ensenso_description`/ensenso_X400_xFA_Series.xacro gui:=true
 -->
