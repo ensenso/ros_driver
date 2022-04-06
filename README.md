@@ -1,10 +1,20 @@
-# ensenso_driver [![Build&Test](https://github.com/ensenso/ros_driver/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/ensenso/ros_driver/actions/workflows/build-and-test.yml)
+# Official ROS driver for [Ensenso](http://www.ensenso.com) stereo cameras [![Build&Test](https://github.com/ensenso/ros_driver/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/ensenso/ros_driver/actions/workflows/build-and-test.yml)
 
-Official ROS driver for [Ensenso](http://www.ensenso.com) stereo cameras. You can find the documentation on the [ROS wiki](http://wiki.ros.org/ensenso_driver).
+## Documentation
 
-**Note:** Please report any bugs or feature requests in the [issue tracker](https://github.com/ensenso/ros_driver/issues).
+To get started with the package, take a look at the [ROS wiki](http://wiki.ros.org/ensenso_driver).
 
-----
+## Remarks
+ * For using this package, you need to have the [Ensenso SDK](https://www.ensenso.com/support/sdk-download) installed.
+ * Version 1.7.0 and newer requires at least Ensenso SDK 3.0.
+ * Version 1.6.3 and older requires at least Ensenso SDK 2.0. Older versions are not supported.
+ * All inputs and outputs of this package are in meters and seconds, as the convention for ROS requires. This is different from the !NxLib, which uses millimeters and milliseconds.
+
+## Report a Bug
+
+Please report any bugs or feature requests in the [issue tracker](https://github.com/ensenso/ros_driver/issues).
+
+## Acknowledgements
 
 <img src="https://raw.githubusercontent.com/ensenso/ros_driver/master/media/rosin.png" alt="ROSIN" title="ROSIN" height="70">&nbsp;<img src="https://raw.githubusercontent.com/ensenso/ros_driver/master/media/eu.png" alt="EU" title="EU" height="70">
 
