@@ -77,7 +77,7 @@ def main():
             time_until_capture -= end_loop - start_loop
         rospy.sleep(time_until_capture)
 
-    calibrate_hand_eye(hand_eye_calib_client, True)
+    calibrate_hand_eye(hand_eye_calib_client)
 
 
 if __name__ == "__main__":
