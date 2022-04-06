@@ -852,6 +852,33 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
 
     NxLibCommand calibrateHandEye(cmdCalibrateHandEye, params.serial);
     calibrateHandEye.parameters()[itmSetup] = params.fixed ? valFixed : valMoving;
+
+    // Check the robot geometry and set the fixed axes accordingly.
+    if (goal->robot_geometry == goal->DOF4_FIX_CAMERA_POSE_Z_COMPONENT)
+    {
+      calibrateHandEye.parameters()[itmFixed][itmLink][itmTranslation][0] = false;
+      calibrateHandEye.parameters()[itmFixed][itmLink][itmTranslation][1] = false;
+      calibrateHandEye.parameters()[itmFixed][itmLink][itmTranslation][2] = true;
+    }
+    else if (goal->robot_geometry == goal->DOF4_FIX_PATTERN_POSE_Z_COMPONENT)
+    {
+      calibrateHandEye.parameters()[itmFixed][itmPatternPose][itmTranslation][0] = false;
+      calibrateHandEye.parameters()[itmFixed][itmPatternPose][itmTranslation][1] = false;
+      calibrateHandEye.parameters()[itmFixed][itmPatternPose][itmTranslation][2] = true;
+    }
+    else if (goal->robot_geometry == goal->DOF3_FIX_CAMERA_POSE)
+    {
+      calibrateHandEye.parameters()[itmFixed][itmLink][itmTranslation][0] = true;
+      calibrateHandEye.parameters()[itmFixed][itmLink][itmTranslation][1] = true;
+      calibrateHandEye.parameters()[itmFixed][itmLink][itmTranslation][2] = true;
+    }
+    else if (goal->robot_geometry == goal->DOF3_FIX_PATTERN_POSE)
+    {
+      calibrateHandEye.parameters()[itmFixed][itmPatternPose][itmTranslation][0] = true;
+      calibrateHandEye.parameters()[itmFixed][itmPatternPose][itmTranslation][1] = true;
+      calibrateHandEye.parameters()[itmFixed][itmPatternPose][itmTranslation][2] = true;
+    }
+
     // The target node will be reset anyway before we calculate data for the next time.
     calibrateHandEye.parameters()[itmTarget] = getNxLibTargetFrameName();
     if (isValid(link))

@@ -36,6 +36,21 @@ uint8 command
 string parameter_set
 
 # Optional for the step START_CALIBRATION:
+# The underlying robot geometry. By default a 6-DOF robot is assumed. In case
+# you are calibrating a 4- or 3-DOF robot, some of the axes have to be fixed.
+# With a 4-DOF robot you can either fix the camera pose Z-component or the
+# pattern pose Z-component in the robot or wrist frame.
+# With a 3-DOF robot you can either fix the camera pose or the pattern pose in
+# the robot or wrist frame.
+uint8 DOF6 = 0
+uint8 DOF4_FIX_CAMERA_POSE_Z_COMPONENT = 1
+uint8 DOF4_FIX_PATTERN_POSE_Z_COMPONENT = 2
+uint8 DOF3_FIX_CAMERA_POSE = 3
+uint8 DOF3_FIX_PATTERN_POSE = 4
+
+uint8 robot_geometry
+
+# Optional for the step START_CALIBRATION:
 # An initial guess for the position of the camera relative to the robot wrist
 # (for a moving camera) or the robot base (for a fixed camera).
 geometry_msgs/Pose link
