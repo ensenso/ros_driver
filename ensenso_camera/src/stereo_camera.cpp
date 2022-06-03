@@ -1062,7 +1062,8 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   int sizeWidth = goal->size_width != 0 ? goal->size_width : 1024;
   int sizeHeight = goal->size_height != 0. ? goal->size_height : 768;
   bool useOpenGL = goal->use_opengl == 1;
-  RenderPointMapParamsTelecentric renderParams(useOpenGL, pixelScale, scaling, sizeWidth, sizeHeight, transform);
+  RenderPointMapParamsTelecentric renderParams(useOpenGL, pixelScale, scaling, sizeWidth, sizeHeight,
+                                               std::move(transform));
 
   NxLibCommand renderPointMap(cmdRenderPointMap, params.serial);
 
@@ -1402,7 +1403,7 @@ geometry_msgs::PoseStamped StereoCamera::estimatePatternPose(ros::Time imageTime
 }
 
 std::vector<geometry_msgs::PoseStamped> StereoCamera::estimatePatternPoses(ros::Time imageTimestamp,
-                                                                                std::string const& targetFrame) const
+                                                                           std::string const& targetFrame) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
