@@ -282,7 +282,7 @@ bool Camera::cameraIsOpen() const
 
 bool Camera::hasLink() const
 {
-  return !isIdentity(poseFromNxLib(cameraNode[itmLink]));
+  return !isIdentity(transformFromNxLib(cameraNode[itmLink]));
 }
 
 void Camera::publishStatus(ros::TimerEvent const& event) const
@@ -341,7 +341,7 @@ std::string Camera::getNxLibTargetFrameName() const
 void Camera::updateTransformations(tf2::Transform const& targetFrameTransformation) const
 {
   cameraNode[itmLink][itmTarget] = getNxLibTargetFrameName();
-  writePoseToNxLib(targetFrameTransformation, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
+  writeTransformToNxLib(targetFrameTransformation, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
 }
 
 void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useCachedTransformation) const
@@ -370,21 +370,21 @@ void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useC
 
   // Update the transformation to the target frame in the NxLib according to the current information from tf only if
   // link and target frame differ.
-  geometry_msgs::TransformStamped transform;
+  geometry_msgs::TransformStamped transformMsg;
   if (useCachedTransformation && transformationCache.count(targetFrame) != 0)
   {
-    transform = transformationCache[targetFrame];
+    transformMsg = transformationCache[targetFrame];
   }
   else
   {
-    transform = tfBuffer->lookupTransform(params.linkFrame, targetFrame, time, ros::Duration(TF_REQUEST_TIMEOUT));
-    transformationCache[targetFrame] = transform;
+    transformMsg = tfBuffer->lookupTransform(params.linkFrame, targetFrame, time, ros::Duration(TF_REQUEST_TIMEOUT));
+    transformationCache[targetFrame] = transformMsg;
   }
-  tf2::Transform tfTrafo;
-  tf2::convert(transform.transform, tfTrafo);
+  tf2::Transform transform;
+  tf2::convert(transformMsg.transform, transform);
   NxLibItem()[itmLinks][getNxLibTargetFrameName()].setNull();
   NxLibItem()[itmLinks].setNull();
-  writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
+  writeTransformToNxLib(transform, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
 }
 
 ensenso_camera_msgs::ParameterPtr Camera::readParameter(std::string const& key) const
@@ -644,7 +644,7 @@ geometry_msgs::TransformStamped Camera::stampedLinkToCamera()
   // camera->link, we want link->camera).
   tf2::Transform cameraToLinkInverse = getCameraToLinkTransform().inverse();
   // The camera always needs to be the child frame in this transformation.
-  return fromTfTransform(cameraToLinkInverse, params.linkFrame, params.cameraFrame);
+  return fromTf(cameraToLinkInverse, params.linkFrame, params.cameraFrame, ros::Time::now());
 }
 
 tf2::Transform Camera::getCameraToLinkTransform()
@@ -655,7 +655,7 @@ tf2::Transform Camera::getCameraToLinkTransform()
 
   try
   {
-    transform = poseFromNxLib(cameraNode[itmLink]);
+    transform = transformFromNxLib(cameraNode[itmLink]);
   }
   catch (NxLibException const& e)
   {
