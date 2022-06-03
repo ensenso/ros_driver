@@ -11,71 +11,100 @@
 
 #include "nxLib.h"
 
+using Transform = tf2::Transform;
+using TransformMsg = geometry_msgs::Transform;
+using StampedTransformMsg = geometry_msgs::TransformStamped;
+using PoseMsg = geometry_msgs::Pose;
+using StampedPoseMsg = geometry_msgs::PoseStamped;
+
 /**
- * Check whether the given pose is valid, that is, whether it does not contain NaNs.
+ * Check whether the given transform is valid, i.e. not containing NaNs.
  *
- * For example, such an invalid pose is produced by converting an uninitialized geometry_msgs/Pose to a tf pose.
+ * An invalid transform is e.g. produced by converting an uninitialized transform msg to a tf transform.
  */
-bool isValid(tf2::Transform const& pose);
-bool isValid(geometry_msgs::Transform const& pose);
+bool isValid(Transform const& transform);
+bool isValid(TransformMsg const& transform);
 
 /**
- * Check whether the given tf pose is an identity transformation.
+ * Check whether the given tf transform is an identity transformation.
  */
-bool isIdentity(tf2::Transform const& pose);
+bool isIdentity(Transform const& transform);
 
 /**
- * Convert the given tf pose to an NxLib transformation and write it into the given NxLib node.
+ * Convert the given tf transform to an NxLib transformation and write it into the given NxLib node.
  */
-void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node);
+void writeTransformToNxLib(Transform const& transform, NxLibItem const& node);
 
 /**
- * Convert the given NxLib transformation node to a tf pose.
+ * Convert the given NxLib transformation node to a tf transform.
  */
-tf2::Transform poseFromNxLib(NxLibItem const& node);
+Transform transformFromNxLib(NxLibItem const& node);
 
 /**
- * Creates a stamped transformation from frame to child frame with given link described in the node.
+ * Create a stamped pose msg from the given link described in the node.
  */
-geometry_msgs::TransformStamped poseFromNxLib(NxLibItem const& node, std::string const& parentFrame,
-                                              std::string const& childFrame, ros::Time timestamp);
+StampedPoseMsg stampedPoseFromNxLib(NxLibItem const& node, std::string const& parentFrame, ros::Time timestamp);
 
 /**
- * Get a tf transformation that defines the child frame at the position of the given pose.
+ * Convert a stamped pose msg to a stamped transform msg that defines the child frame at the position of the given pose.
  */
-geometry_msgs::TransformStamped transformFromPose(geometry_msgs::PoseStamped const& pose,
-                                                  std::string const& childFrame);
+StampedTransformMsg transformFromPose(StampedPoseMsg const& pose, std::string const& childFrame);
 
 /**
- * Get a geometry pose from a transform, where pose has the same rotation and translation as the transform.
+ * Convert a stamped transform msg to a stamped pose msg, where the pose has the same rotation and translation as the
+ * transform.
  */
-geometry_msgs::PoseStamped stampedPoseFromTransform(geometry_msgs::TransformStamped const& transform);
-geometry_msgs::Pose poseFromTransform(tf2::Transform const& transform);
-geometry_msgs::TransformStamped fromTfTransform(tf2::Transform const& transform, std::string parentFrame,
-                                                std::string childFrame, ros::Time timestamp);
+StampedPoseMsg poseFromTransform(StampedTransformMsg const& transform);
 
 /**
- * Creates a tf2::Transform out of pose or transform message type.
+ * Convert a tf transform to a pose msg.
  */
-tf2::Transform fromMsg(geometry_msgs::Transform const& transform);
-tf2::Transform fromMsg(geometry_msgs::Pose const& pose);
-tf2::Transform fromStampedMessage(geometry_msgs::TransformStamped const& transform);
-tf2::Transform fromStampedMessage(geometry_msgs::PoseStamped const& pose);
+PoseMsg poseFromTransform(Transform const& transform);
 
-tf2::Transform getLatestTransform(tf2_ros::Buffer const& tfBuffer, std::string const& cameraFrame,
-                                  std::string const& targetFrame);
+/**
+ * Create a stamped geometry transform from a tf transform in combination with parent and child frame.
+ */
+StampedTransformMsg fromTf(Transform const& transform, std::string parentFrame, std::string childFrame,
+                           ros::Time timestamp);
+
+/**
+ * Create a tf transform from a transform msg.
+ */
+Transform fromMsg(TransformMsg const& transform);
+
+/**
+ * Create a tf transform from a pose msg.
+ */
+Transform fromMsg(PoseMsg const& pose);
+
+/**
+ * Create a tf transform from a stamped transform msg.
+ */
+Transform fromMsg(StampedTransformMsg const& transform);
+
+/**
+ * Create a tf transform from a stamped pose msg.
+ */
+Transform fromMsg(StampedPoseMsg const& pose);
+
+/**
+ * Return the latest transform from the given buffer. Returns an uninitialized tf transform if the lookup throws and
+ * prints a warning.
+ */
+Transform getLatestTransform(tf2_ros::Buffer const& tfBuffer, std::string const& cameraFrame,
+                             std::string const& targetFrame);
 
 /**
  * The tf2::convert method is designed for converting homogeneous datatypes between representations in different
  * libraries, e.g. tf2::Transform and geometry_msgs::Transform. In order to simplify our conversion methods, it is handy
  * to have a set of functions for converting inhomogenous datatypes of the geometry_msgs package.
  *
- * For more info see: https://answers.ros.org/question/206962/tf2-convert-transform-to-msg/
+ * Source: https://answers.ros.org/question/206962/tf2-convert-transform-to-msg/
  */
 namespace tf2
 {
-void convertMsg(geometry_msgs::msg::Transform const& transform, geometry_msgs::msg::Pose& pose);
-void convertMsg(geometry_msgs::msg::Pose const& pose, geometry_msgs::msg::Transform& transform);
-void convertMsg(geometry_msgs::msg::TransformStamped const& transform, geometry_msgs::msg::PoseStamped& pose);
-void convertMsg(geometry_msgs::msg::PoseStamped const& pose, geometry_msgs::msg::TransformStamped& transform);
-}
+void convertMsg(TransformMsg const& transform, PoseMsg& pose);
+void convertMsg(PoseMsg const& pose, TransformMsg& transform);
+void convertMsg(StampedTransformMsg const& transform, StampedPoseMsg& pose);
+void convertMsg(StampedPoseMsg const& pose, StampedTransformMsg& transform);
+}  // namespace tf2
