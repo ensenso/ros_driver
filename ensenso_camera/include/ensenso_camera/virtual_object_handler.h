@@ -15,8 +15,8 @@ public:
   void updateObjectLinks();
 
 private:
-  /// Original object poses in the base frame
-  std::vector<tf2::Transform> originalPoses;
+  /// Original object transforms in the base frame
+  std::vector<tf2::Transform> originalTransforms;
 
   std::string objectsFrame;  ///< Frame in which objects are defined
   std::string cameraFrame;   ///< Optical frame of the camera
