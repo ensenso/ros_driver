@@ -24,6 +24,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
@@ -414,15 +415,15 @@ protected:
    * Otherwise the function assumes that all observations are of the same pattern. It will then average their positions
    * to increase the accuracy of the pose estimation.
    */
-  virtual geometry_msgs::TransformStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
-                                                              std::string const& targetFrame = "",
-                                                              bool latestPatternOnly = false) const = 0;
+  virtual geometry_msgs::PoseStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
+                                                         std::string const& targetFrame = "",
+                                                         bool latestPatternOnly = false) const = 0;
 
   /**
    * Estimate the pose of each pattern in the pattern buffer.
    */
-  virtual std::vector<geometry_msgs::TransformStamped>
-  estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(), std::string const& targetFrame = "") const = 0;
+  virtual std::vector<geometry_msgs::PoseStamped> estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(),
+                                                                       std::string const& targetFrame = "") const = 0;
 
   /**
    * Update the camera's link node and the transformations in the NxLib according to the current information from tf.
