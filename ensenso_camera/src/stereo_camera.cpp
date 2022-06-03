@@ -1399,7 +1399,7 @@ geometry_msgs::TransformStamped StereoCamera::estimatePatternPose(ros::Time imag
 
   ROS_ASSERT(estimatePatternPose.result()[itmPatterns].count() == 1);
 
-  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], params.cameraFrame, targetFrame);
+  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], targetFrame, params.cameraFrame);
 }
 
 std::vector<geometry_msgs::TransformStamped> StereoCamera::estimatePatternPoses(ros::Time imageTimestamp,
@@ -1423,7 +1423,7 @@ std::vector<geometry_msgs::TransformStamped> StereoCamera::estimatePatternPoses(
   for (int i = 0; i < numberOfPatterns; i++)
   {
     result.push_back(
-        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], params.cameraFrame, targetFrame));
+        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], targetFrame, params.cameraFrame));
   }
 
   return result;
