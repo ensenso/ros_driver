@@ -123,10 +123,10 @@ tf2::Transform poseFromNxLib(NxLibItem const& node)
 }
 
 geometry_msgs::TransformStamped poseFromNxLib(NxLibItem const& node, std::string const& parentFrame,
-                                              std::string const& childFrame)
+                                              std::string const& childFrame, ros::Time timestamp)
 {
   geometry_msgs::TransformStamped stampedTransform;
-  stampedTransform.header.stamp = ros::Time::now();
+  stampedTransform.header.stamp = timestamp;
   stampedTransform.header.frame_id = parentFrame;
   stampedTransform.child_frame_id = childFrame;
 
@@ -230,14 +230,14 @@ geometry_msgs::Pose poseFromTransform(tf2::Transform const& transform)
 }
 
 geometry_msgs::TransformStamped fromTfTransform(tf2::Transform const& transform, std::string parentFrame,
-                                                std::string childFrame)
+                                                std::string childFrame, ros::Time timestamp)
 {
   geometry_msgs::TransformStamped tStamped;
   tf2::convert(transform.getOrigin(), tStamped.transform.translation);
   tf2::convert(transform.getRotation(), tStamped.transform.rotation);
   tStamped.header.frame_id = std::move(parentFrame);
   tStamped.child_frame_id = std::move(childFrame);
-  tStamped.header.stamp = ros::Time::now();
+  tStamped.header.stamp = timestamp;
 
   return tStamped;
 }
