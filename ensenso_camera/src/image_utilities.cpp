@@ -203,12 +203,6 @@ ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame
 void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs::CameraInfoPtr const& info)
 {
   std::vector<double> distParams(5, 0.);
-  bool isPlumbModel = info->distortion_model == sensor_msgs::distortion_models::PLUMB_BOB;
-  if (!isPlumbModel)
-  {
-    info->D = distParams;
-    return;
-  }
 
   auto getNxLibValue = [](NxLibItem const& itemToCheck) -> double {
     double value = 0.;
@@ -235,8 +229,9 @@ void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs:
   {
     for (int i = 0; i < 5; i++)
     {
-      info->D.push_back(getNxLibValue(distortionItem[i]));
+      distParams[i] = getNxLibValue(distortionItem[i]);
     }
   }
+
   info->D = distParams;
 }
