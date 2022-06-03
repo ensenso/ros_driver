@@ -72,13 +72,13 @@ private:
 
 public:
   RenderPointMapParamsTelecentric(bool useOpenGl, int pixelScale, double scaling, int sizeWidth, int sizeHeight,
-                                  tf2::Transform const& transform)
+                                  tf2::Transform transform)
     : RenderPointMapParams(useOpenGl)
     , mPixelScale(pixelScale)
     , mScaling(scaling)
     , mSizeWidth(sizeWidth)
     , mSizeHeight(sizeHeight)
-    , mTransform(transform){};
+    , mTransform(std::move(transform)){};
 
   boost::optional<int> pixelScale() const override
   {
@@ -102,10 +102,6 @@ public:
 
   boost::optional<tf2::Transform const&> transform() const override
   {
-    if (!isValid(mTransform))
-    {
-      return {};
-    }
     return mTransform;
   }
 };
