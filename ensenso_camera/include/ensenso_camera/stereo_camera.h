@@ -62,7 +62,7 @@ private:
   // outside of the NxLib, because otherwise we could not use the LocatePattern action while a hand-eye calibration is
   // in progress.
   std::string handEyeCalibrationPatternBuffer;
-  std::vector<tf2::Transform> handEyeCalibrationRobotPoses;
+  std::vector<tf2::Transform> handEyeCalibrationRobotTransforms;
 
 public:
   StereoCamera(ros::NodeHandle nh, CameraParameters params);
@@ -118,11 +118,11 @@ private:
 
   void updateCameraInfo() override;
 
-  virtual geometry_msgs::TransformStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
+  virtual geometry_msgs::PoseStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
                                                               std::string const& targetFrame = "",
                                                               bool latestPatternOnly = false) const override;
 
-  virtual std::vector<geometry_msgs::TransformStamped>
+  virtual std::vector<geometry_msgs::PoseStamped>
   estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(), std::string const& targetFrame = "") const override;
 
   ros::Time capture() const override;

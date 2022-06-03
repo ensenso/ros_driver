@@ -615,7 +615,7 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
     result.pattern_poses.resize(patternPoses.size());
     for (size_t i = 0; i < patternPoses.size(); i++)
     {
-      result.pattern_poses[i] = stampedPoseFromTransform(patternPoses[i]);
+      result.pattern_poses[i] = patternPoses[i];
     }
   }
   else
@@ -624,7 +624,7 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
     auto patternPose = estimatePatternPose(imageTimestamp, patternFrame);
 
     result.pattern_poses.resize(1);
-    result.pattern_poses[0] = stampedPoseFromTransform(patternPose);
+    result.pattern_poses[0] = patternPose;
   }
 
   if (!goal->tf_frame.empty())
@@ -672,7 +672,7 @@ void StereoCamera::onProjectPattern(ensenso_camera_msgs::ProjectPatternGoalConst
   projectPattern.parameters()[itmGridSpacing] = goal->grid_spacing * 1000;
   projectPattern.parameters()[itmGridSize][0] = goal->grid_size_x;
   projectPattern.parameters()[itmGridSize][1] = goal->grid_size_y;
-  writePoseToNxLib(patternPose, projectPattern.parameters()[itmPatternPose]);
+  writeTransformToNxLib(patternPose, projectPattern.parameters()[itmPatternPose]);
   projectPattern.execute();
 
   PREEMPT_ACTION_IF_REQUESTED
@@ -721,7 +721,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
   if (goal->command == goal->RESET)
   {
     handEyeCalibrationPatternBuffer.clear();
-    handEyeCalibrationRobotPoses.clear();
+    handEyeCalibrationRobotTransforms.clear();
   }
   else if (goal->command == goal->CAPTURE_PATTERN)
   {
@@ -771,7 +771,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     patterns[0].writeToMessage(result.pattern);
 
     auto patternPose = estimatePatternPose(imageTimestamp, params.cameraFrame, true);
-    result.pattern_pose = stampedPoseFromTransform(patternPose).pose;
+    result.pattern_pose = patternPose.pose;
 
     PREEMPT_ACTION_IF_REQUESTED
 
@@ -793,13 +793,13 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     getPatternBuffer.execute();
     handEyeCalibrationPatternBuffer = getPatternBuffer.result()[itmPatterns].asJson();
 
-    handEyeCalibrationRobotPoses.push_back(fromStampedMessage(robotPose));
+    handEyeCalibrationRobotTransforms.push_back(fromMsg(robotPose));
 
-    result.robot_pose = stampedPoseFromTransform(robotPose).pose;
+    result.robot_pose = poseFromTransform(robotPose).pose;
   }
   else if (goal->command == goal->START_CALIBRATION)
   {
-    if (handEyeCalibrationRobotPoses.size() < 5)
+    if (handEyeCalibrationRobotTransforms.size() < 5)
     {
       result.error_message = "You need to collect at least 5 patterns before starting a hand-eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
@@ -829,18 +829,18 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     setPatternBuffer.execute();
 
     // Load the corresponding robot poses.
-    auto robotPoses = handEyeCalibrationRobotPoses;
+    auto robotTransforms = handEyeCalibrationRobotTransforms;
     if (!goal->robot_poses.empty())
     {
-      robotPoses.clear();
+      robotTransforms.clear();
       for (auto const& pose : goal->robot_poses)
       {
-        tf2::Transform tfPose = fromMsg(pose);
-        robotPoses.push_back(tfPose);
+        tf2::Transform transform = fromMsg(pose);
+        robotTransforms.push_back(transform);
       }
     }
 
-    if (robotPoses.size() != numberOfPatterns)
+    if (robotTransforms.size() != numberOfPatterns)
     {
       result.error_message = "The number of pattern observations does not match the number of robot poses!";
       ROS_ERROR("%s", result.error_message.c_str());
@@ -849,9 +849,9 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     }
 
     // Load the initial guesses from the action goal.
-    tf2::Transform link, patternPose;
-    link = fromMsg(goal->link);
-    patternPose = fromMsg(goal->pattern_pose);
+    tf2::Transform linkTransform, patternTransform;
+    linkTransform = fromMsg(goal->link);
+    patternTransform = fromMsg(goal->pattern_pose);
 
     NxLibCommand calibrateHandEye(cmdCalibrateHandEye, params.serial);
     calibrateHandEye.parameters()[itmSetup] = params.fixed ? valFixed : valMoving;
@@ -884,17 +884,17 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
 
     // The target node will be reset anyway before we calculate data for the next time.
     calibrateHandEye.parameters()[itmTarget] = getNxLibTargetFrameName();
-    if (isValid(link))
+    if (isValid(linkTransform))
     {
-      writePoseToNxLib(link.inverse(), calibrateHandEye.parameters()[itmLink]);
+      writeTransformToNxLib(linkTransform.inverse(), calibrateHandEye.parameters()[itmLink]);
     }
-    if (isValid(patternPose))
+    if (isValid(patternTransform))
     {
-      writePoseToNxLib(patternPose, calibrateHandEye.parameters()[itmPatternPose]);
+      writeTransformToNxLib(patternTransform, calibrateHandEye.parameters()[itmPatternPose]);
     }
-    for (size_t i = 0; i < robotPoses.size(); i++)
+    for (size_t i = 0; i < robotTransforms.size(); i++)
     {
-      writePoseToNxLib(robotPoses[i], calibrateHandEye.parameters()[itmTransformations][i]);
+      writeTransformToNxLib(robotTransforms[i], calibrateHandEye.parameters()[itmTransformations][i]);
     }
 
     calibrateHandEye.execute(false);
@@ -936,8 +936,8 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     result.number_of_iterations = calibrateHandEye.result()[itmIterations].asInt();
     result.residual = getCalibrationResidual(calibrateHandEye.result());
 
-    result.link = poseFromTransform(poseFromNxLib(cameraNode[itmLink]).inverse());
-    result.pattern_pose = poseFromTransform(poseFromNxLib(calibrateHandEye.result()[itmPatternPose]));
+    result.link = poseFromTransform(transformFromNxLib(cameraNode[itmLink]).inverse());
+    result.pattern_pose = poseFromTransform(transformFromNxLib(calibrateHandEye.result()[itmPatternPose]));
 
     if (goal->write_calibration_to_eeprom)
     {
@@ -999,16 +999,17 @@ void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceG
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  tf2::Transform patternTransformation = fromStampedMessage(estimatePatternPose(imageTimestamp));
+  auto patternPose = estimatePatternPose(imageTimestamp);
+  tf2::Transform patternTransform = fromMsg(patternPose);
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  tf2::Transform definedPatternPose = fromMsg(goal->defined_pattern_pose);
+  tf2::Transform definedPatternTransform = fromMsg(goal->defined_pattern_pose);
 
   NxLibCommand calibrateWorkspace(cmdCalibrateWorkspace, params.serial);
   calibrateWorkspace.parameters()[itmCameras] = params.serial;
-  writePoseToNxLib(patternTransformation, calibrateWorkspace.parameters()[itmPatternPose]);
-  writePoseToNxLib(definedPatternPose, calibrateWorkspace.parameters()[itmDefinedPose]);
+  writeTransformToNxLib(patternTransform, calibrateWorkspace.parameters()[itmPatternPose]);
+  writeTransformToNxLib(definedPatternTransform, calibrateWorkspace.parameters()[itmDefinedPose]);
   calibrateWorkspace.parameters()[itmTarget] = getNxLibTargetFrameName();
   calibrateWorkspace.execute();
 
@@ -1374,9 +1375,8 @@ std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuf
   return result;
 }
 
-geometry_msgs::TransformStamped StereoCamera::estimatePatternPose(ros::Time imageTimestamp,
-                                                                  std::string const& targetFrame,
-                                                                  bool latestPatternOnly) const
+geometry_msgs::PoseStamped StereoCamera::estimatePatternPose(ros::Time imageTimestamp, std::string const& targetFrame,
+                                                             bool latestPatternOnly) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
@@ -1395,12 +1395,13 @@ geometry_msgs::TransformStamped StereoCamera::estimatePatternPose(ros::Time imag
   }
   estimatePatternPose.execute();
 
-  ROS_ASSERT(estimatePatternPose.result()[itmPatterns].count() == 1);
+  auto patterns = estimatePatternPose.result()[itmPatterns];
+  ROS_ASSERT(patterns.count() == 1);
 
-  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], targetFrame, params.cameraFrame);
+  return stampedPoseFromNxLib(patterns[0][itmPatternPose], targetFrame, imageTimestamp);
 }
 
-std::vector<geometry_msgs::TransformStamped> StereoCamera::estimatePatternPoses(ros::Time imageTimestamp,
+std::vector<geometry_msgs::PoseStamped> StereoCamera::estimatePatternPoses(ros::Time imageTimestamp,
                                                                                 std::string const& targetFrame) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
@@ -1413,15 +1414,14 @@ std::vector<geometry_msgs::TransformStamped> StereoCamera::estimatePatternPoses(
   estimatePatternPose.parameters()[itmFilter][itmValue] = true;
   estimatePatternPose.execute();
 
-  int numberOfPatterns = estimatePatternPose.result()[itmPatterns].count();
+  auto patterns = estimatePatternPose.result()[itmPatterns];
 
-  std::vector<geometry_msgs::TransformStamped> result;
-  result.reserve(numberOfPatterns);
+  std::vector<geometry_msgs::PoseStamped> result;
+  result.reserve(patterns.count());
 
-  for (int i = 0; i < numberOfPatterns; i++)
+  for (int i = 0; i < patterns.count(); i++)
   {
-    result.push_back(
-        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], targetFrame, params.cameraFrame));
+    result.push_back(stampedPoseFromNxLib(patterns[i][itmPatternPose], targetFrame, imageTimestamp));
   }
 
   return result;
