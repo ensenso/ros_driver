@@ -2,6 +2,31 @@
 
 #include <string>
 
+namespace
+{
+bool isValid(tf2::Vector3 const& vector)
+{
+  return (!std::isnan(vector.x()) && !std::isnan(vector.y()) && !std::isnan(vector.z()));
+}
+
+tf2Scalar fixZeroValue(double value, double epsilon = 0.00001)
+{
+  if (std::abs(value) <= epsilon)
+  {
+    return tf2Scalar(0.0);
+  }
+  return tf2Scalar(value);
+}
+
+tf2::Vector3 vector3FromNxLib(NxLibItem const& node)
+{
+  double x = node[0].asDouble();
+  double y = node[1].asDouble();
+  double z = node[2].asDouble();
+  return tf2::Vector3(tf2Scalar(x), tf2Scalar(y), tf2Scalar(z));
+}
+}  // namespace
+
 bool isValid(tf2::Transform const& pose)
 {
   auto origin = pose.getOrigin();
@@ -20,27 +45,10 @@ bool isValid(tf2::Transform const& pose)
   return isValid(rotationAxis);
 }
 
-bool isValid(tf2::Vector3 const& vector)
-{
-  return (!std::isnan(vector.x()) && !std::isnan(vector.y()) && !std::isnan(vector.z()));
-}
-
 bool isValid(geometry_msgs::Transform const& pose)
 {
   return isValid(fromMsg(pose));
 }
-
-namespace
-{
-tf2Scalar fixZeroValue(double value, double epsilon = 0.00001)
-{
-  if (std::abs(value) <= epsilon)
-  {
-    return tf2Scalar(0.0);
-  }
-  return tf2Scalar(value);
-}
-}  // namespace
 
 bool isIdentity(tf2::Transform const& pose)
 {
@@ -99,13 +107,36 @@ void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
   }
 }
 
-tf2::Vector3 vector3FromNxLib(NxLibItem const& node)
+namespace tf2
 {
-  double x = node[0].asDouble();
-  double y = node[1].asDouble();
-  double z = node[2].asDouble();
-  return tf2::Vector3(tf2Scalar(x), tf2Scalar(y), tf2Scalar(z));
+void convertMsg(geometry_msgs::Transform const& transform, geometry_msgs::Pose& pose)
+{
+  pose.orientation = transform.rotation;
+  pose.position.x = transform.translation.x;
+  pose.position.y = transform.translation.y;
+  pose.position.z = transform.translation.z;
 }
+
+void convertMsg(geometry_msgs::Pose const& pose, geometry_msgs::Transform& transform)
+{
+  transform.rotation = pose.orientation;
+  transform.translation.x = pose.position.x;
+  transform.translation.y = pose.position.y;
+  transform.translation.z = pose.position.z;
+}
+
+void convertMsg(geometry_msgs::TransformStamped const& transform, geometry_msgs::PoseStamped& pose)
+{
+  convertMsg(transform.transform, pose.pose);
+  pose.header = transform.header;
+}
+
+void convertMsg(geometry_msgs::PoseStamped const& pose, geometry_msgs::TransformStamped& transform)
+{
+  convertMsg(pose.pose, transform.transform);
+  transform.header = pose.header;
+}
+}  // namespace tf2
 
 tf2::Transform poseFromNxLib(NxLibItem const& node)
 {
@@ -138,14 +169,7 @@ geometry_msgs::TransformStamped poseFromNxLib(NxLibItem const& node, std::string
 geometry_msgs::TransformStamped transformFromPose(geometry_msgs::PoseStamped const& pose, std::string const& childFrame)
 {
   geometry_msgs::TransformStamped transform;
-
-  transform.transform.translation.x = pose.pose.position.x;
-  transform.transform.translation.y = pose.pose.position.y;
-  transform.transform.translation.z = pose.pose.position.z;
-  transform.transform.rotation = pose.pose.orientation;
-
-  transform.header.stamp = pose.header.stamp;
-  transform.header.frame_id = pose.header.frame_id;
+  tf2::convertMsg(pose, transform);
   transform.child_frame_id = childFrame;
 
   return transform;
@@ -154,14 +178,7 @@ geometry_msgs::TransformStamped transformFromPose(geometry_msgs::PoseStamped con
 geometry_msgs::PoseStamped stampedPoseFromTransform(geometry_msgs::TransformStamped const& transform)
 {
   geometry_msgs::PoseStamped pose;
-
-  pose.pose.position.x = transform.transform.translation.x;
-  pose.pose.position.y = transform.transform.translation.y;
-  pose.pose.position.z = transform.transform.translation.z;
-  pose.pose.orientation = transform.transform.rotation;
-
-  pose.header.stamp = transform.header.stamp;
-  pose.header.frame_id = transform.header.frame_id;
+  tf2::convertMsg(transform, pose);
 
   return pose;
 }
@@ -181,13 +198,11 @@ tf2::Transform fromStampedMessage(geometry_msgs::TransformStamped const& tStampe
 
 tf2::Transform fromStampedMessage(geometry_msgs::PoseStamped const& pStamped)
 {
+  geometry_msgs::TransformStamped tStamped;
+  tf2::convertMsg(pStamped, tStamped);
+
   tf2::Transform transform;
-  tf2::Quaternion quat;
-  tf2::convert(pStamped.pose.orientation, quat);
-  transform.setRotation(quat);
-  tf2::Vector3 trans;
-  tf2::convert(pStamped.pose.position, trans);
-  transform.setOrigin(trans);
+  tf2::convert(tStamped.transform, transform);
 
   return transform;
 }
@@ -195,36 +210,29 @@ tf2::Transform fromStampedMessage(geometry_msgs::PoseStamped const& pStamped)
 tf2::Transform fromMsg(geometry_msgs::Transform const& t)
 {
   tf2::Transform transform;
-  tf2::Quaternion quat;
-  tf2::convert(t.rotation, quat);
-  transform.setRotation(quat);
-  tf2::Vector3 trans;
-  tf2::convert(t.translation, trans);
-  transform.setOrigin(trans);
+  tf2::convert(t, transform);
 
   return transform;
 }
 
 tf2::Transform fromMsg(geometry_msgs::Pose const& p)
 {
+  geometry_msgs::Transform t;
+  tf2::convertMsg(p, t);
+
   tf2::Transform transform;
-  tf2::Quaternion quat;
-  tf2::convert(p.orientation, quat);
-  transform.setRotation(quat);
-  tf2::Vector3 trans;
-  tf2::convert(p.position, trans);
-  transform.setOrigin(trans);
+  tf2::convert(t, transform);
 
   return transform;
 }
 
 geometry_msgs::Pose poseFromTransform(tf2::Transform const& transform)
 {
+  geometry_msgs::Transform t;
+  tf2::convert(transform, t);
+
   geometry_msgs::Pose pose;
-  tf2::convert(transform.getRotation(), pose.orientation);
-  pose.position.x = transform.getOrigin().x();
-  pose.position.y = transform.getOrigin().y();
-  pose.position.z = transform.getOrigin().z();
+  tf2::convertMsg(t, pose);
 
   return pose;
 }
@@ -233,11 +241,10 @@ geometry_msgs::TransformStamped fromTfTransform(tf2::Transform const& transform,
                                                 std::string childFrame, ros::Time timestamp)
 {
   geometry_msgs::TransformStamped tStamped;
-  tf2::convert(transform.getOrigin(), tStamped.transform.translation);
-  tf2::convert(transform.getRotation(), tStamped.transform.rotation);
+  tf2::convert(transform, tStamped.transform);
+  tStamped.header.stamp = timestamp;
   tStamped.header.frame_id = std::move(parentFrame);
   tStamped.child_frame_id = std::move(childFrame);
-  tStamped.header.stamp = timestamp;
 
   return tStamped;
 }
