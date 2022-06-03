@@ -1434,13 +1434,6 @@ void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& inf
   NxLibItem monoCalibrationNode = cameraNode[itmCalibration][itmMonocular][right ? itmRight : itmLeft];
   NxLibItem stereoCalibrationNode = cameraNode[itmCalibration][itmStereo][right ? itmRight : itmLeft];
 
-  info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
-  info->D.clear();
-
-  info->K.fill(0);
-  info->P.fill(0);
-  info->R.fill(0);
-
   if (rectified)
   {
     // For the rectified images all transformations are the identity (because all of the distortions were already
