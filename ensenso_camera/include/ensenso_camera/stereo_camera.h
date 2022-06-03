@@ -118,6 +118,13 @@ private:
 
   void updateCameraInfo() override;
 
+  virtual geometry_msgs::TransformStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
+                                                              std::string const& targetFrame = "",
+                                                              bool latestPatternOnly = false) const override;
+
+  virtual std::vector<geometry_msgs::TransformStamped>
+  estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(), std::string const& targetFrame = "") const override;
+
   ros::Time capture() const override;
 
   ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const override;
