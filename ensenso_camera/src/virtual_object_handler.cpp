@@ -38,26 +38,26 @@ VirtualObjectHandler::VirtualObjectHandler(const std::string& filename, const st
   auto objects = NxLibItem{ itmObjects };
   objects.setJson(readFile(filename));
 
-  // Get the original poses from file
+  // Get the original transforms from file
   for (int i = 0; i < objects.count(); ++i)
   {
-    originalPoses.push_back(poseFromNxLib(objects[i][itmLink]));
+    originalTransforms.push_back(transformFromNxLib(objects[i][itmLink]));
   }
 }
 
 void VirtualObjectHandler::updateObjectLinks()
 {
   // Exit early if we have no work to do
-  if (originalPoses.empty())
+  if (originalTransforms.empty())
   {
     return;
   }
 
   // Find transform from the frame in which the objects were defined to the current optical frame
-  tf2::Transform cameraPose;
+  tf2::Transform cameraTransform;
   try
   {
-    cameraPose = fromMsg(tfBuffer.lookupTransform(cameraFrame, objectsFrame, ros::Time(0)).transform);
+    cameraTransform = fromMsg(tfBuffer.lookupTransform(cameraFrame, objectsFrame, ros::Time(0)).transform);
   }
   catch (const tf2::TransformException& e)
   {
@@ -65,11 +65,11 @@ void VirtualObjectHandler::updateObjectLinks()
     return;
   }
 
-  // Apply the transform to all of the original poses
-  for (size_t i = 0; i < originalPoses.size(); ++i)
+  // Apply the transform to all of the original transforms
+  for (size_t i = 0; i < originalTransforms.size(); ++i)
   {
-    tf2::Transform objectPose = cameraPose * originalPoses[i];
+    tf2::Transform objectTransform = cameraTransform * originalTransforms[i];
     NxLibItem objectLink = NxLibItem{ itmObjects }[static_cast<int>(i)][itmLink];
-    writePoseToNxLib(objectPose.inverse(), objectLink);
+    writeTransformToNxLib(objectTransform.inverse(), objectLink);
   }
 }
