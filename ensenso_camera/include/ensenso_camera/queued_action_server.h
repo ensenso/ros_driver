@@ -54,42 +54,33 @@ public:
     loopThread = std::thread([this] { loop(); });  // NOLINT
   }
 
-  void shutdown()
-  {
-    if (loopThread.joinable())
-    {
-      shutdownRequested = true;
-      loopThread.join();
-    }
-  }
-
   bool isPreemptRequested()
   {
     return preemptRequested;
   }
 
-  void setSucceeded(Result const& result = Result(), std::string const& text = "")
+  void setSucceeded(Result const& result = Result())
   {
     std::lock_guard<std::mutex> lock(mutex);
 
     ROS_DEBUG_NAMED("actionlib", "Setting the current goal as succeeded.");
-    currentGoal.setSucceeded(result, text);
+    currentGoal.setSucceeded(result);
   }
 
-  void setAborted(Result const& result = Result(), std::string const& text = "")
+  void setAborted(Result const& result = Result())
   {
     std::lock_guard<std::mutex> lock(mutex);
 
     ROS_DEBUG_NAMED("actionlib", "Setting the current goal as aborted.");
-    currentGoal.setAborted(result, text);
+    currentGoal.setAborted(result);
   }
 
-  void setPreempted(Result const& result = Result(), std::string const& text = "")
+  void setPreempted(Result const& result = Result())
   {
     std::lock_guard<std::mutex> lock(mutex);
 
     ROS_DEBUG_NAMED("actionlib", "Setting the current goal as canceled.");
-    currentGoal.setCanceled(result, text);
+    currentGoal.setCanceled(result);
   }
 
   void publishFeedback(FeedbackConstPtr const& feedback)
@@ -103,6 +94,15 @@ public:
   }
 
 private:
+  void shutdown()
+  {
+    if (loopThread.joinable())
+    {
+      shutdownRequested = true;
+      loopThread.join();
+    }
+  }
+
   void onGoalReceived(GoalHandle goal)
   {
     ROS_DEBUG_NAMED("actionlib", "Received a new goal.");
@@ -119,8 +119,8 @@ private:
 
     if (goal == currentGoal)
     {
-      // The goal is already being executed. We set the preemption flag and the user is responsible for polling it and
-      // canceling his action handler.
+      // The goal is already being executed. We set the preemption flag and the user is responsible for polling it with
+      // isPreemptRequested() and canceling his action handler with setPreempted().
       preemptRequested = true;
     }
     else
@@ -133,6 +133,7 @@ private:
   void loop()
   {
     std::unique_lock<std::mutex> lock(mutex);
+
     while (nh.ok() && !shutdownRequested)
     {
       if (!goalQueue.empty())
@@ -169,7 +170,7 @@ private:
           {
             ROS_WARN_NAMED("actionlib",
                            "Your action handler did not set the goal to a terminal state. Aborting it for now.");
-            setAborted(Result(), "Aborted, because the user did not set the goal to a terminal state.");
+            setAborted(Result());
           }
         }
       }
