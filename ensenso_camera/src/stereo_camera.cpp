@@ -1371,6 +1371,59 @@ std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuf
   return result;
 }
 
+geometry_msgs::TransformStamped StereoCamera::estimatePatternPose(ros::Time imageTimestamp,
+                                                                  std::string const& targetFrame,
+                                                                  bool latestPatternOnly) const
+{
+  updateGlobalLink(imageTimestamp, targetFrame);
+
+  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, params.serial);
+  if (latestPatternOnly)
+  {
+    estimatePatternPose.parameters()[itmAverage] = false;
+
+    int patternCount = NxLibItem()[itmParameters][itmPatternCount].asInt();
+    estimatePatternPose.parameters()[itmFilter][itmOr][0][itmAnd][0][itmType] = valIndex;
+    estimatePatternPose.parameters()[itmFilter][itmOr][0][itmAnd][0][itmValue] = patternCount - 1;
+  }
+  else
+  {
+    estimatePatternPose.parameters()[itmAverage] = true;
+  }
+  estimatePatternPose.execute();
+
+  ROS_ASSERT(estimatePatternPose.result()[itmPatterns].count() == 1);
+
+  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], params.cameraFrame, targetFrame);
+}
+
+std::vector<geometry_msgs::TransformStamped> StereoCamera::estimatePatternPoses(ros::Time imageTimestamp,
+                                                                                std::string const& targetFrame) const
+{
+  updateGlobalLink(imageTimestamp, targetFrame);
+
+  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, params.serial);
+  estimatePatternPose.parameters()[itmAverage] = false;
+  estimatePatternPose.parameters()[itmFilter][itmCameras] = params.serial;
+  estimatePatternPose.parameters()[itmFilter][itmUseModel] = true;
+  estimatePatternPose.parameters()[itmFilter][itmType] = valStatic;
+  estimatePatternPose.parameters()[itmFilter][itmValue] = true;
+  estimatePatternPose.execute();
+
+  int numberOfPatterns = estimatePatternPose.result()[itmPatterns].count();
+
+  std::vector<geometry_msgs::TransformStamped> result;
+  result.reserve(numberOfPatterns);
+
+  for (int i = 0; i < numberOfPatterns; i++)
+  {
+    result.push_back(
+        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], params.cameraFrame, targetFrame));
+  }
+
+  return result;
+}
+
 void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool rectified) const
 {
   Camera::fillBasicCameraInfoFromNxLib(info);
