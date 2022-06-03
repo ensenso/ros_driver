@@ -416,13 +416,13 @@ protected:
    */
   virtual geometry_msgs::TransformStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
                                                               std::string const& targetFrame = "",
-                                                              bool latestPatternOnly = false) const;
+                                                              bool latestPatternOnly = false) const = 0;
 
   /**
    * Estimate the pose of each pattern in the pattern buffer.
    */
-  virtual std::vector<geometry_msgs::TransformStamped> estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(),
-                                                                            std::string const& targetFrame = "") const;
+  virtual std::vector<geometry_msgs::TransformStamped>
+  estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(), std::string const& targetFrame = "") const = 0;
 
   /**
    * Update the camera's link node and the transformations in the NxLib according to the current information from tf.

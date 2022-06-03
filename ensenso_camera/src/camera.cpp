@@ -379,58 +379,6 @@ void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useC
   writePoseToNxLib(tfTrafo, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
 }
 
-std::vector<geometry_msgs::TransformStamped> Camera::estimatePatternPoses(ros::Time imageTimestamp,
-                                                                          std::string const& targetFrame) const
-{
-  updateGlobalLink(imageTimestamp, targetFrame);
-
-  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, params.serial);
-  estimatePatternPose.parameters()[itmAverage] = false;
-  estimatePatternPose.parameters()[itmFilter][itmCameras] = params.serial;
-  estimatePatternPose.parameters()[itmFilter][itmUseModel] = true;
-  estimatePatternPose.parameters()[itmFilter][itmType] = valStatic;
-  estimatePatternPose.parameters()[itmFilter][itmValue] = true;
-  estimatePatternPose.execute();
-
-  int numberOfPatterns = estimatePatternPose.result()[itmPatterns].count();
-
-  std::vector<geometry_msgs::TransformStamped> result;
-  result.reserve(numberOfPatterns);
-
-  for (int i = 0; i < numberOfPatterns; i++)
-  {
-    result.push_back(
-        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], params.cameraFrame, targetFrame));
-  }
-
-  return result;
-}
-
-geometry_msgs::TransformStamped Camera::estimatePatternPose(ros::Time imageTimestamp, std::string const& targetFrame,
-                                                            bool latestPatternOnly) const
-{
-  updateGlobalLink(imageTimestamp, targetFrame);
-
-  NxLibCommand estimatePatternPose(cmdEstimatePatternPose, params.serial);
-  if (latestPatternOnly)
-  {
-    estimatePatternPose.parameters()[itmAverage] = false;
-
-    int patternCount = NxLibItem()[itmParameters][itmPatternCount].asInt();
-    estimatePatternPose.parameters()[itmFilter][itmOr][0][itmAnd][0][itmType] = valIndex;
-    estimatePatternPose.parameters()[itmFilter][itmOr][0][itmAnd][0][itmValue] = patternCount - 1;
-  }
-  else
-  {
-    estimatePatternPose.parameters()[itmAverage] = true;
-  }
-  estimatePatternPose.execute();
-
-  ROS_ASSERT(estimatePatternPose.result()[itmPatterns].count() == 1);
-
-  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], params.cameraFrame, targetFrame);
-}
-
 ensenso_camera_msgs::ParameterPtr Camera::readParameter(std::string const& key) const
 {
   auto message = boost::make_shared<ensenso_camera_msgs::Parameter>();
