@@ -407,7 +407,7 @@ geometry_msgs::TransformStamped MonoCamera::estimatePatternPose(ros::Time imageT
 
   ROS_ASSERT(estimatePatternPose.result()[itmPatterns].count() == 1);
 
-  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], params.cameraFrame, targetFrame);
+  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], targetFrame, params.cameraFrame);
 }
 
 std::vector<geometry_msgs::TransformStamped> MonoCamera::estimatePatternPoses(ros::Time imageTimestamp,
