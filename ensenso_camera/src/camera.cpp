@@ -314,6 +314,13 @@ void Camera::fillBasicCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info
   info->width = cameraNode[itmSensor][itmSize][0].asInt();
   info->height = cameraNode[itmSensor][itmSize][1].asInt();
 
+  info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+
+  info->D.clear();
+  info->K.fill(0);
+  info->P.fill(0);
+  info->R.fill(0);
+
   if (cameraNode[itmParameters][itmCapture][itmBinning].exists())
   {
     info->binning_x = cameraNode[itmParameters][itmCapture][itmBinning].asInt();

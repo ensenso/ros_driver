@@ -74,9 +74,6 @@ void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info,
 
   NxLibItem calibrationNode = cameraNode[itmCalibration];
 
-  info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
-  info->D.clear();
-
   if (rectified)
   {
     info->D.resize(5, 0.);
@@ -86,9 +83,6 @@ void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info,
     fillDistortionParamsFromNxLib(calibrationNode[itmDistortion], info);
   }
 
-  info->K.fill(0);
-  info->P.fill(0);
-  info->R.fill(0);
   for (int row = 0; row < 3; row++)
   {
     for (int column = 0; column < 3; column++)
