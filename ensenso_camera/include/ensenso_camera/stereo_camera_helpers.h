@@ -55,7 +55,7 @@ public:
     return {};
   }
 
-  virtual boost::optional<tf2::Transform const&> viewPose() const
+  virtual boost::optional<tf2::Transform const&> transform() const
   {
     return {};
   }
@@ -68,17 +68,17 @@ private:
   double mScaling;
   int mSizeWidth;
   int mSizeHeight;
-  tf2::Transform mViewPose;
+  tf2::Transform mTransform;
 
 public:
   RenderPointMapParamsTelecentric(bool useOpenGl, int pixelScale, double scaling, int sizeWidth, int sizeHeight,
-                                  tf2::Transform const& viewPose)
+                                  tf2::Transform const& transform)
     : RenderPointMapParams(useOpenGl)
     , mPixelScale(pixelScale)
     , mScaling(scaling)
     , mSizeWidth(sizeWidth)
     , mSizeHeight(sizeHeight)
-    , mViewPose(viewPose){};
+    , mTransform(transform){};
 
   boost::optional<int> pixelScale() const override
   {
@@ -100,13 +100,13 @@ public:
     return mSizeHeight;
   }
 
-  boost::optional<tf2::Transform const&> viewPose() const override
+  boost::optional<tf2::Transform const&> transform() const override
   {
-    if (!isValid(mViewPose))
+    if (!isValid(mTransform))
     {
       return {};
     }
-    return mViewPose;
+    return mTransform;
   }
 };
 
@@ -159,9 +159,9 @@ void setRenderParams(NxLibItem const& cmdParams, RenderPointMapParams const* par
   {
     cmdParams[itmSize][1] = *params->sizeHeight();
   }
-  if (params->viewPose())
+  if (params->transform())
   {
-    writePoseToNxLib(*params->viewPose(), cmdParams[itmViewPose]);
+    writeTransformToNxLib(*params->transform(), cmdParams[itmViewPose]);
   }
 
   // Some parameters are both in the command parameters and the global parameter node.
