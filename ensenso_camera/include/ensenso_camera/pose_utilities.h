@@ -39,7 +39,7 @@ tf2::Transform poseFromNxLib(NxLibItem const& node);
  * Creates a stamped transformation from frame to child frame with given link described in the node.
  */
 geometry_msgs::TransformStamped poseFromNxLib(NxLibItem const& node, std::string const& parentFrame,
-                                              std::string const& childFrame);
+                                              std::string const& childFrame, ros::Time timestamp);
 
 /**
  * Get a tf transformation that defines the child frame at the position of the given pose.
@@ -53,7 +53,7 @@ geometry_msgs::TransformStamped transformFromPose(geometry_msgs::PoseStamped con
 geometry_msgs::PoseStamped stampedPoseFromTransform(geometry_msgs::TransformStamped const& transform);
 geometry_msgs::Pose poseFromTransform(tf2::Transform const& transform);
 geometry_msgs::TransformStamped fromTfTransform(tf2::Transform const& transform, std::string parentFrame,
-                                                std::string childFrame);
+                                                std::string childFrame, ros::Time timestamp);
 
 /**
  * Creates a tf2::Transform out of pose or transform message type.
