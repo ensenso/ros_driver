@@ -27,15 +27,15 @@ tf2::Vector3 vector3FromNxLib(NxLibItem const& node)
 }
 }  // namespace
 
-bool isValid(tf2::Transform const& pose)
+bool isValid(tf2::Transform const& transform)
 {
-  auto origin = pose.getOrigin();
+  auto origin = transform.getOrigin();
   if (!isValid(origin))
   {
     return false;
   }
 
-  auto rotation = pose.getRotation();
+  auto rotation = transform.getRotation();
   if (std::isnan(rotation.getAngle()))
   {
     return false;
@@ -45,26 +45,27 @@ bool isValid(tf2::Transform const& pose)
   return isValid(rotationAxis);
 }
 
-bool isValid(geometry_msgs::Transform const& pose)
+bool isValid(TransformMsg const& transform)
 {
-  return isValid(fromMsg(pose));
+  return isValid(fromMsg(transform));
 }
 
-bool isIdentity(tf2::Transform const& pose)
+bool isIdentity(tf2::Transform const& transform)
 {
-  tf2::Matrix3x3 basis(fixZeroValue(pose.getBasis().getRow(0).getX()), fixZeroValue(pose.getBasis().getRow(0).getY()),
-                       fixZeroValue(pose.getBasis().getRow(0).getZ()), fixZeroValue(pose.getBasis().getRow(1).getX()),
-                       fixZeroValue(pose.getBasis().getRow(1).getY()), fixZeroValue(pose.getBasis().getRow(1).getZ()),
-                       fixZeroValue(pose.getBasis().getRow(2).getX()), fixZeroValue(pose.getBasis().getRow(2).getY()),
-                       fixZeroValue(pose.getBasis().getRow(2).getZ()));
+  tf2::Matrix3x3 basis(
+      fixZeroValue(transform.getBasis().getRow(0).getX()), fixZeroValue(transform.getBasis().getRow(0).getY()),
+      fixZeroValue(transform.getBasis().getRow(0).getZ()), fixZeroValue(transform.getBasis().getRow(1).getX()),
+      fixZeroValue(transform.getBasis().getRow(1).getY()), fixZeroValue(transform.getBasis().getRow(1).getZ()),
+      fixZeroValue(transform.getBasis().getRow(2).getX()), fixZeroValue(transform.getBasis().getRow(2).getY()),
+      fixZeroValue(transform.getBasis().getRow(2).getZ()));
 
-  tf2::Vector3 origin(fixZeroValue(pose.getOrigin().getX()), fixZeroValue(pose.getOrigin().getY()),
-                      fixZeroValue(pose.getOrigin().getZ()));
+  tf2::Vector3 origin(fixZeroValue(transform.getOrigin().getX()), fixZeroValue(transform.getOrigin().getY()),
+                      fixZeroValue(transform.getOrigin().getZ()));
 
   return (basis == tf2::Matrix3x3::getIdentity() && origin.isZero());
 }
 
-void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
+void writeTransformToNxLib(tf2::Transform const& transform, NxLibItem const& node)
 {
   // Initialize the node to be empty. This is necessary, because there is a bug in some versions of the NxLib that
   // overwrites the whole transformation node with an identity transformation as soon as a new node in /Links gets
@@ -75,16 +76,16 @@ void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
     node.setNull();
   }
 
-  if (isValid(pose))
+  if (isValid(transform))
   {
     // ROS transformation is in meters, NxLib expects it to be in millimeters.
-    auto origin = pose.getOrigin();
+    auto origin = transform.getOrigin();
     origin *= 1000;
     node[itmTranslation][0] = origin.x();
     node[itmTranslation][1] = origin.y();
     node[itmTranslation][2] = origin.z();
 
-    auto rotation = pose.getRotation();
+    auto rotation = transform.getRotation();
     node[itmRotation][itmAngle] = rotation.getAngle();
 
     auto rotationAxis = rotation.getAxis();
@@ -94,7 +95,7 @@ void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
   }
   else
   {
-    ROS_ERROR("Given pose is not valid for writing to the NxLib, using identity transform instead");
+    ROS_ERROR("Given transform is not valid for writing to the NxLib, using identity transform instead");
     // Use an identity transformation as a reasonable default value.
     node[itmTranslation][0] = 0;
     node[itmTranslation][1] = 0;
@@ -109,7 +110,7 @@ void writePoseToNxLib(tf2::Transform const& pose, NxLibItem const& node)
 
 namespace tf2
 {
-void convertMsg(geometry_msgs::Transform const& transform, geometry_msgs::Pose& pose)
+void convertMsg(TransformMsg const& transform, PoseMsg& pose)
 {
   pose.orientation = transform.rotation;
   pose.position.x = transform.translation.x;
@@ -117,7 +118,7 @@ void convertMsg(geometry_msgs::Transform const& transform, geometry_msgs::Pose& 
   pose.position.z = transform.translation.z;
 }
 
-void convertMsg(geometry_msgs::Pose const& pose, geometry_msgs::Transform& transform)
+void convertMsg(PoseMsg const& pose, TransformMsg& transform)
 {
   transform.rotation = pose.orientation;
   transform.translation.x = pose.position.x;
@@ -125,50 +126,51 @@ void convertMsg(geometry_msgs::Pose const& pose, geometry_msgs::Transform& trans
   transform.translation.z = pose.position.z;
 }
 
-void convertMsg(geometry_msgs::TransformStamped const& transform, geometry_msgs::PoseStamped& pose)
+void convertMsg(StampedTransformMsg const& transform, StampedPoseMsg& pose)
 {
   convertMsg(transform.transform, pose.pose);
   pose.header = transform.header;
 }
 
-void convertMsg(geometry_msgs::PoseStamped const& pose, geometry_msgs::TransformStamped& transform)
+void convertMsg(StampedPoseMsg const& pose, StampedTransformMsg& transform)
 {
   convertMsg(pose.pose, transform.transform);
   transform.header = pose.header;
 }
 }  // namespace tf2
 
-tf2::Transform poseFromNxLib(NxLibItem const& node)
+tf2::Transform transformFromNxLib(NxLibItem const& node)
 {
-  tf2::Transform pose;
+  tf2::Transform transform;
 
   // NxLib transformation is in millimeters, ROS expects it to be in meters.
   tf2::Vector3 origin = vector3FromNxLib(node[itmTranslation]);
   origin /= 1000;
-  pose.setOrigin(origin);
+  transform.setOrigin(origin);
 
   tf2::Quaternion rotation(vector3FromNxLib(node[itmRotation][itmAxis]), node[itmRotation][itmAngle].asDouble());
-  pose.setRotation(rotation);
+  transform.setRotation(rotation);
 
-  return pose;
+  return transform;
 }
 
-geometry_msgs::TransformStamped poseFromNxLib(NxLibItem const& node, std::string const& parentFrame,
-                                              std::string const& childFrame, ros::Time timestamp)
+StampedPoseMsg stampedPoseFromNxLib(NxLibItem const& node, std::string const& parentFrame, ros::Time timestamp)
 {
-  geometry_msgs::TransformStamped stampedTransform;
-  stampedTransform.header.stamp = timestamp;
-  stampedTransform.header.frame_id = parentFrame;
-  stampedTransform.child_frame_id = childFrame;
-
-  tf2::Transform transform = poseFromNxLib(node);
+  StampedTransformMsg stampedTransform;
+  tf2::Transform transform = transformFromNxLib(node);
   tf2::convert(transform, stampedTransform.transform);
-  return stampedTransform;
+
+  StampedPoseMsg stampedPose;
+  tf2::convertMsg(stampedTransform, stampedPose);
+  stampedPose.header.frame_id = parentFrame;
+  stampedPose.header.stamp = timestamp;
+
+  return stampedPose;
 }
 
-geometry_msgs::TransformStamped transformFromPose(geometry_msgs::PoseStamped const& pose, std::string const& childFrame)
+StampedTransformMsg transformFromPose(StampedPoseMsg const& pose, std::string const& childFrame)
 {
-  geometry_msgs::TransformStamped transform;
+  StampedTransformMsg transform;
   // TODO Check if it is a problem if header.id is also copied in convertMsg()
   tf2::convertMsg(pose, transform);
   transform.child_frame_id = childFrame;
@@ -176,31 +178,26 @@ geometry_msgs::TransformStamped transformFromPose(geometry_msgs::PoseStamped con
   return transform;
 }
 
-geometry_msgs::PoseStamped stampedPoseFromTransform(geometry_msgs::TransformStamped const& transform)
+StampedPoseMsg poseFromTransform(StampedTransformMsg const& transform)
 {
-  geometry_msgs::PoseStamped pose;
+  StampedPoseMsg pose;
   // TODO Check if it is a problem if header.id is also copied in convertMsg()
   tf2::convertMsg(transform, pose);
 
   return pose;
 }
 
-tf2::Transform fromStampedMessage(geometry_msgs::TransformStamped const& tStamped)
+tf2::Transform fromMsg(StampedTransformMsg const& tStamped)
 {
   tf2::Transform transform;
-  tf2::Quaternion quat;
-  tf2::convert(tStamped.transform.rotation, quat);
-  transform.setRotation(quat);
-  tf2::Vector3 trans;
-  tf2::convert(tStamped.transform.translation, trans);
-  transform.setOrigin(trans);
+  tf2::convert(tStamped.transform, transform);
 
   return transform;
 }
 
-tf2::Transform fromStampedMessage(geometry_msgs::PoseStamped const& pStamped)
+tf2::Transform fromMsg(StampedPoseMsg const& pStamped)
 {
-  geometry_msgs::TransformStamped tStamped;
+  StampedTransformMsg tStamped;
   tf2::convertMsg(pStamped, tStamped);
 
   tf2::Transform transform;
@@ -209,7 +206,7 @@ tf2::Transform fromStampedMessage(geometry_msgs::PoseStamped const& pStamped)
   return transform;
 }
 
-tf2::Transform fromMsg(geometry_msgs::Transform const& t)
+tf2::Transform fromMsg(TransformMsg const& t)
 {
   tf2::Transform transform;
   tf2::convert(t, transform);
@@ -217,9 +214,9 @@ tf2::Transform fromMsg(geometry_msgs::Transform const& t)
   return transform;
 }
 
-tf2::Transform fromMsg(geometry_msgs::Pose const& p)
+tf2::Transform fromMsg(PoseMsg const& p)
 {
-  geometry_msgs::Transform t;
+  TransformMsg t;
   tf2::convertMsg(p, t);
 
   tf2::Transform transform;
@@ -228,21 +225,21 @@ tf2::Transform fromMsg(geometry_msgs::Pose const& p)
   return transform;
 }
 
-geometry_msgs::Pose poseFromTransform(tf2::Transform const& transform)
+PoseMsg poseFromTransform(tf2::Transform const& transform)
 {
-  geometry_msgs::Transform t;
+  TransformMsg t;
   tf2::convert(transform, t);
 
-  geometry_msgs::Pose pose;
+  PoseMsg pose;
   tf2::convertMsg(t, pose);
 
   return pose;
 }
 
-geometry_msgs::TransformStamped fromTfTransform(tf2::Transform const& transform, std::string parentFrame,
-                                                std::string childFrame, ros::Time timestamp)
+StampedTransformMsg fromTf(tf2::Transform const& transform, std::string parentFrame, std::string childFrame,
+                           ros::Time timestamp)
 {
-  geometry_msgs::TransformStamped tStamped;
+  StampedTransformMsg tStamped;
   tf2::convert(transform, tStamped.transform);
   tStamped.header.stamp = timestamp;
   tStamped.header.frame_id = std::move(parentFrame);
@@ -257,10 +254,10 @@ tf2::Transform getLatestTransform(tf2_ros::Buffer const& tfBuffer, std::string c
   tf2::Transform transform;
   try
   {
-    geometry_msgs::TransformStamped stTransform;
-    stTransform = tfBuffer.lookupTransform(cameraFrame, targetFrame, ros::Time(0));
+    StampedTransformMsg tStamped;
+    tStamped = tfBuffer.lookupTransform(cameraFrame, targetFrame, ros::Time(0));
 
-    transform = fromMsg(stTransform.transform);
+    transform = fromMsg(tStamped.transform);
   }
   catch (tf2::TransformException& ex)
   {
