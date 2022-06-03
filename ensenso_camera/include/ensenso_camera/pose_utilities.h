@@ -18,7 +18,6 @@
  */
 bool isValid(tf2::Transform const& pose);
 bool isValid(geometry_msgs::Transform const& pose);
-bool isValid(tf2::Vector3 const& vector);
 
 /**
  * Check whether the given tf pose is an identity transformation.
@@ -65,3 +64,18 @@ tf2::Transform fromStampedMessage(geometry_msgs::PoseStamped const& pose);
 
 tf2::Transform getLatestTransform(tf2_ros::Buffer const& tfBuffer, std::string const& cameraFrame,
                                   std::string const& targetFrame);
+
+/**
+ * The tf2::convert method is designed for converting homogeneous datatypes between representations in different
+ * libraries, e.g. tf2::Transform and geometry_msgs::Transform. In order to simplify our conversion methods, it is handy
+ * to have a set of functions for converting inhomogenous datatypes of the geometry_msgs package.
+ *
+ * For more info see: https://answers.ros.org/question/206962/tf2-convert-transform-to-msg/
+ */
+namespace tf2
+{
+void convertMsg(geometry_msgs::msg::Transform const& transform, geometry_msgs::msg::Pose& pose);
+void convertMsg(geometry_msgs::msg::Pose const& pose, geometry_msgs::msg::Transform& transform);
+void convertMsg(geometry_msgs::msg::TransformStamped const& transform, geometry_msgs::msg::PoseStamped& pose);
+void convertMsg(geometry_msgs::msg::PoseStamped const& pose, geometry_msgs::msg::TransformStamped& transform);
+}
