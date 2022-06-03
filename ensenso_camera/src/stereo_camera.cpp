@@ -1093,7 +1093,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
 
       if (goal->publish_results)
       {
-        projectedPointCloudPublisher.publish(*pointCloud);
+        projectedPointCloudPublisher.publish(pointCloud);
       }
       if (goal->include_results_in_response)
       {
