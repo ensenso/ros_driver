@@ -51,9 +51,13 @@ jobs:
         os: [ubuntu-20.04]
         ros_distro: [noetic]
         ros_version: [1]
-        ensenso_sdk_version: [3.2.489, 3.1.996, 3.0.311]
+        ensenso_sdk_version: [3.3.1385, 3.2.489, 3.1.996]
         include:
         # Ubuntu 18.04 - melodic
+          - os: ubuntu-18.04
+            ros_distro: melodic
+            ros_version: 1
+            ensenso_sdk_version: 3.3.1385
           - os: ubuntu-18.04
             ros_distro: melodic
             ros_version: 1
@@ -62,10 +66,6 @@ jobs:
             ros_distro: melodic
             ros_version: 1
             ensenso_sdk_version: 3.1.996
-          - os: ubuntu-18.04
-            ros_distro: melodic
-            ros_version: 1
-            ensenso_sdk_version: 3.0.311
     steps:
       - name: Checkout
         uses: actions/checkout@v2
