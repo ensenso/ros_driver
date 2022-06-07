@@ -55,8 +55,9 @@ private:
   image_transport::Publisher projectedImagePublisher;
 
   ros::Publisher pointCloudPublisher;
-  ros::Publisher pointCloudPublisherColor;
-  ros::Publisher projectedPointCloudPublisher;
+  ros::Publisher pointCloudNormalsPublisher;
+  ros::Publisher pointCloudColoredPublisher;
+  ros::Publisher pointCloudProjectedPublisher;
 
   // Information that we remember between the different steps of the hand-eye calibration. We save the pattern buffer
   // outside of the NxLib, because otherwise we could not use the LocatePattern action while a hand-eye calibration is
@@ -119,8 +120,8 @@ private:
   void updateCameraInfo() override;
 
   virtual geometry_msgs::PoseStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
-                                                              std::string const& targetFrame = "",
-                                                              bool latestPatternOnly = false) const override;
+                                                         std::string const& targetFrame = "",
+                                                         bool latestPatternOnly = false) const override;
 
   virtual std::vector<geometry_msgs::PoseStamped>
   estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(), std::string const& targetFrame = "") const override;
