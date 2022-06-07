@@ -58,9 +58,10 @@ void StereoCamera::advertiseTopics()
   depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
   projectedImagePublisher = imageTransport.advertise("depth/projected_depth_map", 1);
 
-  pointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("point_cloud", 1);
-  pointCloudPublisherColor = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("point_cloud_color", 1);
-  projectedPointCloudPublisher = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("projected_point_cloud", 1);
+  pointCloudPublisher = nh.advertise<ensenso::PointCloud>("point_cloud", 1);
+  pointCloudNormalsPublisher = nh.advertise<ensenso::PointCloudNormals>("point_cloud", 1);
+  pointCloudColoredPublisher = nh.advertise<ensenso::PointCloudColored>("point_cloud_color", 1);
+  pointCloudProjectedPublisher = nh.advertise<ensenso::PointCloud>("projected_point_cloud", 1);
 }
 
 void StereoCamera::init()
@@ -445,7 +446,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       }
       if (publishResults)
       {
-        pointCloudPublisher.publish(pointCloud);
+        pointCloudNormalsPublisher.publish(pointCloud);
       }
     }
   }
@@ -1093,7 +1094,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
 
       if (goal->publish_results)
       {
-        projectedPointCloudPublisher.publish(pointCloud);
+        pointCloudProjectedPublisher.publish(pointCloud);
       }
       if (goal->include_results_in_response)
       {
@@ -1169,7 +1170,7 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
     auto cloudColored = retrieveTexturedPointCloud(renderPointMap.result(), params.targetFrame);
     if (goal->publish_results)
     {
-      pointCloudPublisherColor.publish(cloudColored);
+      pointCloudColoredPublisher.publish(cloudColored);
     }
     if (goal->include_results_in_response)
     {
