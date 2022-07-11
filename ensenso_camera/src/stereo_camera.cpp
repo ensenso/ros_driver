@@ -196,7 +196,7 @@ void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr 
     }
   }
 
-  fitPrimitiveServer->setSucceeded(result);
+  fitPrimitiveServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(FitPrimitive)
 }
@@ -483,7 +483,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     }
   }
 
-  requestDataServer->setSucceeded(result);
+  requestDataServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(RequestData)
 }
@@ -502,7 +502,7 @@ void StereoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr 
     result.parameter_file_applied = loadSettings(goal->parameter_file);
     if (!result.parameter_file_applied)
     {
-      server->setAborted(result);
+      server->setAborted(std::move(result));
       return;
     }
   }
@@ -534,7 +534,7 @@ void StereoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr 
     result.results.push_back(*readParameter(parameter.key));
   }
 
-  setParameterServer->setSucceeded(result);
+  setParameterServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(SetParameter)
 }
@@ -580,7 +580,7 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
     if (patterns.empty())
     {
       result.found_pattern = false;
-      locatePatternServer->setSucceeded(result);
+      locatePatternServer->setSucceeded(std::move(result));
       return;
     }
 
@@ -644,7 +644,7 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
 
   // The target frame has changed.
   publishCurrentLinks();
-  locatePatternServer->setSucceeded(result);
+  locatePatternServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(LocatePattern)
 }
@@ -708,7 +708,7 @@ void StereoCamera::onProjectPattern(ensenso_camera_msgs::ProjectPatternGoalConst
     }
   }
 
-  projectPatternServer->setSucceeded(result);
+  projectPatternServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(ProjectPattern)
 }
@@ -731,7 +731,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     {
       result.error_message = "You need to specify a robot base and wrist frame to do a hand-eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
-      calibrateHandEyeServer->setAborted(result);
+      calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
 
@@ -756,14 +756,14 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     if (patterns.empty())
     {
       result.found_pattern = false;
-      calibrateHandEyeServer->setSucceeded(result);
+      calibrateHandEyeServer->setSucceeded(std::move(result));
       return;
     }
     if (patterns.size() > 1)
     {
       result.error_message = "Detected multiple calibration patterns during a hand-eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
-      calibrateHandEyeServer->setAborted(result);
+      calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
 
@@ -786,7 +786,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     {
       result.error_message = std::string("Could not look up the robot pose due to the tf error: ") + e.what();
       ROS_ERROR("%s", result.error_message.c_str());
-      calibrateHandEyeServer->setAborted(result);
+      calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
 
@@ -805,7 +805,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     {
       result.error_message = "You need to collect at least 5 patterns before starting a hand-eye calibration!";
       ROS_ERROR("%s", result.error_message.c_str());
-      calibrateHandEyeServer->setAborted(result);
+      calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
 
@@ -846,7 +846,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     {
       result.error_message = "The number of pattern observations does not match the number of robot poses!";
       ROS_ERROR("%s", result.error_message.c_str());
-      calibrateHandEyeServer->setAborted(result);
+      calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
 
@@ -953,7 +953,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
 
   // The target frame has changed.
   publishCurrentLinks();
-  calibrateHandEyeServer->setSucceeded(result);
+  calibrateHandEyeServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(CalibrateHandEye)
 }
@@ -994,7 +994,7 @@ void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceG
     if (patterns.size() != 1)
     {
       result.successful = false;
-      calibrateWorkspaceServer->setSucceeded(result);
+      calibrateWorkspaceServer->setSucceeded(std::move(result));
       return;
     }
   }
@@ -1024,7 +1024,7 @@ void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceG
   }
 
   publishCurrentLinks();
-  calibrateWorkspaceServer->setSucceeded(result);
+  calibrateWorkspaceServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(CalibrateWorkspace)
 }
@@ -1042,7 +1042,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   {
     result.error.message = "You have to define a valid frame, to which to projection will be published. Aborting";
     ROS_ERROR("%s", result.error.message.c_str());
-    telecentricProjectionServer->setAborted(result);
+    telecentricProjectionServer->setAborted(std::move(result));
     return;
   }
 
@@ -1081,7 +1081,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   {
     result.error.message = "Rendered Point Map does not exist in path: " + resultPath.path;
     ROS_ERROR("%s", result.error.message.c_str());
-    telecentricProjectionServer->setAborted(result);
+    telecentricProjectionServer->setAborted(std::move(result));
     return;
   }
 
@@ -1098,7 +1098,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
       if (goal->include_results_in_response)
       {
         pcl::toROSMsg(*pointCloud, result.projected_point_cloud);
-        telecentricProjectionServer->setSucceeded(result);
+        telecentricProjectionServer->setSucceeded(std::move(result));
       }
       else
       {
@@ -1117,7 +1117,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
       if (goal->include_results_in_response)
       {
         result.projected_depth_map = *renderedImage;
-        telecentricProjectionServer->setSucceeded(result);
+        telecentricProjectionServer->setSucceeded(std::move(result));
       }
       else
       {
@@ -1143,7 +1143,7 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
   {
     result.error.message = "In Order to use this action, you have to specify one mono serial";
     ROS_ERROR("%s", result.error.message.c_str());
-    texturedPointCloudServer->setAborted(result);
+    texturedPointCloudServer->setAborted(std::move(result));
     return;
   }
 
@@ -1174,7 +1174,7 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
     if (goal->include_results_in_response)
     {
       pcl::toROSMsg(*cloudColored, result.point_cloud);
-      texturedPointCloudServer->setSucceeded(result);
+      texturedPointCloudServer->setSucceeded(std::move(result));
     }
     else
     {
