@@ -1,7 +1,7 @@
 <launch>
   <include file="$(find ensenso_camera)/launch/file_camera.launch">
     <arg name="serial" value="multi_pat_cam"/>
-    <arg name="path" value="$(find ensenso_camera_test)/data/locate_pattern/camera_multiple_patterns.zip"/>
+    <arg name="path" value="$(find ensenso_camera_test)/data/locate_multiple_patterns/camera.zip"/>
   </include>
   <test pkg="ensenso_camera_test" type="locate_multiple_patterns.py" test-name="locate_multiple_patterns_test" cwd="node"></test>
 </launch>
