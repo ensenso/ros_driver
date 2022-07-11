@@ -274,7 +274,7 @@ protected:
   ros::Timer cameraPosePublisher;
 
   // tf buffer, that will store transformations for 10 seconds and dropping transformation afterwards.
-  tf2_ros::Buffer tfBuffer;
+  std::unique_ptr<tf2_ros::Buffer> tfBuffer;
   std::unique_ptr<tf2_ros::TransformListener> transformListener;
   std::unique_ptr<tf2_ros::TransformBroadcaster> transformBroadcaster;
 
