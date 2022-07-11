@@ -225,7 +225,7 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
     }  // The item was not binary.
   }
 
-  accessTreeServer->setSucceeded(result);
+  accessTreeServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(AccessTree)
 }
@@ -243,7 +243,7 @@ void Camera::onExecuteCommand(const ensenso_camera_msgs::ExecuteCommandGoalConst
   ensenso_camera_msgs::ExecuteCommandResult result;
   result.result = command.result().asJson();
 
-  executeCommandServer->setSucceeded(result);
+  executeCommandServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(ExecuteCommand)
 }
@@ -262,7 +262,7 @@ void Camera::onGetParameter(ensenso_camera_msgs::GetParameterGoalConstPtr const&
     result.results.push_back(*readParameter(key));
   }
 
-  getParameterServer->setSucceeded(result);
+  getParameterServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(GetParameter)
 }

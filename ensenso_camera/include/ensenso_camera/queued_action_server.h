@@ -59,7 +59,7 @@ public:
     return preemptRequested;
   }
 
-  void setSucceeded(Result const& result = Result())
+  void setSucceeded(Result result = Result())
   {
     std::lock_guard<std::mutex> lock(mutex);
 
@@ -67,7 +67,7 @@ public:
     currentGoal.setSucceeded(result);
   }
 
-  void setAborted(Result const& result = Result())
+  void setAborted(Result result = Result())
   {
     std::lock_guard<std::mutex> lock(mutex);
 
@@ -75,7 +75,7 @@ public:
     currentGoal.setAborted(result);
   }
 
-  void setPreempted(Result const& result = Result())
+  void setPreempted(Result result = Result())
   {
     std::lock_guard<std::mutex> lock(mutex);
 

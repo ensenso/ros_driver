@@ -106,7 +106,7 @@ int const ERROR_CODE_TF = 101;
     ensenso_camera_msgs::ACTION_NAME##Result result;                                                                   \
     result.error.code = e.getErrorCode();                                                                              \
     result.error.message = e.getErrorText();                                                                           \
-    server->setAborted(result);                                                                                        \
+    server->setAborted(std::move(result));                                                                             \
     return;                                                                                                            \
   } /* NOLINT */                                                                                                       \
   catch (tf2::TransformException & e)                                                                                  \
@@ -115,7 +115,7 @@ int const ERROR_CODE_TF = 101;
     ensenso_camera_msgs::ACTION_NAME##Result result;                                                                   \
     result.error.code = ERROR_CODE_TF;                                                                                 \
     result.error.message = e.what();                                                                                   \
-    server->setAborted(result);                                                                                        \
+    server->setAborted(std::move(result));                                                                             \
     return;                                                                                                            \
   } /* NOLINT */                                                                                                       \
   catch (std::exception & e)                                                                                           \
@@ -124,7 +124,7 @@ int const ERROR_CODE_TF = 101;
     ensenso_camera_msgs::ACTION_NAME##Result result;                                                                   \
     result.error.code = ERROR_CODE_UNKNOWN_EXCEPTION;                                                                  \
     result.error.message = e.what();                                                                                   \
-    server->setAborted(result);                                                                                        \
+    server->setAborted(std::move(result));                                                                             \
     return;                                                                                                            \
   }
 
