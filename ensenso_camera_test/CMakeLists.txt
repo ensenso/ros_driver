@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+catkin_python_setup()
+
 catkin_package(
   CATKIN_DEPENDS
   ensenso_camera_msgs
