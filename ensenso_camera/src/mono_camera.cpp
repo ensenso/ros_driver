@@ -174,7 +174,7 @@ void MonoCamera::onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr 
     }
   }
 
-  requestDataServer->setSucceeded(result);
+  requestDataServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(RequestDataMono)
 }
@@ -193,7 +193,7 @@ void MonoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr co
     result.parameter_file_applied = loadSettings(goal->parameter_file);
     if (!result.parameter_file_applied)
     {
-      server->setAborted(result);
+      server->setAborted(std::move(result));
       return;
     }
   }
@@ -219,7 +219,7 @@ void MonoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr co
     result.results.push_back(*readParameter(parameter.key));
   }
 
-  setParameterServer->setSucceeded(result);
+  setParameterServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(SetParameter)
 }
@@ -263,7 +263,7 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
     if (patterns.empty())
     {
       result.found_pattern = false;
-      locatePatternServer->setSucceeded(result);
+      locatePatternServer->setSucceeded(std::move(result));
       return;
     }
 
@@ -325,7 +325,7 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
     }
   }
 
-  locatePatternServer->setSucceeded(result);
+  locatePatternServer->setSucceeded(std::move(result));
 
   FINISH_NXLIB_ACTION(LocatePatternMono)
 }
