@@ -11,7 +11,7 @@ from ensenso_camera_msgs.msg import LocatePatternMonoAction, LocatePatternMonoGo
 
 from helper import Pose
 
-DATA_SET_DIRECTORY = "../data/mono_camera/locate_pattern/"
+DATA_SET_DIRECTORY = "../data/locate_pattern_mono/"
 
 
 class TestLocatePattern(unittest.TestCase):
