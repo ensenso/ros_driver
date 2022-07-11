@@ -86,7 +86,8 @@ CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const&
 
 Camera::Camera(ros::NodeHandle& nh, CameraParameters _params) : params(std::move(_params)), nh(nh)
 {
-  transformListener = make_unique<tf2_ros::TransformListener>(tfBuffer);
+  tfBuffer = make_unique<tf2_ros::Buffer>();
+  transformListener = make_unique<tf2_ros::TransformListener>(*tfBuffer);
   transformBroadcaster = make_unique<tf2_ros::TransformBroadcaster>();
 
   accessTreeServer = MAKE_SERVER(AccessTree, access_tree);
@@ -369,7 +370,7 @@ void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useC
   }
   else
   {
-    transform = tfBuffer.lookupTransform(params.linkFrame, targetFrame, time, ros::Duration(TF_REQUEST_TIMEOUT));
+    transform = tfBuffer->lookupTransform(params.linkFrame, targetFrame, time, ros::Duration(TF_REQUEST_TIMEOUT));
     transformationCache[targetFrame] = transform;
   }
   tf2::Transform tfTrafo;

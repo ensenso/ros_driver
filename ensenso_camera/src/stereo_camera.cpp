@@ -778,7 +778,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     geometry_msgs::TransformStamped robotPose;
     try
     {
-      robotPose = tfBuffer.lookupTransform(params.robotFrame, params.wristFrame, ros::Time(0));
+      robotPose = tfBuffer->lookupTransform(params.robotFrame, params.wristFrame, ros::Time(0));
     }
     catch (tf2::TransformException& e)
     {
@@ -1053,7 +1053,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   }
   else
   {
-    transform = getLatestTransform(tfBuffer, params.targetFrame, goal->frame);
+    transform = getLatestTransform(*tfBuffer, params.targetFrame, goal->frame);
   }
 
   int pixelScale = goal->pixel_scale != 0. ? goal->pixel_scale : 1;
