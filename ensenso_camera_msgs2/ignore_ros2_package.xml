@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package format="3">
+  <name>ensenso_camera_msgs</name>
+  <version>0.0.1</version>
+  <description>Message definitions for the ensenso_camera package.</description>
+
+  <license>BSD</license>
+
+  <url type="website">http://wiki.ros.org/ensenso_camera_msgs</url>
+  <url type="repository">https://github.com/ensenso/ros_driver.git</url>
+  <url type="bugtracker">https://github.com/ensenso/ros_driver/issues</url>
+
+  <author>Ensenso</author>
+  <maintainer email="daniel.saier@ensenso.com">Daniel Saier</maintainer>
+  <maintainer email="benjamin.thiemann@ensenso.com">Benjamin Thiemann</maintainer>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+  <depend>builtin_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>stereo_msgs</depend>
+
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
