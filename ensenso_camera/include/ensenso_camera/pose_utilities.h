@@ -1,21 +1,37 @@
 #pragma once
 
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>  // Needed for conversion from geometry_msgs to tf2::Transform
+#include "ensenso_camera/ros2_namespace.h"
+#include "ensenso_camera/ros2_time.h"
+
+#ifdef ROS2
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#else
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <string>
-#include <tf2_ros/buffer.h>
+#endif
+
 #include <tf2/LinearMath/Transform.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
+
+#include <string>
 
 #include "nxLib.h"
 
+USING_MSG(geometry_msgs, Pose)
+USING_MSG(geometry_msgs, PoseStamped)
+USING_MSG(geometry_msgs, Transform)
+USING_MSG(geometry_msgs, TransformStamped)
+
 using Transform = tf2::Transform;
-using TransformMsg = geometry_msgs::Transform;
-using StampedTransformMsg = geometry_msgs::TransformStamped;
-using PoseMsg = geometry_msgs::Pose;
-using StampedPoseMsg = geometry_msgs::PoseStamped;
+using TransformMsg = geometry_msgs::msg::Transform;
+using StampedTransformMsg = geometry_msgs::msg::TransformStamped;
+using PoseMsg = geometry_msgs::msg::Pose;
+using StampedPoseMsg = geometry_msgs::msg::PoseStamped;
 
 /**
  * Check whether the given transform is valid, i.e. not containing NaNs.
@@ -43,7 +59,8 @@ Transform transformFromNxLib(NxLibItem const& node);
 /**
  * Create a stamped pose msg from the given link described in the node.
  */
-StampedPoseMsg stampedPoseFromNxLib(NxLibItem const& node, std::string const& parentFrame, ros::Time timestamp);
+StampedPoseMsg stampedPoseFromNxLib(NxLibItem const& node, std::string const& parentFrame,
+                                    ensenso::ros::Time timestamp);
 
 /**
  * Convert a stamped pose msg to a stamped transform msg that defines the child frame at the position of the given pose.
@@ -65,7 +82,7 @@ PoseMsg poseFromTransform(Transform const& transform);
  * Create a stamped geometry transform from a tf transform in combination with parent and child frame.
  */
 StampedTransformMsg fromTf(Transform const& transform, std::string parentFrame, std::string childFrame,
-                           ros::Time timestamp);
+                           ensenso::ros::Time timestamp);
 
 /**
  * Create a tf transform from a transform msg.

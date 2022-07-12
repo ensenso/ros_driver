@@ -2,17 +2,24 @@
 
 #include "ensenso_camera/camera.h"
 
-#include <ensenso_camera_msgs/RequestDataMonoAction.h>
+#ifdef ROS2
+#include <ensenso_camera_msgs/action/locate_pattern_mono.hpp>
+#include <ensenso_camera_msgs/action/request_data_mono.hpp>
+#else
 #include <ensenso_camera_msgs/LocatePatternMonoAction.h>
+#include <ensenso_camera_msgs/RequestDataMonoAction.h>
+#endif
 
-using RequestDataMonoServer = QueuedActionServer<ensenso_camera_msgs::RequestDataMonoAction>;
-using LocatePatternMonoServer = QueuedActionServer<ensenso_camera_msgs::LocatePatternMonoAction>;
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(LocatePatternMono)
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(RequestDataMono)
+
+USING_ENSENSO_CAMERA_MSG(ImagePoint)
 
 class MonoCamera : public Camera
 {
 private:
-  sensor_msgs::CameraInfoPtr cameraInfo;
-  sensor_msgs::CameraInfoPtr rectifiedCameraInfo;
+  sensor_msgs::msg::CameraInfoPtr cameraInfo;
+  sensor_msgs::msg::CameraInfoPtr rectifiedCameraInfo;
 
   std::unique_ptr<RequestDataMonoServer> requestDataServer;
   std::unique_ptr<LocatePatternMonoServer> locatePatternServer;
@@ -21,35 +28,35 @@ private:
   image_transport::CameraPublisher rectifiedImagePublisher;
 
 public:
-  MonoCamera(ros::NodeHandle nh, CameraParameters params);
+  MonoCamera(ensenso::ros::NodeHandle& nh, CameraParameters params);
 
   void init() override;
 
-  ros::Time capture() const override;
+  ensenso::ros::Time capture() const override;
 
-  void onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal) override;
+  void onSetParameter(ensenso::action::SetParameterGoalConstPtr const& goal) override;
 
   /**
    * Callback for the `request_data` action.
    */
-  void onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr const& goal);
+  void onRequestData(ensenso::action::RequestDataMonoGoalConstPtr const& goal);
 
   /**
    * Callback for the `locate_pattern` action.
    */
-  void onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConstPtr const& goal);
+  void onLocatePattern(ensenso::action::LocatePatternMonoGoalConstPtr const& goal);
 
 private:
   void startServers() const override;
 
   void updateCameraInfo() override;
 
-  geometry_msgs::PoseStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
-                                                 std::string const& targetFrame = "",
-                                                 bool latestPatternOnly = false) const override;
+  geometry_msgs::msg::PoseStamped estimatePatternPose(ensenso::ros::Time imageTimestamp,
+                                                      std::string const& targetFrame = "",
+                                                      bool latestPatternOnly = false) const override;
 
-  std::vector<geometry_msgs::PoseStamped> estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(),
-                                                               std::string const& targetFrame = "") const override;
+  std::vector<geometry_msgs::msg::PoseStamped> estimatePatternPoses(ensenso::ros::Time imageTimestamp,
+                                                                    std::string const& targetFrame = "") const override;
 
   /**
    * Advertise all camera topics.
@@ -59,7 +66,7 @@ private:
   /**
    * Read the camera calibration from the NxLib and write it into a CameraInfo message.
    */
-  void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool rectified = false);
+  void fillCameraInfoFromNxLib(sensor_msgs::msg::CameraInfoPtr const& info, bool rectified = false);
 
   /**
    * Runs the NxLib's collectPattern command and returns a vector of MonoCalibrationPatterns. The result is empty if no

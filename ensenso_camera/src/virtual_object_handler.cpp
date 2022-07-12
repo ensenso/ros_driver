@@ -2,11 +2,15 @@
 
 #include <ensenso_camera/pose_utilities.h>
 
+#include <ensenso_camera/ros2_logging.h>
+#include <ensenso_camera/ros2_tf2.h>
+#include <ensenso_camera/ros2_time.h>
+
+#include <tf2/LinearMath/Quaternion.h>
+
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
-
-#include <tf2/LinearMath/Quaternion.h>
 
 #include <nxLib.h>
 
@@ -28,9 +32,9 @@ std::string readFile(const std::string& filename)
 }
 }  // namespace
 
-VirtualObjectHandler::VirtualObjectHandler(const std::string& filename, const std::string& objectsFrame,
-                                           const std::string& cameraFrame)
-  : objectsFrame(objectsFrame), cameraFrame(cameraFrame)
+VirtualObjectHandler::VirtualObjectHandler(const ensenso::ros::NodeHandle& nh, const std::string& filename,
+                                           const std::string& objectsFrame, const std::string& cameraFrame)
+  : objectsFrame(objectsFrame), cameraFrame(cameraFrame), tfBuffer(TF2_BUFFER_CTOR_ARGS(nh))
 {
   nxLibInitialize(false);
 
@@ -57,11 +61,11 @@ void VirtualObjectHandler::updateObjectLinks()
   tf2::Transform cameraTransform;
   try
   {
-    cameraTransform = fromMsg(tfBuffer.lookupTransform(cameraFrame, objectsFrame, ros::Time(0)).transform);
+    cameraTransform = fromMsg(tfBuffer.lookupTransform(cameraFrame, objectsFrame, ensenso::ros::Time(0)).transform);
   }
   catch (const tf2::TransformException& e)
   {
-    ROS_WARN("Could not look up the virtual object pose due to the tf error: %s", e.what());
+    ENSENSO_WARN("Could not look up the virtual object pose due to the TF error: %s", e.what());
     return;
   }
 

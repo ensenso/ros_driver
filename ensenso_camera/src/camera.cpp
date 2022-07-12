@@ -3,34 +3,38 @@
 #include "ensenso_camera/conversion.h"
 #include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
+#include "ensenso_camera/ros2_tf2.h"
 
+#ifdef ROS2
+#include <sensor_msgs/distortion_models.hpp>
+#else
 #include <sensor_msgs/distortion_models.h>
+#endif
 
-#define MAKE_SERVER(TYPE, TAG) ::make_unique<TYPE##Server>(nh, #TAG, boost::bind(&Camera::on##TYPE, this, _1))
-
-ParameterSet::ParameterSet(const std::string& name, const NxLibItem& defaultParameters)
+ParameterSet::ParameterSet(std::string const& name, NxLibItem const& defaultParameters)
 {
   // Create a new NxLib node where we will store the parameters for this set and overwrite it with the default settings.
   node = NxLibItem()["rosParameterSets"][name];
   node << defaultParameters;
 }
 
-CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const& cameraType, std::string serial)
+CameraParameters::CameraParameters(ensenso::ros::NodeHandle& nh, std::string const& cameraType, std::string serial)
   : serial(std::move(serial))
 {
-  nh.param<std::string>("file_camera_path", fileCameraPath, "");
+  ensenso::ros::get_parameter(nh, "file_camera_path", fileCameraPath);
   isFileCamera = !fileCameraPath.empty();
 
-  nh.param("fixed", fixed, false);
-  nh.param("wait_for_camera", wait_for_camera, false);
+  ensenso::ros::get_parameter(nh, "fixed", fixed);
+  ensenso::ros::get_parameter(nh, "wait_for_camera", wait_for_camera);
 
-  if (!nh.getParam("camera_frame", cameraFrame))
+  ensenso::ros::get_parameter(nh, "camera_frame", cameraFrame);
+  if (cameraFrame.empty())
   {
     cameraFrame = "optical_frame_" + this->serial;
   }
 
-  nh.getParam("link_frame", linkFrame);
-  nh.getParam("target_frame", targetFrame);
+  ensenso::ros::get_parameter(nh, "link_frame", linkFrame);
+  ensenso::ros::get_parameter(nh, "target_frame", targetFrame);
 
   if (linkFrame.empty() && !targetFrame.empty())
   {
@@ -44,8 +48,8 @@ CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const&
 
   if (cameraType != valMonocular)
   {
-    nh.getParam("robot_frame", robotFrame);
-    nh.getParam("wrist_frame", wristFrame);
+    ensenso::ros::get_parameter(nh, "robot_frame", robotFrame);
+    ensenso::ros::get_parameter(nh, "wrist_frame", wristFrame);
 
     if (fixed && robotFrame.empty())
     {
@@ -60,42 +64,43 @@ CameraParameters::CameraParameters(ros::NodeHandle const& nh, std::string const&
       }
     }
 
-    nh.param("capture_timeout", captureTimeout, 0);
+    ensenso::ros::get_parameter(nh, "capture_timeout", captureTimeout);
 
     // Load virtual objects and create the handler.
-    std::string objectsFile;
-    if (nh.getParam("objects_file", objectsFile) && !objectsFile.empty())
+    std::string objectsFile = "";
+    ensenso::ros::get_parameter(nh, "objects_file", objectsFile);
+    if (!objectsFile.empty())
     {
       // Get objects frame, default to target.
       std::string objectsFrame = targetFrame;
-      nh.getParam("objects_frame", objectsFrame);
+      ensenso::ros::get_parameter(nh, "objects_frame", objectsFrame);
 
-      ROS_DEBUG("Loading virtual objects...");
+      ENSENSO_DEBUG(nh, "Loading virtual objects...");
       try
       {
         virtualObjectHandler =
-            ::make_unique<ensenso_camera::VirtualObjectHandler>(objectsFile, objectsFrame, cameraFrame);
+            ensenso::std::make_unique<ensenso_camera::VirtualObjectHandler>(nh, objectsFile, objectsFrame, cameraFrame);
       }
       catch (std::exception const& e)
       {
-        ROS_WARN("Unable to load virtual objects file '%s'. Error: %s", objectsFile.c_str(), e.what());
+        ENSENSO_WARN(nh, "Unable to load virtual objects file '%s'. Error: %s", objectsFile.c_str(), e.what());
       }
     }
   }
 }
 
-Camera::Camera(ros::NodeHandle& nh, CameraParameters _params) : params(std::move(_params)), nh(nh)
+Camera::Camera(ensenso::ros::NodeHandle& nh, CameraParameters _params) : params(std::move(_params)), nh(nh)
 {
-  tfBuffer = make_unique<tf2_ros::Buffer>();
-  transformListener = make_unique<tf2_ros::TransformListener>(*tfBuffer);
-  transformBroadcaster = make_unique<tf2_ros::TransformBroadcaster>();
+  tfBuffer = MAKE_TF2_BUFFER(nh);
+  transformListener = ensenso::std::make_unique<tf2_ros::TransformListener>(*tfBuffer);
+  transformBroadcaster = MAKE_TF2_BROADCASTER(nh);
 
-  accessTreeServer = MAKE_SERVER(AccessTree, access_tree);
-  executeCommandServer = MAKE_SERVER(ExecuteCommand, execute_command);
-  getParameterServer = MAKE_SERVER(GetParameter, get_parameter);
-  setParameterServer = MAKE_SERVER(SetParameter, set_parameter);
+  accessTreeServer = MAKE_SERVER(Camera, AccessTree, "access_tree");
+  executeCommandServer = MAKE_SERVER(Camera, ExecuteCommand, "execute_command");
+  getParameterServer = MAKE_SERVER(Camera, GetParameter, "get_parameter");
+  setParameterServer = MAKE_SERVER(Camera, SetParameter, "set_parameter");
 
-  statusPublisher = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
+  statusPublisher = CREATE_PUBLISHER(nh, diagnostic_msgs::msg::DiagnosticArray, "/diagnostics", 1);
 
   nxLibVersion.fillFromNxLib();
 
@@ -112,7 +117,7 @@ void Camera::startServers() const
   setParameterServer->start();
 }
 
-bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParameters)
+bool Camera::loadSettings(std::string const& jsonFile, bool saveAsDefaultParameters)
 {
   if (jsonFile.empty())
   {
@@ -133,7 +138,7 @@ bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParamet
     }
     catch (NxLibException&)
     {
-      ROS_ERROR("The file '%s' does not contain valid JSON", jsonFile.c_str());
+      ENSENSO_ERROR(nh, "The file '%s' does not contain valid JSON", jsonFile.c_str());
       return false;
     }
 
@@ -161,7 +166,7 @@ bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParamet
         saveDefaultParameterSet();
       }
 
-      ROS_INFO("Loaded settings from '%s'.", jsonFile.c_str());
+      ENSENSO_INFO(nh, "Loaded settings from '%s'.", jsonFile.c_str());
     }
     catch (NxLibException& e)
     {
@@ -171,14 +176,14 @@ bool Camera::loadSettings(const std::string& jsonFile, bool saveAsDefaultParamet
   }
   else
   {
-    ROS_ERROR("Could not open the file '%s'", jsonFile.c_str());
+    ENSENSO_ERROR(nh, "Could not open the file '%s'", jsonFile.c_str());
     return false;
   }
 
   return true;
 }
 
-void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goal)
+void Camera::onAccessTree(ensenso::action::AccessTreeGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(AccessTree, accessTreeServer)
 
@@ -208,7 +213,7 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
     saveParameterSet(goal->parameter_set);
   }
 
-  ensenso_camera_msgs::AccessTreeResult result;
+  ensenso::action::AccessTreeResult result;
 
   result.exists = false;
   if (item.exists())
@@ -231,7 +236,7 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
   FINISH_NXLIB_ACTION(AccessTree)
 }
 
-void Camera::onExecuteCommand(const ensenso_camera_msgs::ExecuteCommandGoalConstPtr& goal)
+void Camera::onExecuteCommand(ensenso::action::ExecuteCommandGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(ExecuteCommand, executeCommandServer)
 
@@ -241,7 +246,7 @@ void Camera::onExecuteCommand(const ensenso_camera_msgs::ExecuteCommandGoalConst
   command.parameters().setJson(goal->parameters);
   command.execute();
 
-  ensenso_camera_msgs::ExecuteCommandResult result;
+  ensenso::action::ExecuteCommandResult result;
   result.result = command.result().asJson();
 
   executeCommandServer->setSucceeded(std::move(result));
@@ -249,15 +254,15 @@ void Camera::onExecuteCommand(const ensenso_camera_msgs::ExecuteCommandGoalConst
   FINISH_NXLIB_ACTION(ExecuteCommand)
 }
 
-void Camera::onGetParameter(ensenso_camera_msgs::GetParameterGoalConstPtr const& goal)
+void Camera::onGetParameter(ensenso::action::GetParameterGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(GetParameter, getParameterServer)
 
-  ensenso_camera_msgs::GetParameterResult result;
+  ensenso::action::GetParameterResult result;
 
   loadParameterSet(goal->parameter_set);
 
-  result.stamp = ros::Time::now();
+  result.stamp = ensenso::ros::now(nh);
   for (auto const& key : goal->keys)
   {
     result.results.push_back(*readParameter(key));
@@ -285,29 +290,29 @@ bool Camera::hasLink() const
   return !isIdentity(transformFromNxLib(cameraNode[itmLink]));
 }
 
-void Camera::publishStatus(ros::TimerEvent const& event) const
+void Camera::publishStatus(TIMER_CALLBACK_DEFINITION_ARGS)
 {
   std::lock_guard<std::mutex> lock(nxLibMutex);
 
-  diagnostic_msgs::DiagnosticStatus cameraStatus;
+  diagnostic_msgs::msg::DiagnosticStatus cameraStatus;
   cameraStatus.name = "Camera";
   cameraStatus.hardware_id = params.serial;
-  cameraStatus.level = diagnostic_msgs::DiagnosticStatus::OK;
+  cameraStatus.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
   cameraStatus.message = "OK";
 
   if (!cameraIsOpen())
   {
-    cameraStatus.level = diagnostic_msgs::DiagnosticStatus::ERROR;
+    cameraStatus.level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
     cameraStatus.message = "Camera is no longer open";
   }
 
-  diagnostic_msgs::DiagnosticArray status;
-  status.header.stamp = ros::Time::now();
+  diagnostic_msgs::msg::DiagnosticArray status;
+  status.header.stamp = ensenso::ros::now(nh);
   status.status.push_back(cameraStatus);
-  statusPublisher.publish(status);
+  statusPublisher->publish(status);
 }
 
-void Camera::fillBasicCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info) const
+void Camera::fillBasicCameraInfoFromNxLib(sensor_msgs::msg::CameraInfoPtr const& info) const
 {
   info->header.frame_id = params.cameraFrame;
 
@@ -316,10 +321,11 @@ void Camera::fillBasicCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info
 
   info->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
 
-  info->D.clear();
-  info->K.fill(0);
-  info->P.fill(0);
-  info->R.fill(0);
+  GET_D_MATRIX(info).clear();
+
+  GET_K_MATRIX(info).fill(0);
+  GET_P_MATRIX(info).fill(0);
+  GET_R_MATRIX(info).fill(0);
 
   if (cameraNode[itmParameters][itmCapture][itmBinning].exists())
   {
@@ -344,7 +350,7 @@ void Camera::updateTransformations(tf2::Transform const& targetFrameTransformati
   writeTransformToNxLib(targetFrameTransformation, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
 }
 
-void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useCachedTransformation) const
+void Camera::updateGlobalLink(ensenso::ros::Time time, std::string targetFrame, bool useCachedTransformation) const
 {
   // Transformations are represented in the NxLib as follows:
   //  - The camera's link node might contain calibration data from e.g. a hand-eye calibration. This is always used if
@@ -370,14 +376,15 @@ void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useC
 
   // Update the transformation to the target frame in the NxLib according to the current information from tf only if
   // link and target frame differ.
-  geometry_msgs::TransformStamped transformMsg;
+  geometry_msgs::msg::TransformStamped transformMsg;
   if (useCachedTransformation && transformationCache.count(targetFrame) != 0)
   {
     transformMsg = transformationCache[targetFrame];
   }
   else
   {
-    transformMsg = tfBuffer->lookupTransform(params.linkFrame, targetFrame, time, ros::Duration(TF_REQUEST_TIMEOUT));
+    transformMsg = tfBuffer->lookupTransform(params.linkFrame, targetFrame, time,
+                                             ensenso::ros::durationFromSeconds(TF_REQUEST_TIMEOUT));
     transformationCache[targetFrame] = transformMsg;
   }
   tf2::Transform transform;
@@ -387,9 +394,9 @@ void Camera::updateGlobalLink(ros::Time time, std::string targetFrame, bool useC
   writeTransformToNxLib(transform, NxLibItem()[itmLinks][getNxLibTargetFrameName()]);
 }
 
-ensenso_camera_msgs::ParameterPtr Camera::readParameter(std::string const& key) const
+ensenso::msg::ParameterPtr Camera::readParameter(std::string const& key) const
 {
-  auto message = boost::make_shared<ensenso_camera_msgs::Parameter>();
+  auto message = ensenso::std::make_shared<ensenso::msg::Parameter>();
   message->key = key;
   if (parameterExists(key))
   {
@@ -415,18 +422,18 @@ ensenso_camera_msgs::ParameterPtr Camera::readParameter(std::string const& key) 
     }
     else
     {
-      ROS_WARN("Reading the parameter %s, but the camera does not support it!", key.c_str());
+      ENSENSO_WARN(nh, "Reading the parameter %s, but the camera does not support it!", key.c_str());
     }
   }
   else
   {
-    ROS_ERROR("Unknown parameter '%s'!", key.c_str());
+    ENSENSO_ERROR(nh, "Unknown parameter '%s'!", key.c_str());
   }
 
   return message;
 }
 
-void Camera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
+void Camera::writeParameter(ensenso::msg::Parameter const& parameter)
 {
   if (parameterExists(parameter.key))
   {
@@ -437,7 +444,7 @@ void Camera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
 
     if (!node.exists())
     {
-      ROS_WARN("Writing the parameter %s, but the camera does not support it!", parameter.key.c_str());
+      ENSENSO_WARN(nh, "Writing the parameter %s, but the camera does not support it!", parameter.key.c_str());
       return;
     }
 
@@ -455,7 +462,7 @@ void Camera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
   }
   else
   {
-    ROS_ERROR("Unknown parameter '%s'!", parameter.key.c_str());
+    ENSENSO_ERROR(nh, "Unknown parameter '%s'!", parameter.key.c_str());
   }
 }
 
@@ -467,7 +474,7 @@ bool Camera::open()
     {
       if (params.serial.size() > 15)
       {
-        ROS_ERROR("The serial '%s' is too long!", params.serial.c_str());
+        ENSENSO_ERROR(nh, "The serial '%s' is too long!", params.serial.c_str());
         return false;
       }
 
@@ -480,7 +487,7 @@ bool Camera::open()
     }
     catch (NxLibException& e)
     {
-      ROS_ERROR("Failed to create the file camera!");
+      ENSENSO_ERROR(nh, "Failed to create the file camera!");
       LOG_NXLIB_EXCEPTION(e)
       return false;
     }
@@ -488,21 +495,21 @@ bool Camera::open()
 
   if (!cameraNode.exists())
   {
-    ROS_ERROR("The camera '%s' could not be found", params.serial.c_str());
+    ENSENSO_ERROR(nh, "The camera '%s' could not be found", params.serial.c_str());
     return false;
   }
 
   if (params.wait_for_camera)
   {
-    while (!cameraIsAvailable() && ros::ok())
+    while (!cameraIsAvailable() && ensenso::ros::ok())
     {
-      ROS_INFO("Waiting for camera '%s' to become available", params.serial.c_str());
-      ros::Duration(0.5).sleep();
+      ENSENSO_INFO(nh, "Waiting for camera '%s' to become available", params.serial.c_str());
+      ensenso::ros::sleep(0.5);
     }
   }
   else if (!cameraIsAvailable())
   {
-    ROS_ERROR("The camera '%s' is already in use", params.serial.c_str());
+    ENSENSO_ERROR(nh, "The camera '%s' is already in use", params.serial.c_str());
     return false;
   }
 
@@ -519,7 +526,7 @@ bool Camera::open()
   }
   catch (NxLibException& e)
   {
-    ROS_ERROR("Error while opening the camera '%s'!", params.serial.c_str());
+    ENSENSO_ERROR(nh, "Error while opening the camera '%s'!", params.serial.c_str());
     LOG_NXLIB_EXCEPTION(e)
     return false;
   }
@@ -528,22 +535,24 @@ bool Camera::open()
   publishCurrentLinks();
   updateCameraInfo();
 
-  ROS_INFO("Opened camera with serial number '%s'.", params.serial.c_str());
+  ENSENSO_INFO(nh, "Opened camera with serial number '%s'.", params.serial.c_str());
 
   if (!nxLibVersion.meetsMinimumRequirement(3, 0))
   {
-    ROS_WARN_ONCE("Ensenso SDK 3.0 or newer is required, you are using version %s.", nxLibVersion.toString().c_str());
+    ENSENSO_WARN_ONCE(nh, "Ensenso SDK 3.0 or newer is required, you are using version %s.",
+                      nxLibVersion.toString().c_str());
   }
 
   if (hasLink() && params.cameraFrame == params.targetFrame)
   {
-    ROS_WARN_ONCE(
-        "Camera %s has an internal link (i.e. it is either extrinsically calibrated (workspace- or hand-eye) or has a "
-        "link to another camera), but camera and target frame are equal, which means that neither a link nor a target "
-        "frame has been provided. The images and 3d data retreived from the camera are transformed by the NxLib with "
-        "the transform stored in the camera's link node, however, this transform is not known to tf. Please provide "
-        "a link or target frame in order for the transform to be published.",
-        params.serial.c_str());
+    ENSENSO_WARN_ONCE(nh,
+                      "Camera %s has an internal link (i.e. it is either extrinsically calibrated (workspace- or "
+                      "hand-eye) or has a link to another camera), but camera and target frame are equal, which means "
+                      "that neither a link nor a target frame has been provided. The images and 3d data retreived from "
+                      "the camera are transformed by the NxLib with the transform stored in the camera's link node, "
+                      "however, this transform is not known to tf. Please provide a link or target frame in order for "
+                      "the transform to be published.",
+                      params.serial.c_str());
   }
   return true;
 }
@@ -595,7 +604,7 @@ void Camera::loadParameterSet(std::string name)
     name = DEFAULT_PARAMETER_SET;
   }
 
-  ROS_DEBUG("Loading parameter set '%s'", name.c_str());
+  ENSENSO_DEBUG(nh, "Loading parameter set '%s'", name.c_str());
 
   if (parameterSets.count(name) == 0)
   {
@@ -623,7 +632,7 @@ void Camera::loadParameterSet(std::string name)
   currentParameterSet = name;
 }
 
-void Camera::publishCurrentLinks(ros::TimerEvent const& timerEvent)
+void Camera::publishCurrentLinks(TIMER_CALLBACK_DEFINITION_ARGS)
 {
   publishCameraLink();
 }
@@ -638,13 +647,13 @@ void Camera::publishCameraLink()
   transformBroadcaster->sendTransform(stampedLinkToCamera());
 }
 
-geometry_msgs::TransformStamped Camera::stampedLinkToCamera()
+geometry_msgs::msg::TransformStamped Camera::stampedLinkToCamera()
 {
   // Get the inverse of the camera to link transform, because we want to publish the other way around (e.g. instead of
   // camera->link, we want link->camera).
   tf2::Transform cameraToLinkInverse = getCameraToLinkTransform().inverse();
   // The camera always needs to be the child frame in this transformation.
-  return fromTf(cameraToLinkInverse, params.linkFrame, params.cameraFrame, ros::Time::now());
+  return fromTf(cameraToLinkInverse, params.linkFrame, params.cameraFrame, ensenso::ros::now(nh));
 }
 
 tf2::Transform Camera::getCameraToLinkTransform()
@@ -659,14 +668,14 @@ tf2::Transform Camera::getCameraToLinkTransform()
   }
   catch (NxLibException const& e)
   {
-    ROS_WARN("Link does not exist. Therefore we cannot publish a transform to any target. Error message: %s",
-             e.getErrorText().c_str());
+    ENSENSO_WARN(nh, "Link does not exist. Therefore we cannot publish a transform to any target. Error message: %s",
+                 e.getErrorText().c_str());
   }
 
   if (!isValid(transform))
   {
-    ROS_WARN("Did not find a good transform from %s to %s. Transform has been set to identity",
-             params.cameraFrame.c_str(), params.linkFrame.c_str());
+    ENSENSO_WARN(nh, "Did not find a good transform from %s to %s. Transform has been set to identity",
+                 params.cameraFrame.c_str(), params.linkFrame.c_str());
   }
 
   return transform;
@@ -674,10 +683,10 @@ tf2::Transform Camera::getCameraToLinkTransform()
 
 void Camera::initTfPublishTimer()
 {
-  cameraPosePublisher = nh.createTimer(ros::Duration(POSE_TF_INTERVAL), &Camera::publishCurrentLinks, this);
+  cameraPosePublisher = CREATE_TIMER(nh, POSE_TF_INTERVAL, &Camera::publishCurrentLinks, this);
 }
 
 void Camera::initStatusTimer()
 {
-  statusTimer = nh.createTimer(ros::Duration(STATUS_INTERVAL), &Camera::publishStatus, this);
+  statusTimer = CREATE_TIMER(nh, STATUS_INTERVAL, &Camera::publishStatus, this);
 }

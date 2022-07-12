@@ -1,7 +1,10 @@
 #pragma once
 
+#include "ensenso_camera/ros2_node_handle.h"
+
 #include <vector>
 
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2/LinearMath/Transform.h>
 
@@ -10,7 +13,8 @@ namespace ensenso_camera
 class VirtualObjectHandler
 {
 public:
-  VirtualObjectHandler(const std::string& filename, const std::string& objectsFrame, const std::string& cameraFrame);
+  VirtualObjectHandler(const ensenso::ros::NodeHandle& nh, const std::string& filename, const std::string& objectsFrame,
+                       const std::string& cameraFrame);
 
   void updateObjectLinks();
 

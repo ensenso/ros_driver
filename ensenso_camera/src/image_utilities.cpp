@@ -4,13 +4,22 @@
 
 #include "ensenso_camera/conversion.h"
 
+#include "ensenso_camera/ros2_core.h"
+#include "ensenso_camera/ros2_logging.h"
+
+#ifdef ROS2
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/distortion_models.hpp>
+#else
+#include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/distortion_models.h>
+#endif
+
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <ros/ros.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/distortion_models.h>
+USING_MSG(sensor_msgs, CameraInfo)
 
 std::string imageEncoding(bool isFloat, int channels, int bytesPerElement)
 {
@@ -83,13 +92,13 @@ std::string imageEncoding(bool isFloat, int channels, int bytesPerElement)
     }
   }
 
-  ROS_ERROR("Invalid image encoding in binary NxLib node.");
+  ENSENSO_ERROR("Invalid image encoding in binary NxLib node.");
   return "";
 }
 
 ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame, bool isFileCamera)
 {
-  auto image = boost::make_shared<Image>();
+  auto image = ensenso::std::make_shared<Image>();
 
   bool isFloat;
   int width, height, channels, bytesPerElement;
@@ -98,7 +107,7 @@ ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame, boo
 
   double timestamp = ensenso_conversion::nxLibToRosTimestamp(nxLibTimestamp, isFileCamera);
 
-  image->header.stamp = ros::Time(timestamp);
+  image->header.stamp = ensenso::ros::timeFromSeconds(timestamp);
   image->header.frame_id = frame;
   image->width = width;
   image->height = height;
@@ -168,12 +177,12 @@ std::vector<ImagePtr> imagesFromNxLibNode(NxLibItem const& node, std::string con
   return result;
 }
 
-ros::Time timestampFromNxLibNode(NxLibItem const& node)
+ensenso::ros::Time timestampFromNxLibNode(NxLibItem const& node)
 {
   double nxLibTimestamp;
   node.getBinaryDataInfo(0, 0, 0, 0, 0, &nxLibTimestamp);
 
-  return ros::Time(ensenso_conversion::nxLibToRosTimestamp(nxLibTimestamp));
+  return ensenso::ros::timeFromSeconds(ensenso_conversion::nxLibToRosTimestamp(nxLibTimestamp));
 }
 
 ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame, bool isFileCamera)
@@ -182,25 +191,25 @@ ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame
   cv::Mat pointMap;
   node.getBinaryData(pointMap, &nxLibTimestamp);
 
-  cv::Mat depthMap;
-  cv::extractChannel(pointMap, depthMap, 2);
+  cv::Mat depthImage;
+  cv::extractChannel(pointMap, depthImage, 2);
 
   // Convert units from millimeters to meters.
-  depthMap /= 1000.0;
+  depthImage /= 1000.0;
 
   double timestamp = ensenso_conversion::nxLibToRosTimestamp(nxLibTimestamp, isFileCamera);
 
   // Convert cv mat to ros image.
-  cv_bridge::CvImage depthImage;
-  depthImage.header.stamp = ros::Time(timestamp);
-  depthImage.header.frame_id = frame;
-  depthImage.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
-  depthImage.image = depthMap;
+  cv_bridge::CvImage out_msg;
+  out_msg.header.stamp = ensenso::ros::timeFromSeconds(timestamp);
+  out_msg.header.frame_id = frame;
+  out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+  out_msg.image = depthImage;
 
-  return depthImage.toImageMsg();
+  return out_msg.toImageMsg();
 }
 
-void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs::CameraInfoPtr const& info)
+void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs::msg::CameraInfoPtr const& info)
 {
   std::vector<double> distParams(5, 0.);
 
@@ -212,7 +221,7 @@ void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs:
     }
     catch (...)
     {
-      ROS_WARN("The distortion parameter %s does not exist. Using value 0.0 instead.", itemToCheck.path.c_str());
+      ENSENSO_WARN("The distortion parameter %s does not exist. Using value 0.0 instead.", itemToCheck.path.c_str());
     }
     return value;
   };
@@ -233,5 +242,5 @@ void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs:
     }
   }
 
-  info->D = distParams;
+  GET_D_MATRIX(info) = distParams;
 }

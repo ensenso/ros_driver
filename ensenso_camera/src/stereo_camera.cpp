@@ -1,35 +1,27 @@
 #include "ensenso_camera/stereo_camera.h"
 
 #include "ensenso_camera/conversion.h"
-#include "ensenso_camera/helper.h"
 #include "ensenso_camera/image_utilities.h"
 #include "ensenso_camera/parameters.h"
 #include "ensenso_camera/pose_utilities.h"
 #include "ensenso_camera/stereo_camera_helpers.h"
 
-#include <diagnostic_msgs/DiagnosticArray.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
-#include <sensor_msgs/distortion_models.h>
-
-#define MAKE_SERVER(TYPE, TAG) ::make_unique<TYPE##Server>(nh, #TAG, boost::bind(&StereoCamera::on##TYPE, this, _1))
-
-StereoCamera::StereoCamera(ros::NodeHandle nh, CameraParameters params) : Camera(nh, std::move(params))
+StereoCamera::StereoCamera(ensenso::ros::NodeHandle& nh, CameraParameters params) : Camera(nh, std::move(params))
 {
-  leftCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
-  rightCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
-  leftRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
-  rightRectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
+  leftCameraInfo = ensenso::std::make_shared<sensor_msgs::msg::CameraInfo>();
+  rightCameraInfo = ensenso::std::make_shared<sensor_msgs::msg::CameraInfo>();
+  leftRectifiedCameraInfo = ensenso::std::make_shared<sensor_msgs::msg::CameraInfo>();
+  rightRectifiedCameraInfo = ensenso::std::make_shared<sensor_msgs::msg::CameraInfo>();
 
-  fitPrimitiveServer = MAKE_SERVER(FitPrimitive, fit_primitive);
-  setParameterServer = MAKE_SERVER(SetParameter, set_parameter);
-  requestDataServer = MAKE_SERVER(RequestData, request_data);
-  locatePatternServer = MAKE_SERVER(LocatePattern, locate_pattern);
-  projectPatternServer = MAKE_SERVER(ProjectPattern, project_pattern);
-  calibrateHandEyeServer = MAKE_SERVER(CalibrateHandEye, calibrate_hand_eye);
-  calibrateWorkspaceServer = MAKE_SERVER(CalibrateWorkspace, calibrate_workspace);
-  telecentricProjectionServer = MAKE_SERVER(TelecentricProjection, project_telecentric);
-  texturedPointCloudServer = MAKE_SERVER(TexturedPointCloud, texture_point_cloud);
+  fitPrimitiveServer = MAKE_SERVER(StereoCamera, FitPrimitive, "fit_primitive");
+  setParameterServer = MAKE_SERVER(StereoCamera, SetParameter, "set_parameter");
+  requestDataServer = MAKE_SERVER(StereoCamera, RequestData, "request_data");
+  locatePatternServer = MAKE_SERVER(StereoCamera, LocatePattern, "locate_pattern");
+  projectPatternServer = MAKE_SERVER(StereoCamera, ProjectPattern, "project_pattern");
+  calibrateHandEyeServer = MAKE_SERVER(StereoCamera, CalibrateHandEye, "calibrate_hand_eye");
+  calibrateWorkspaceServer = MAKE_SERVER(StereoCamera, CalibrateWorkspace, "calibrate_workspace");
+  telecentricProjectionServer = MAKE_SERVER(StereoCamera, TelecentricProjection, "project_telecentric");
+  texturedPointCloudServer = MAKE_SERVER(StereoCamera, TexturedPointCloud, "texture_point_cloud");
 }
 
 void StereoCamera::updateCameraTypeSpecifics()
@@ -43,25 +35,25 @@ void StereoCamera::updateCameraTypeSpecifics()
 
 void StereoCamera::advertiseTopics()
 {
-  image_transport::ImageTransport imageTransport(nh);
-  leftRawImagePublisher = imageTransport.advertiseCamera("raw/left/image", 1);
-  leftRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/left/image", 1);
+  IMAGE_TRANSPORT_INIT(nh);
+  leftRawImagePublisher = IMAGE_TRANSPORT_CREATE_CAMERA_PUBLISHER(nh, "raw/left/image");
+  leftRectifiedImagePublisher = IMAGE_TRANSPORT_CREATE_CAMERA_PUBLISHER(nh, "rectified/left/image");
   if (hasRightCamera())
   {
-    rightRawImagePublisher = imageTransport.advertiseCamera("raw/right/image", 1);
-    rightRectifiedImagePublisher = imageTransport.advertiseCamera("rectified/right/image", 1);
+    rightRawImagePublisher = IMAGE_TRANSPORT_CREATE_CAMERA_PUBLISHER(nh, "raw/right/image");
+    rightRectifiedImagePublisher = IMAGE_TRANSPORT_CREATE_CAMERA_PUBLISHER(nh, "rectified/right/image");
   }
   if (hasDisparityMap())
   {
-    disparityMapPublisher = imageTransport.advertiseCamera("disparity_map", 1);
+    disparityMapPublisher = IMAGE_TRANSPORT_CREATE_CAMERA_PUBLISHER(nh, "disparity_map");
   }
-  depthImagePublisher = imageTransport.advertiseCamera("depth/image", 1);
-  projectedImagePublisher = imageTransport.advertise("depth/projected_depth_map", 1);
+  depthImagePublisher = IMAGE_TRANSPORT_CREATE_CAMERA_PUBLISHER(nh, "depth/image");
+  projectedImagePublisher = IMAGE_TRANSPORT_CREATE_PUBLISHER(nh, "depth/projected_depth_map");
 
-  pointCloudPublisher = nh.advertise<ensenso::PointCloud>("point_cloud", 1);
-  pointCloudNormalsPublisher = nh.advertise<ensenso::PointCloudNormals>("point_cloud", 1);
-  pointCloudColoredPublisher = nh.advertise<ensenso::PointCloudColored>("point_cloud_color", 1);
-  pointCloudProjectedPublisher = nh.advertise<ensenso::PointCloud>("projected_point_cloud", 1);
+  pointCloudPublisher = CREATE_POINT_CLOUD_PUBLISHER(nh, ensenso::PointCloud, "point_cloud", 1);
+  pointCloudNormalsPublisher = CREATE_POINT_CLOUD_PUBLISHER(nh, ensenso::PointCloudNormals, "point_cloud", 1);
+  pointCloudColoredPublisher = CREATE_POINT_CLOUD_PUBLISHER(nh, ensenso::PointCloudColored, "point_cloud_color", 1);
+  pointCloudProjectedPublisher = CREATE_POINT_CLOUD_PUBLISHER(nh, ensenso::PointCloud, "projected_point_cloud", 1);
 }
 
 void StereoCamera::init()
@@ -85,7 +77,7 @@ void StereoCamera::startServers() const
   telecentricProjectionServer->start();
 }
 
-void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr const& goal)
+void StereoCamera::onFitPrimitive(ensenso::action::FitPrimitiveGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(FitPrimitive, fitPrimitiveServer)
 
@@ -95,18 +87,18 @@ void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr 
   int primitivesCount = 0;
   for (auto const& primitive : goal->primitives)
   {
-    if (primitive.type == ensenso_camera_msgs::Primitive::SPHERE)
+    if (primitive.type == ensenso::msg::Primitive::SPHERE)
     {
       primitives[primitivesCount][itmRadius][itmMin] = primitive.min_radius * ensenso_conversion::conversionFactor;
       primitives[primitivesCount][itmRadius][itmMax] = primitive.max_radius * ensenso_conversion::conversionFactor;
       primitives[primitivesCount][itmCount] = primitive.count;
     }
-    else if (primitive.type == ensenso_camera_msgs::Primitive::CYLINDER)
+    else if (primitive.type == ensenso::msg::Primitive::CYLINDER)
     {
       primitives[primitivesCount][itmRadius][itmMin] = primitive.min_radius * ensenso_conversion::conversionFactor;
       primitives[primitivesCount][itmRadius][itmMax] = primitive.min_radius * ensenso_conversion::conversionFactor;
     }
-    else if (primitive.type == ensenso_camera_msgs::Primitive::PLANE)
+    else if (primitive.type == ensenso::msg::Primitive::PLANE)
     {
       primitives[primitivesCount][itmCount] = primitive.count;
     }
@@ -161,7 +153,7 @@ void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr 
 
   fitPrimitives.execute();
 
-  ensenso_camera_msgs::FitPrimitiveResult result;
+  ensenso::action::FitPrimitiveResult result;
 
   NxLibItem const primitiveResults = fitPrimitives.result()[itmPrimitive];
   if (primitiveResults.isArray())
@@ -170,7 +162,7 @@ void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr 
     for (int primitiveCount = 0; primitiveCount < primitiveResults.count(); primitiveCount++)
     {
       NxLibItem const& currentPrimitive = primitiveResults[primitiveCount];
-      ensenso_camera_msgs::Primitive primitive;
+      ensenso::msg::Primitive primitive;
 
       primitive.type = currentPrimitive[itmType].asString();
       primitive.ransac_iterations = currentPrimitive[itmIterations].asInt();
@@ -179,17 +171,17 @@ void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr 
       primitive.score = currentPrimitive[itmScore].asDouble();
       primitive.center = ensenso_conversion::toRosPoint(currentPrimitive[itmCenter]);
 
-      if (primitive.type == ensenso_camera_msgs::Primitive::PLANE)
+      if (primitive.type == ensenso::msg::Primitive::PLANE)
       {
         primitive.axes.push_back(ensenso_conversion::toRosPoint(currentPrimitive[itmAxis][0]));
         primitive.axes.push_back(ensenso_conversion::toRosPoint(currentPrimitive[itmAxis][1]));
         primitive.normal = ensenso_conversion::toRosPoint(currentPrimitive[itmNormal], false);
       }
-      else if (primitive.type == ensenso_camera_msgs::Primitive::SPHERE)
+      else if (primitive.type == ensenso::msg::Primitive::SPHERE)
       {
         primitive.radius = currentPrimitive[itmRadius].asDouble() / ensenso_conversion::conversionFactor;
       }
-      else if (primitive.type == ensenso_camera_msgs::Primitive::CYLINDER)
+      else if (primitive.type == ensenso::msg::Primitive::CYLINDER)
       {
         primitive.axis = ensenso_conversion::toRosPoint(currentPrimitive[itmAxis]);
       }
@@ -202,12 +194,12 @@ void StereoCamera::onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr 
   FINISH_NXLIB_ACTION(FitPrimitive)
 }
 
-void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal)
+void StereoCamera::onRequestData(ensenso::action::RequestDataGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(RequestData, requestDataServer)
 
-  ensenso_camera_msgs::RequestDataResult result;
-  ensenso_camera_msgs::RequestDataFeedback feedback;
+  ensenso::action::RequestDataResult result;
+  ensenso::action::RequestDataFeedback feedback;
 
   // Automatically enable publishing if neither publish_reults nor include_results_in_response is enabled.
   bool publishResults = goal->publish_results;
@@ -220,7 +212,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   bool requestRawImages = goal->request_raw_images;
   if (isXrSeries() && !hasRawImages() && requestRawImages)
   {
-    ROS_WARN("XR: Capture mode \"Rectified\", skipping raw images request.");
+    ENSENSO_WARN(nh, "XR: Capture mode \"Rectified\", skipping raw images request.");
     requestRawImages = false;
   }
 
@@ -228,14 +220,14 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   bool requestRectifiedImages = goal->request_rectified_images;
   if (isXrSeries() && hasRawImages() && requestRectifiedImages)
   {
-    ROS_WARN("XR: Capture mode \"Raw\", skipping rectified images request.");
+    ENSENSO_WARN(nh, "XR: Capture mode \"Raw\", skipping rectified images request.");
     requestRectifiedImages = false;
   }
 
   // Automatically disable requesting raw/rectified images if the camera does not have downloaded any.
   if (isXrSeries() && !hasDownloadedImages() && (requestRawImages || requestRectifiedImages))
   {
-    ROS_WARN("XR: Downloading raw/rectified images is disabled, skipping the raw/rectified images request.");
+    ENSENSO_WARN(nh, "XR: Downloading raw/rectified images is disabled, skipping the raw/rectified images request.");
     requestRawImages = false;
     requestRectifiedImages = false;
   }
@@ -267,10 +259,11 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   // Automatically disable requesting 3d data if the camera is an XR and only has raw images.
   if (isXrSeries() && hasRawImages() && (computeDisparityMap || computePointCloud))
   {
-    ROS_WARN(
-        "XR: Capture mode \"Raw\", skipping all 3D data requests! Only raw images are captured and they can only be "
-        "used for calibration actions. Rectifying these images afterwards is not possible and they cannot be used to "
-        "compute 3D data. If you want to retrieve 3D data, set capture mode to \"Rectified\".");
+    ENSENSO_WARN(nh,
+                 "XR: Capture mode \"Raw\", skipping all 3D data requests! Only raw images are captured and they can "
+                 "only be used for calibration actions. Rectifying these images afterwards is not possible and they "
+                 "cannot be used to compute 3D data. If you want to retrieve 3D data, set capture mode to "
+                 "\"Rectified\".");
     requestDisparityMap = false;
     requestDepthImage = false;
     requestPointCloud = false;
@@ -280,7 +273,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   }
 
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
-  ros::Time imageTimestamp = capture();
+  ensenso::ros::Time imageTimestamp = capture();
 
   PREEMPT_ACTION_IF_REQUESTED
 
@@ -383,7 +376,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
     }
   }
 
-  auto depthImageCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>(*leftRectifiedCameraInfo);
+  auto depthImageCameraInfo = ensenso::std::make_shared<sensor_msgs::msg::CameraInfo>(*leftRectifiedCameraInfo);
 
   addDisparityMapOffset(depthImageCameraInfo);
 
@@ -429,7 +422,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       }
       if (publishResults)
       {
-        pointCloudPublisher.publish(pointCloud);
+        publishPointCloud(pointCloudPublisher, std::move(pointCloud));
       }
     }
     else
@@ -446,7 +439,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       }
       if (publishResults)
       {
-        pointCloudNormalsPublisher.publish(pointCloud);
+        publishPointCloud(pointCloudNormalsPublisher, std::move(pointCloud));
       }
     }
   }
@@ -487,11 +480,11 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
   FINISH_NXLIB_ACTION(RequestData)
 }
 
-void StereoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal)
+void StereoCamera::onSetParameter(ensenso::action::SetParameterGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(SetParameter, setParameterServer)
 
-  ensenso_camera_msgs::SetParameterResult result;
+  ensenso::action::SetParameterResult result;
 
   loadParameterSet(goal->parameter_set);
 
@@ -538,12 +531,12 @@ void StereoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr 
   FINISH_NXLIB_ACTION(SetParameter)
 }
 
-void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPtr const& goal)
+void StereoCamera::onLocatePattern(ensenso::action::LocatePatternGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(LocatePattern, locatePatternServer)
 
-  ensenso_camera_msgs::LocatePatternResult result;
-  ensenso_camera_msgs::LocatePatternFeedback feedback;
+  ensenso::action::LocatePatternResult result;
+  ensenso::action::LocatePatternFeedback feedback;
 
   loadParameterSet(goal->parameter_set, projectorOff);
 
@@ -554,12 +547,12 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
   }
 
   std::vector<StereoCalibrationPattern> patterns;
-  ros::Time imageTimestamp;
+  ensenso::ros::Time imageTimestamp;
   for (int i = 0; i < numberOfShots; i++)
   {
     PREEMPT_ACTION_IF_REQUESTED
 
-    ros::Time timestamp = capture();
+    ensenso::ros::Time timestamp = capture();
     if (i == 0)
     {
       imageTimestamp = timestamp;
@@ -637,7 +630,7 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
     }
     else
     {
-      ROS_WARN("Cannot publish the pattern pose in tf, because there are multiple patterns!");
+      ENSENSO_WARN(nh, "Cannot publish the pattern pose in tf, because there are multiple patterns!");
     }
   }
 
@@ -648,11 +641,11 @@ void StereoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPt
   FINISH_NXLIB_ACTION(LocatePattern)
 }
 
-void StereoCamera::onProjectPattern(ensenso_camera_msgs::ProjectPatternGoalConstPtr const& goal)
+void StereoCamera::onProjectPattern(ensenso::action::ProjectPatternGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(ProjectPattern, projectPatternServer)
 
-  ensenso_camera_msgs::ProjectPatternResult result;
+  ensenso::action::ProjectPatternResult result;
 
   tf2::Transform targetFrameTransformation = fromMsg(goal->target_frame_transformation);
   if (isValid(targetFrameTransformation))
@@ -661,19 +654,22 @@ void StereoCamera::onProjectPattern(ensenso_camera_msgs::ProjectPatternGoalConst
   }
   else
   {
-    updateGlobalLink();
+    // Here we need to pass the current timestamp
+    updateGlobalLink(ensenso::ros::now(nh));
   }
 
   PREEMPT_ACTION_IF_REQUESTED
 
-  tf2::Transform patternPose = fromMsg(goal->pattern_pose);
+  tf2::Transform patternTransform = fromMsg(goal->pattern_pose);
 
   NxLibCommand projectPattern(cmdProjectPattern, params.serial);
   projectPattern.parameters()[itmCameras] = params.serial;
   projectPattern.parameters()[itmGridSpacing] = goal->grid_spacing * 1000;
   projectPattern.parameters()[itmGridSize][0] = goal->grid_size_x;
   projectPattern.parameters()[itmGridSize][1] = goal->grid_size_y;
-  writeTransformToNxLib(patternPose, projectPattern.parameters()[itmPatternPose]);
+
+  writeTransformToNxLib(patternTransform, projectPattern.parameters()[itmPatternPose]);
+
   projectPattern.execute();
 
   PREEMPT_ACTION_IF_REQUESTED
@@ -712,11 +708,11 @@ void StereoCamera::onProjectPattern(ensenso_camera_msgs::ProjectPatternGoalConst
   FINISH_NXLIB_ACTION(ProjectPattern)
 }
 
-void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalConstPtr const& goal)
+void StereoCamera::onCalibrateHandEye(ensenso::action::CalibrateHandEyeGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(CalibrateHandEye, calibrateHandEyeServer)
 
-  ensenso_camera_msgs::CalibrateHandEyeResult result;
+  ensenso::action::CalibrateHandEyeResult result;
   result.command = goal->command;
 
   if (goal->command == goal->RESET)
@@ -729,13 +725,13 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     if (params.robotFrame.empty() || params.wristFrame.empty())
     {
       result.error_message = "You need to specify a robot base and wrist frame to do a hand-eye calibration!";
-      ROS_ERROR("%s", result.error_message.c_str());
+      ENSENSO_ERROR(nh, "%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
 
     loadParameterSet(goal->parameter_set, projectorOff);
-    ros::Time imageTimestamp = capture();
+    ensenso::ros::Time imageTimestamp = capture();
 
     PREEMPT_ACTION_IF_REQUESTED
 
@@ -761,7 +757,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     if (patterns.size() > 1)
     {
       result.error_message = "Detected multiple calibration patterns during a hand-eye calibration!";
-      ROS_ERROR("%s", result.error_message.c_str());
+      ENSENSO_ERROR(nh, "%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
@@ -776,15 +772,15 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
 
     PREEMPT_ACTION_IF_REQUESTED
 
-    geometry_msgs::TransformStamped robotPose;
+    geometry_msgs::msg::TransformStamped robotPose;
     try
     {
-      robotPose = tfBuffer->lookupTransform(params.robotFrame, params.wristFrame, ros::Time(0));
+      robotPose = tfBuffer->lookupTransform(params.robotFrame, params.wristFrame, ensenso::ros::Time(0));
     }
     catch (tf2::TransformException& e)
     {
       result.error_message = std::string("Could not look up the robot pose due to the tf error: ") + e.what();
-      ROS_ERROR("%s", result.error_message.c_str());
+      ENSENSO_ERROR(nh, "%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
@@ -803,7 +799,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     if (handEyeCalibrationRobotTransforms.size() < 5)
     {
       result.error_message = "You need to collect at least 5 patterns before starting a hand-eye calibration!";
-      ROS_ERROR("%s", result.error_message.c_str());
+      ENSENSO_ERROR(nh, "%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
@@ -829,7 +825,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     numberOfPatterns = setPatternBuffer.parameters()[itmPatterns].count();
     setPatternBuffer.execute();
 
-    // Load the corresponding robot poses.
+    // Load the corresponding robot transforms.
     auto robotTransforms = handEyeCalibrationRobotTransforms;
     if (!goal->robot_poses.empty())
     {
@@ -844,7 +840,7 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
     if (robotTransforms.size() != numberOfPatterns)
     {
       result.error_message = "The number of pattern observations does not match the number of robot poses!";
-      ROS_ERROR("%s", result.error_message.c_str());
+      ENSENSO_ERROR(nh, "%s", result.error_message.c_str());
       calibrateHandEyeServer->setAborted(std::move(result));
       return;
     }
@@ -909,12 +905,12 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
       return node[itmReprojectionError].asDouble();
     };
 
-    ros::Rate waitingRate(5);
+    ensenso::ros::Rate waitingRate(5);
     while (!calibrateHandEye.finished())
     {
       if (calibrateHandEye.result()[itmProgress].exists())
       {
-        ensenso_camera_msgs::CalibrateHandEyeFeedback feedback;
+        ensenso::action::CalibrateHandEyeFeedback feedback;
         feedback.number_of_iterations = calibrateHandEye.result()[itmProgress][itmIterations].asInt();
         feedback.residual = getCalibrationResidual(calibrateHandEye.result()[itmProgress]);
         calibrateHandEyeServer->publishFeedback(feedback);
@@ -957,16 +953,17 @@ void StereoCamera::onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalC
   FINISH_NXLIB_ACTION(CalibrateHandEye)
 }
 
-void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceGoalConstPtr const& goal)
+void StereoCamera::onCalibrateWorkspace(ensenso::action::CalibrateWorkspaceGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(CalibrateWorkspace, calibrateWorkspaceServer)
 
   if (!params.fixed)
   {
-    ROS_WARN("You are performing a workspace calibration for a moving camera. Are you sure this is what you want?");
+    ENSENSO_WARN(nh,
+                 "You are performing a workspace calibration for a moving camera. Are you sure this is what you want?");
   }
 
-  ensenso_camera_msgs::CalibrateWorkspaceResult result;
+  ensenso::action::CalibrateWorkspaceResult result;
   result.successful = true;
 
   loadParameterSet(goal->parameter_set, projectorOff);
@@ -977,12 +974,12 @@ void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceG
     numberOfShots = 1;
   }
 
-  ros::Time imageTimestamp;
+  ensenso::ros::Time imageTimestamp;
   for (int i = 0; i < numberOfShots; i++)
   {
     PREEMPT_ACTION_IF_REQUESTED
 
-    ros::Time timestamp = capture();
+    ensenso::ros::Time timestamp = capture();
     if (i == 0)
       imageTimestamp = timestamp;
 
@@ -1029,11 +1026,11 @@ void StereoCamera::onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceG
   FINISH_NXLIB_ACTION(CalibrateWorkspace)
 }
 
-void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProjectionGoalConstPtr const& goal)
+void StereoCamera::onTelecentricProjection(ensenso::action::TelecentricProjectionGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(TelecentricProjection, telecentricProjectionServer)
 
-  ensenso_camera_msgs::TelecentricProjectionResult result;
+  ensenso::action::TelecentricProjectionResult result;
 
   bool useViewPose = isValid(goal->view_pose);
   bool frameGiven = !goal->frame.empty();
@@ -1041,7 +1038,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   if (!frameGiven)
   {
     result.error.message = "You have to define a valid frame, to which to projection will be published. Aborting";
-    ROS_ERROR("%s", result.error.message.c_str());
+    ENSENSO_ERROR(nh, "%s", result.error.message.c_str());
     telecentricProjectionServer->setAborted(std::move(result));
     return;
   }
@@ -1081,7 +1078,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   if (!resultPath.exists())
   {
     result.error.message = "Rendered Point Map does not exist in path: " + resultPath.path;
-    ROS_ERROR("%s", result.error.message.c_str());
+    ENSENSO_ERROR(nh, "%s", result.error.message.c_str());
     telecentricProjectionServer->setAborted(std::move(result));
     return;
   }
@@ -1092,10 +1089,6 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
     {
       auto pointCloud = retrieveRenderedPointCloud(renderPointMap.result(), goal->frame);
 
-      if (goal->publish_results)
-      {
-        pointCloudProjectedPublisher.publish(pointCloud);
-      }
       if (goal->include_results_in_response)
       {
         pcl::toROSMsg(*pointCloud, result.projected_point_cloud);
@@ -1104,6 +1097,10 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
       else
       {
         telecentricProjectionServer->setSucceeded();
+      }
+      if (goal->publish_results)
+      {
+        publishPointCloud(pointCloudProjectedPublisher, std::move(pointCloud));
       }
     }
 
@@ -1134,16 +1131,16 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
   FINISH_NXLIB_ACTION(TelecentricProjection)
 }
 
-void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudGoalConstPtr const& goal)
+void StereoCamera::onTexturedPointCloud(ensenso::action::TexturedPointCloudGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(TexturedPointCloud, texturedPointCloudServer)
 
-  ensenso_camera_msgs::TexturedPointCloudResult result;
+  ensenso::action::TexturedPointCloudResult result;
 
   if (goal->mono_serial.empty())
   {
     result.error.message = "In Order to use this action, you have to specify one mono serial";
-    ROS_ERROR("%s", result.error.message.c_str());
+    ENSENSO_ERROR(nh, "%s", result.error.message.c_str());
     texturedPointCloudServer->setAborted(std::move(result));
     return;
   }
@@ -1167,19 +1164,19 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
 
   if (goal->publish_results || goal->include_results_in_response)
   {
-    auto cloudColored = retrieveTexturedPointCloud(renderPointMap.result(), params.targetFrame);
-    if (goal->publish_results)
-    {
-      pointCloudColoredPublisher.publish(cloudColored);
-    }
+    auto pointCloud = retrieveTexturedPointCloud(renderPointMap.result(), params.targetFrame);
     if (goal->include_results_in_response)
     {
-      pcl::toROSMsg(*cloudColored, result.point_cloud);
+      pcl::toROSMsg(*pointCloud, result.point_cloud);
       texturedPointCloudServer->setSucceeded(std::move(result));
     }
     else
     {
       texturedPointCloudServer->setSucceeded();
+    }
+    if (goal->publish_results)
+    {
+      publishPointCloud(pointCloudColoredPublisher, std::move(pointCloud));
     }
   }
   else
@@ -1243,14 +1240,14 @@ void StereoCamera::loadParameterSet(std::string name, ProjectorState projector)
   }
 }
 
-ros::Time StereoCamera::timestampOfCapturedImage() const
+ensenso::ros::Time StereoCamera::timestampOfCapturedImage() const
 {
   // For file cameras this workaround is needed, because the timestamp of captures from file cameras will not change
   // over time. When looking up the current tf tree, this will result in errors, because the time of the original
   // timestamp is requested, which lies in the past (and most often longer than the tfBuffer will store the transform!).
   if (params.isFileCamera)
   {
-    return ros::Time::now();
+    return ensenso::ros::now(nh);
   }
   // For stereo cameras with only one sensor (S-Series) the image is stored in the raw node.
   else if (isSSeries())
@@ -1260,7 +1257,7 @@ ros::Time StereoCamera::timestampOfCapturedImage() const
   // For XR cameras the image node depends on the capture mode. In Raw mode it behaves like a normal stereo camera.
   else if (isXrSeries() && !hasRawImages())
   {
-    ROS_WARN_ONCE("XR: Using timestamp of first left rectified image in capture mode \"Rectified\".");
+    ENSENSO_WARN_ONCE("XR: Using timestamp of first left rectified image in capture mode \"Rectified\".");
     return timestampFromNxLibNode(cameraNode[itmImages][itmRectified][itmLeft]);
   }
   // For stereo cameras with left and right sensor the timestamp of the left sensor is taken as the reference.
@@ -1270,7 +1267,7 @@ ros::Time StereoCamera::timestampOfCapturedImage() const
   }
 }
 
-ros::Time StereoCamera::capture() const
+ensenso::ros::Time StereoCamera::capture() const
 {
   // Update virtual objects. Ignore failures with a simple warning.
   if (params.virtualObjectHandler)
@@ -1281,11 +1278,11 @@ ros::Time StereoCamera::capture() const
     }
     catch (const std::exception& e)
     {
-      ROS_WARN("Unable to update virtual objects. Error: %s", e.what());
+      ENSENSO_WARN(nh, "Unable to update virtual objects. Error: %s", e.what());
     }
   }
 
-  ROS_DEBUG("Capturing an image...");
+  ENSENSO_DEBUG(nh, "Capturing an image...");
 
   NxLibCommand capture(cmdCapture, params.serial);
   capture.parameters()[itmCameras] = params.serial;
@@ -1358,7 +1355,7 @@ std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuf
     {
       NxLibItem pointNode = pattern[itmLeft][i][itmPoints][j];
 
-      ensenso_camera_msgs::ImagePoint point;
+      ensenso::msg::ImagePoint point;
       point.x = pointNode[0].asDouble();
       point.y = pointNode[1].asDouble();
       result.at(i).leftPoints.push_back(point);
@@ -1367,7 +1364,7 @@ std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuf
     {
       NxLibItem pointNode = pattern[itmRight][i][itmPoints][j];
 
-      ensenso_camera_msgs::ImagePoint point;
+      ensenso::msg::ImagePoint point;
       point.x = pointNode[0].asDouble();
       point.y = pointNode[1].asDouble();
       result.at(i).rightPoints.push_back(point);
@@ -1377,8 +1374,9 @@ std::vector<StereoCalibrationPattern> StereoCamera::collectPattern(bool clearBuf
   return result;
 }
 
-geometry_msgs::PoseStamped StereoCamera::estimatePatternPose(ros::Time imageTimestamp, std::string const& targetFrame,
-                                                             bool latestPatternOnly) const
+geometry_msgs::msg::PoseStamped StereoCamera::estimatePatternPose(ensenso::ros::Time imageTimestamp,
+                                                                  std::string const& targetFrame,
+                                                                  bool latestPatternOnly) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
@@ -1398,13 +1396,13 @@ geometry_msgs::PoseStamped StereoCamera::estimatePatternPose(ros::Time imageTime
   estimatePatternPose.execute();
 
   auto patterns = estimatePatternPose.result()[itmPatterns];
-  ROS_ASSERT(patterns.count() == 1);
+  ENSENSO_ASSERT(patterns.count() == 1);
 
   return stampedPoseFromNxLib(patterns[0][itmPatternPose], targetFrame, imageTimestamp);
 }
 
-std::vector<geometry_msgs::PoseStamped> StereoCamera::estimatePatternPoses(ros::Time imageTimestamp,
-                                                                           std::string const& targetFrame) const
+std::vector<geometry_msgs::msg::PoseStamped> StereoCamera::estimatePatternPoses(ensenso::ros::Time imageTimestamp,
+                                                                                std::string const& targetFrame) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
@@ -1418,7 +1416,7 @@ std::vector<geometry_msgs::PoseStamped> StereoCamera::estimatePatternPoses(ros::
 
   auto patterns = estimatePatternPose.result()[itmPatterns];
 
-  std::vector<geometry_msgs::PoseStamped> result;
+  std::vector<geometry_msgs::msg::PoseStamped> result;
   result.reserve(patterns.count());
 
   for (int i = 0; i < patterns.count(); i++)
@@ -1429,7 +1427,8 @@ std::vector<geometry_msgs::PoseStamped> StereoCamera::estimatePatternPoses(ros::
   return result;
 }
 
-void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool rectified) const
+void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::msg::CameraInfoPtr const& info, bool right,
+                                           bool rectified) const
 {
   Camera::fillBasicCameraInfoFromNxLib(info);
 
@@ -1440,18 +1439,18 @@ void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& inf
   {
     // For the rectified images all transformations are the identity (because all of the distortions were already
     // removed), except for the stereo camera matrix.
-    info->D.resize(5, 0);
+    GET_D_MATRIX(info).resize(5, 0);
 
     for (int row = 0; row < 3; row++)
     {
       for (int column = 0; column < 3; column++)
       {
-        info->P[4 * row + column] = stereoCalibrationNode[itmCamera][column][row].asDouble();
+        GET_P_MATRIX(info)[4 * row + column] = stereoCalibrationNode[itmCamera][column][row].asDouble();
 
         if (row == column)
         {
-          info->K[3 * row + column] = 1;
-          info->R[3 * row + column] = 1;
+          GET_K_MATRIX(info)[3 * row + column] = 1;
+          GET_R_MATRIX(info)[3 * row + column] = 1;
         }
       }
     }
@@ -1464,9 +1463,9 @@ void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& inf
     {
       for (int column = 0; column < 3; column++)
       {
-        info->K[3 * row + column] = monoCalibrationNode[itmCamera][column][row].asDouble();
-        info->P[4 * row + column] = stereoCalibrationNode[itmCamera][column][row].asDouble();
-        info->R[3 * row + column] = stereoCalibrationNode[itmRotation][column][row].asDouble();
+        GET_K_MATRIX(info)[3 * row + column] = monoCalibrationNode[itmCamera][column][row].asDouble();
+        GET_P_MATRIX(info)[4 * row + column] = stereoCalibrationNode[itmCamera][column][row].asDouble();
+        GET_R_MATRIX(info)[3 * row + column] = stereoCalibrationNode[itmRotation][column][row].asDouble();
       }
     }
   }
@@ -1476,7 +1475,7 @@ void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& inf
     // Add the offset of the right camera relative to the left one to the projection matrix.
     double fx = stereoCalibrationNode[itmCamera][0][0].asDouble();
     double baseline = cameraNode[itmCalibration][itmStereo][itmBaseline].asDouble() / 1000.0;
-    info->P[3] = -fx * baseline;
+    GET_P_MATRIX(info)[3] = -fx * baseline;
   }
 
   int leftTopX = cameraNode[itmParameters][itmDisparityMap][itmAreaOfInterest][itmLeftTop][0].asInt();
@@ -1504,12 +1503,12 @@ void StereoCamera::updateCameraInfo()
   }
 }
 
-ensenso_camera_msgs::ParameterPtr StereoCamera::readParameter(std::string const& key) const
+ensenso::msg::ParameterPtr StereoCamera::readParameter(std::string const& key) const
 {
-  auto message = boost::make_shared<ensenso_camera_msgs::Parameter>();
+  auto message = ensenso::std::make_shared<ensenso::msg::Parameter>();
   message->key = key;
 
-  if (key == ensenso_camera_msgs::Parameter::REGION_OF_INTEREST)
+  if (key == ensenso::msg::Parameter::REGION_OF_INTEREST)
   {
     PointCloudROI const& roi = parameterSets.at(currentParameterSet).roi;
 
@@ -1520,7 +1519,7 @@ ensenso_camera_msgs::ParameterPtr StereoCamera::readParameter(std::string const&
     message->region_of_interest_value.upper.y = roi.maxY;
     message->region_of_interest_value.upper.z = roi.maxZ;
   }
-  else if (key == ensenso_camera_msgs::Parameter::FLEX_VIEW)
+  else if (key == ensenso::msg::Parameter::FLEX_VIEW)
   {
     NxLibItem flexViewNode = cameraNode[itmParameters][itmCapture][itmFlexView];
 
@@ -1545,9 +1544,9 @@ ensenso_camera_msgs::ParameterPtr StereoCamera::readParameter(std::string const&
   return message;
 }
 
-void StereoCamera::writeParameter(ensenso_camera_msgs::Parameter const& parameter)
+void StereoCamera::writeParameter(ensenso::msg::Parameter const& parameter)
 {
-  if (parameter.key == ensenso_camera_msgs::Parameter::REGION_OF_INTEREST)
+  if (parameter.key == ensenso::msg::Parameter::REGION_OF_INTEREST)
   {
     PointCloudROI& roi = parameterSets.at(currentParameterSet).roi;
 
@@ -1560,13 +1559,13 @@ void StereoCamera::writeParameter(ensenso_camera_msgs::Parameter const& paramete
 
     parameterSets.at(currentParameterSet).useROI = !roi.isEmpty();
   }
-  else if (parameter.key == ensenso_camera_msgs::Parameter::FLEX_VIEW)
+  else if (parameter.key == ensenso::msg::Parameter::FLEX_VIEW)
   {
     NxLibItem flexViewNode = cameraNode[itmParameters][itmCapture][itmFlexView];
 
     if (!flexViewNode.exists())
     {
-      ROS_WARN("Writing the parameter FlexView, but the camera does not support it!");
+      ENSENSO_WARN(nh, "Writing the parameter FlexView, but the camera does not support it!");
       return;
     }
 
@@ -1618,7 +1617,7 @@ bool StereoCamera::hasDisparityMap() const
   return (!isSSeries());
 }
 
-void StereoCamera::addDisparityMapOffset(sensor_msgs::CameraInfoPtr const& info) const
+void StereoCamera::addDisparityMapOffset(sensor_msgs::msg::CameraInfoPtr const& info) const
 {
   double disparityMapOffset = 0.0;
   if (cameraNode[itmCalibration][itmDynamic][itmStereo][itmDisparityMapOffset].exists())
@@ -1630,6 +1629,6 @@ void StereoCamera::addDisparityMapOffset(sensor_msgs::CameraInfoPtr const& info)
   info->width -= disparityMapOffset;
 
   // Adjust origin cx.
-  info->K[2] -= disparityMapOffset;
-  info->P[2] -= disparityMapOffset;
+  GET_K_MATRIX(info)[2] -= disparityMapOffset;
+  GET_P_MATRIX(info)[2] -= disparityMapOffset;
 }

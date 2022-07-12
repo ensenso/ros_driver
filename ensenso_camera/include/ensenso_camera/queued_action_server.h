@@ -1,6 +1,8 @@
 #pragma once
 
-#include "ensenso_camera/helper.h"
+#include "ensenso_camera/ros2_logging.h"
+#include "ensenso_camera/ros2_node_handle.h"
+#include "ensenso_camera/ros2_core.h"
 
 #include <actionlib/action_definition.h>
 #include <actionlib/server/action_server.h>
@@ -27,15 +29,16 @@ public:
   ACTION_DEFINITION(ActionSpec)
   using GoalHandle = typename actionlib::ActionServer<ActionSpec>::GoalHandle;
 
-  using ExecuteCallback = boost::function<void(GoalConstPtr const&)>;
+  using ExecuteCallback = ensenso::std::function<void(GoalConstPtr const&)>;
 
 public:
-  QueuedActionServer(ros::NodeHandle nh, std::string const& name, ExecuteCallback callback, bool autoStart = false)
-    : nh(nh), callback(callback)
+  QueuedActionServer(ensenso::ros::NodeHandle& nh, std::string const& name, ExecuteCallback callback,
+                     bool autoStart = false)
+    : nh(nh), name(name), callback(callback)
   {
-    actionServer = ::make_unique<actionlib::ActionServer<ActionSpec>>(nh, name, false);
-    actionServer->registerGoalCallback(boost::bind(&QueuedActionServer::onGoalReceived, this, _1));
-    actionServer->registerCancelCallback(boost::bind(&QueuedActionServer::onCancelReceived, this, _1));
+    actionServer = ensenso::std::make_unique<actionlib::ActionServer<ActionSpec>>(nh, name, false);
+    actionServer->registerGoalCallback(ensenso::std::bind(&QueuedActionServer::onGoalReceived, this, _1));
+    actionServer->registerCancelCallback(ensenso::std::bind(&QueuedActionServer::onCancelReceived, this, _1));
 
     if (autoStart)
     {
@@ -63,7 +66,7 @@ public:
   {
     std::lock_guard<std::mutex> lock(mutex);
 
-    ROS_DEBUG_NAMED("actionlib", "Setting the current goal as succeeded.");
+    ENSENSO_DEBUG_NAMED(getLoggerName(), "Setting the current goal as succeeded.");
     currentGoal.setSucceeded(result);
   }
 
@@ -71,7 +74,7 @@ public:
   {
     std::lock_guard<std::mutex> lock(mutex);
 
-    ROS_DEBUG_NAMED("actionlib", "Setting the current goal as aborted.");
+    ENSENSO_DEBUG_NAMED(getLoggerName(), "Setting the current goal as aborted.");
     currentGoal.setAborted(result);
   }
 
@@ -79,7 +82,7 @@ public:
   {
     std::lock_guard<std::mutex> lock(mutex);
 
-    ROS_DEBUG_NAMED("actionlib", "Setting the current goal as canceled.");
+    ENSENSO_DEBUG_NAMED(getLoggerName(), "Setting the current goal as canceled.");
     currentGoal.setCanceled(result);
   }
 
@@ -103,9 +106,14 @@ private:
     }
   }
 
+  std::string getLoggerName()
+  {
+    return ros::this_node::getName() + "/QueuedActionServer/" + name;
+  }
+
   void onGoalReceived(GoalHandle goal)
   {
-    ROS_DEBUG_NAMED("actionlib", "Received a new goal.");
+    ENSENSO_DEBUG_NAMED(getLoggerName(), "Received a new goal.");
     std::lock_guard<std::mutex> lock(mutex);
 
     goalQueue.push(goal);
@@ -114,7 +122,7 @@ private:
 
   void onCancelReceived(GoalHandle goal)
   {
-    ROS_DEBUG_NAMED("actionlib", "Received a cancel request.");
+    ENSENSO_DEBUG_NAMED(getLoggerName(), "Received a cancel request.");
     std::lock_guard<std::mutex> lock(mutex);
 
     if (goal == currentGoal)
@@ -156,7 +164,7 @@ private:
         }
         else
         {
-          ROS_DEBUG_NAMED("actionlib", "Accepting a new goal.");
+          ENSENSO_DEBUG_NAMED(getLoggerName(), "Accepting a new goal.");
           currentGoal.setAccepted();
 
           preemptRequested = false;
@@ -168,8 +176,8 @@ private:
           if (currentGoal.getGoalStatus().status == actionlib_msgs::GoalStatus::ACTIVE ||
               currentGoal.getGoalStatus().status == actionlib_msgs::GoalStatus::PREEMPTING)
           {
-            ROS_WARN_NAMED("actionlib",
-                           "Your action handler did not set the goal to a terminal state. Aborting it for now.");
+            ENSENSO_WARN_NAMED(getLoggerName(),
+                               "Your action handler did not set the goal to a terminal state. Aborting it for now.");
             setAborted(Result());
           }
         }
@@ -180,7 +188,8 @@ private:
   }
 
 private:
-  ros::NodeHandle nh;
+  ensenso::ros::NodeHandle nh;
+  std::string name;
   std::unique_ptr<actionlib::ActionServer<ActionSpec>> actionServer;
 
   std::thread loopThread;

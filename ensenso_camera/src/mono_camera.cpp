@@ -2,24 +2,20 @@
 
 #include "ensenso_camera/pose_utilities.h"
 
-#include <sensor_msgs/distortion_models.h>
-
-#define MAKE_SERVER(TYPE, TAG) ::make_unique<TYPE##MonoServer>(nh, #TAG, boost::bind(&MonoCamera::on##TYPE, this, _1))
-
-MonoCamera::MonoCamera(ros::NodeHandle nh, CameraParameters params) : Camera(nh, std::move(params))
+MonoCamera::MonoCamera(ensenso::ros::NodeHandle& nh, CameraParameters params) : Camera(nh, std::move(params))
 {
-  cameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
-  rectifiedCameraInfo = boost::make_shared<sensor_msgs::CameraInfo>();
+  cameraInfo = ensenso::std::make_shared<sensor_msgs::msg::CameraInfo>();
+  rectifiedCameraInfo = ensenso::std::make_shared<sensor_msgs::msg::CameraInfo>();
 
-  requestDataServer = MAKE_SERVER(RequestData, request_data);
-  locatePatternServer = MAKE_SERVER(LocatePattern, locate_pattern);
+  requestDataServer = MAKE_MONO_SERVER(MonoCamera, RequestData, "request_data");
+  locatePatternServer = MAKE_MONO_SERVER(MonoCamera, LocatePattern, "locate_pattern");
 }
 
 void MonoCamera::advertiseTopics()
 {
-  image_transport::ImageTransport imageTransport(nh);
-  rawImagePublisher = imageTransport.advertiseCamera("raw/image", 1);
-  rectifiedImagePublisher = imageTransport.advertiseCamera("rectified/image", 1);
+  IMAGE_TRANSPORT_INIT(nh);
+  rawImagePublisher = IMAGE_TRANSPORT_CREATE_CAMERA_PUBLISHER(nh, "raw/image");
+  rectifiedImagePublisher = IMAGE_TRANSPORT_CREATE_CAMERA_PUBLISHER(nh, "rectified/image");
 }
 
 void MonoCamera::init()
@@ -37,9 +33,9 @@ void MonoCamera::startServers() const
   locatePatternServer->start();
 }
 
-ros::Time MonoCamera::capture() const
+ensenso::ros::Time MonoCamera::capture() const
 {
-  ROS_DEBUG("Capturing an image...");
+  ENSENSO_DEBUG(nh, "Capturing an image...");
 
   NxLibCommand capture(cmdCapture, params.serial);
   capture.parameters()[itmCameras] = params.serial;
@@ -56,7 +52,7 @@ ros::Time MonoCamera::capture() const
     // This workaround is needed, because the timestamp of captures from file cameras will not change over time. When
     // looking up the current tf tree, this will result in errors, because the time of the original timestamp is
     // requested, which lies in the past (and most often longer than the tfBuffer will store the transform!)
-    return ros::Time::now();
+    return ensenso::ros::now(nh);
   }
 
   return timestampFromNxLibNode(imageNode);
@@ -68,7 +64,7 @@ void MonoCamera::updateCameraInfo()
   fillCameraInfoFromNxLib(rectifiedCameraInfo, true);
 }
 
-void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool rectified)
+void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::msg::CameraInfoPtr const& info, bool rectified)
 {
   Camera::fillBasicCameraInfoFromNxLib(info);
 
@@ -76,7 +72,7 @@ void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info,
 
   if (rectified)
   {
-    info->D.resize(5, 0.);
+    GET_D_MATRIX(info).resize(5, 0.);
   }
   else
   {
@@ -87,22 +83,22 @@ void MonoCamera::fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info,
   {
     for (int column = 0; column < 3; column++)
     {
-      info->K[3 * row + column] = calibrationNode[itmCamera][column][row].asDouble();
-      info->P[4 * row + column] = info->K[3 * row + column];
+      GET_K_MATRIX(info)[3 * row + column] = calibrationNode[itmCamera][column][row].asDouble();
+      GET_P_MATRIX(info)[4 * row + column] = GET_K_MATRIX(info)[3 * row + column];
       if (row == column)
       {
-        info->R[3 * row + column] = 1.0f;
+        GET_R_MATRIX(info)[3 * row + column] = 1.0f;
       }
     }
   }
 }
 
-void MonoCamera::onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr const& goal)
+void MonoCamera::onRequestData(ensenso::action::RequestDataMonoGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(RequestDataMono, requestDataServer)
 
-  ensenso_camera_msgs::RequestDataMonoResult result;
-  ensenso_camera_msgs::RequestDataMonoFeedback feedback;
+  ensenso::action::RequestDataMonoResult result;
+  ensenso::action::RequestDataMonoFeedback feedback;
 
   bool publishResults = goal->publish_results;
   if (!goal->publish_results && !goal->include_results_in_response)
@@ -173,11 +169,11 @@ void MonoCamera::onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr 
   FINISH_NXLIB_ACTION(RequestDataMono)
 }
 
-void MonoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal)
+void MonoCamera::onSetParameter(ensenso::action::SetParameterGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(SetParameter, setParameterServer)
 
-  ensenso_camera_msgs::SetParameterResult result;
+  ensenso::action::SetParameterResult result;
 
   loadParameterSet(goal->parameter_set);
 
@@ -218,12 +214,12 @@ void MonoCamera::onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr co
   FINISH_NXLIB_ACTION(SetParameter)
 }
 
-void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConstPtr const& goal)
+void MonoCamera::onLocatePattern(ensenso::action::LocatePatternMonoGoalConstPtr const& goal)
 {
   START_NXLIB_ACTION(LocatePatternMono, locatePatternServer)
 
-  ensenso_camera_msgs::LocatePatternMonoResult result;
-  ensenso_camera_msgs::LocatePatternMonoFeedback feedback;
+  ensenso::action::LocatePatternMonoResult result;
+  ensenso::action::LocatePatternMonoFeedback feedback;
 
   loadParameterSet(goal->parameter_set);
 
@@ -234,12 +230,12 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
   }
 
   std::vector<MonoCalibrationPattern> patterns;
-  ros::Time imageTimestamp;
+  ensenso::ros::Time imageTimestamp;
   for (int i = 0; i < numberOfShots; i++)
   {
     PREEMPT_ACTION_IF_REQUESTED
 
-    ros::Time timestamp = capture();
+    ensenso::ros::Time timestamp = capture();
     if (i == 0)
       imageTimestamp = timestamp;
 
@@ -310,12 +306,12 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
   {
     if (patterns.size() == 1)
     {
-      geometry_msgs::TransformStamped transform = transformFromPose(result.mono_pattern_poses[0], goal->tf_frame);
+      geometry_msgs::msg::TransformStamped transform = transformFromPose(result.mono_pattern_poses[0], goal->tf_frame);
       transformBroadcaster->sendTransform(transform);
     }
     else
     {
-      ROS_WARN("Cannot publish the pattern pose in tf, because there are multiple patterns!");
+      ENSENSO_WARN(nh, "Cannot publish the pattern pose in tf, because there are multiple patterns!");
     }
   }
 
@@ -367,7 +363,7 @@ std::vector<MonoCalibrationPattern> MonoCamera::collectPattern(bool clearBuffer)
     {
       NxLibItem pointNode = pattern[i][itmPoints][j];
 
-      ensenso_camera_msgs::ImagePoint point;
+      ensenso::msg::ImagePoint point;
       point.x = pointNode[0].asDouble();
       point.y = pointNode[1].asDouble();
       result[i].points.push_back(point);
@@ -377,8 +373,9 @@ std::vector<MonoCalibrationPattern> MonoCamera::collectPattern(bool clearBuffer)
   return result;
 }
 
-geometry_msgs::PoseStamped MonoCamera::estimatePatternPose(ros::Time imageTimestamp, std::string const& targetFrame,
-                                                           bool latestPatternOnly) const
+geometry_msgs::msg::PoseStamped MonoCamera::estimatePatternPose(ensenso::ros::Time imageTimestamp,
+                                                                std::string const& targetFrame,
+                                                                bool latestPatternOnly) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
@@ -399,13 +396,13 @@ geometry_msgs::PoseStamped MonoCamera::estimatePatternPose(ros::Time imageTimest
   estimatePatternPose.execute();
 
   auto patterns = estimatePatternPose.result()[itmPatterns];
-  ROS_ASSERT(patterns.count() == 1);
+  ENSENSO_ASSERT(patterns.count() == 1);
 
   return stampedPoseFromNxLib(patterns[0][itmPatternPose], targetFrame, imageTimestamp);
 }
 
-std::vector<geometry_msgs::PoseStamped> MonoCamera::estimatePatternPoses(ros::Time imageTimestamp,
-                                                                         std::string const& targetFrame) const
+std::vector<geometry_msgs::msg::PoseStamped> MonoCamera::estimatePatternPoses(ensenso::ros::Time imageTimestamp,
+                                                                              std::string const& targetFrame) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
@@ -418,13 +415,12 @@ std::vector<geometry_msgs::PoseStamped> MonoCamera::estimatePatternPoses(ros::Ti
 
   auto patterns = estimatePatternPose.result()[itmPatterns];
 
-  std::vector<geometry_msgs::PoseStamped> result;
+  std::vector<geometry_msgs::msg::PoseStamped> result;
   result.reserve(patterns.count());
 
   for (int i = 0; i < patterns.count(); i++)
   {
-    result.push_back(
-        stampedPoseFromNxLib(patterns[i][itmPatternPose], targetFrame, imageTimestamp));
+    result.push_back(stampedPoseFromNxLib(patterns[i][itmPatternPose], targetFrame, imageTimestamp));
   }
 
   return result;
