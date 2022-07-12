@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ensenso_camera_test</name>
+  <version>0.0.1</version>
+  <description>Tests for the ensenso_camera package.</description>
+
+  <license>BSD</license>
+
+  <url type="repository">https://github.com/ensenso/ros_driver.git</url>
+  <url type="bugtracker">https://github.com/ensenso/ros_driver/issues</url>
+
+  <author>Ensenso</author>
+  <maintainer email="daniel.saier@ensenso.com">Daniel Saier</maintainer>
+  <maintainer email="benjamin.thiemann@ensenso.com">Benjamin Thiemann</maintainer>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>ensenso_camera</depend>
+  <depend>ensenso_camera_msgs</depend>
+  <depend>launch_testing_ament_cmake</depend>
+  <depend>rclpy</depend>
+  <depend>tf_transformations</depend>
+  <depend>tf2_ros</depend>
+  <!-- https://answers.ros.org/question/383007/opencv-and-ros2/ see answer by jimmycanuck -->
+  <depend>python3-opencv</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
