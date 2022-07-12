@@ -1,106 +1,114 @@
 #!/usr/bin/env python
-import rospy
-import rostest
-
-import unittest
-
-import actionlib
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import TelecentricProjectionAction, TelecentricProjectionGoal, TelecentricProjectionResult
-from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
-
-from geometry_msgs.msg import Transform
-from cv_bridge import CvBridge
 import cv2 as cv
 import numpy as np
 import os
-import time
+import unittest
 
-import sensor_msgs.point_cloud2 as pc2
-from sensor_msgs.point_cloud2 import PointCloud2
+import ensenso_camera.ros2 as ros2py
 
-IMAGE_PATH = "../data/telecentric_projection/img"
+import ensenso_camera_test.ros2_testing as ros2py_testing
+
+from geometry_msgs.msg import Transform
+from cv_bridge import CvBridge
+from sensor_msgs.msg import PointCloud2
+
+pc2 = ros2py_testing.import_point_cloud2()
+
+TelecentricProjection = ros2py.import_action("ensenso_camera_msgs", "TelecentricProjection")
+RequestData = ros2py.import_action("ensenso_camera_msgs", "RequestData")
+
+IMAGE_PATH = ros2py_testing.get_test_data_path("telecentric_projection/")
 IMAGE_PATH_MONO8 = IMAGE_PATH + "mono8.jpg"
 IMAGE_PATH_BINARY = IMAGE_PATH + "binary.jpg"
-TIMEOUT = 20
+
 FRAME = "Workspace"
 
 
 class TestTelecentricProjection(unittest.TestCase):
     def setUp(self):
-        self.telecentric_projection_client = actionlib.SimpleActionClient(
-            "project_telecentric", TelecentricProjectionAction
+        self.node = ros2py.create_node("test_project_pattern")
+        self.telecentric_projection_client = ros2py.create_action_client(
+            self.node, "project_telecentric", TelecentricProjection
         )
-        self.request_data_client = actionlib.SimpleActionClient("request_data", RequestDataAction)
-        for client in [self.telecentric_projection_client, self.request_data_client]:
-            if not client.wait_for_server(rospy.Duration(TIMEOUT)):
-                self.fail(msg="Request_data action servers timed out!")
+        self.request_data_client = ros2py.create_action_client(self.node, "request_data", RequestData)
 
-        self.pc_subscriber = rospy.Subscriber("/projected_point_cloud", PointCloud2, self.callback)
+        clients = [self.telecentric_projection_client, self.request_data_client]
+        success = ros2py.wait_for_servers(self.node, clients, timeout_sec=ros2py_testing.TEST_TIMEOUT, exit=False)
+        self.assertTrue(success, msg="Timeout reached for servers.")
+
+        self.pc_subscriber = ros2py.create_subscription(self.node, PointCloud2, "/projected_point_cloud", self.callback)
         self.got_subscribed_cloud = False
 
         # Rotation, that is 90 degrees rotated to the original camera in the test
         self.trafo = Transform()
-        self.trafo.rotation.x = 0
+        self.trafo.rotation.x = 0.0
         self.trafo.rotation.y = -0.7071068
-        self.trafo.rotation.z = 0
+        self.trafo.rotation.z = 0.0
         self.trafo.rotation.w = 0.7071068
-        self.trafo.translation.x = 0
-        self.trafo.translation.y = 0
-        self.trafo.translation.z = 0
+        self.trafo.translation.x = 0.0
+        self.trafo.translation.y = 0.0
+        self.trafo.translation.z = 0.0
 
-        # Test the projected depth image
+        self.timeout = ros2py.Duration(ros2py_testing.TEST_TIMEOUT)
+
+        # Prepare the projected depth image
         self.request_point_cloud()
-        self.send_goal_depth_image()
-        self.generate_line_estimate()
+        self.retrieve_projected_depth_map()
+        self.generate_line_estimate()  # --> gets/needs projected_depth_map
 
-        # Test the point cloud
-        self.send_goal_point_cloud()
-        self.get_projected_point_cloud()
+        # Prepare the projected point cloud
+        self.retrieve_projected_point_cloud()
 
         # Test the subscribed cloud
         self.send_goal_with_publishing_point_cloud()
+
+        # Explicitly spin the node so that the subscription callback will be executed, because the test cases do not
+        # send any further actions, which would implicitly spin the node
+        ros2py.spin(self.node)
 
     def tearDown(self):
         if os.path.isfile(IMAGE_PATH_MONO8):
             os.remove(IMAGE_PATH_MONO8)
         if os.path.isfile(IMAGE_PATH_BINARY):
             os.remove(IMAGE_PATH_BINARY)
+        # Unittests with several test cases require the node to be shut down before the next test case is started
+        ros2py.shutdown(self.node)
 
     def request_point_cloud(self):
-        request_data_goal = RequestDataGoal()
+        request_data_goal = RequestData.Goal()
         request_data_goal.request_point_cloud = True
-        self.request_data_client.send_goal(request_data_goal)
-        self.request_data_client.wait_for_result()
 
-        result = self.request_data_client.get_result()
-        self.assertEqual(result.error.code, 0, msg="Requesting point cloud not successful")
+        response = ros2py.send_action_goal(self.node, self.request_data_client, request_data_goal)
+        result = response.get_result()
 
-    def send_goal_depth_image(self):
+        self.assertFalse(response.timeout(), msg="Requesting point cloud action timed out.")
+        self.assertTrue(response.successful(), msg="Requesting point cloud action not successful.")
+        self.assertEqual(result.error.code, 0, msg="Requesting point cloud not successful.")
+
+    def retrieve_projected_depth_map(self):
         # Setup the view pose to be 90 degrees rotated w.r.t the original camera
-        goal = TelecentricProjectionGoal()
+        goal = TelecentricProjection.Goal()
         goal.view_pose = self.trafo
         goal.frame = FRAME
         goal.request_depth_image = True
         goal.include_results_in_response = True
-        self.telecentric_projection_client.send_goal(goal)
 
-    def send_goal_point_cloud(self):
-        goal = TelecentricProjectionGoal()
-        goal.view_pose = self.trafo
-        goal.frame = FRAME
-        goal.include_results_in_response = True
-        self.telecentric_projection_client.send_goal(goal)
+        response = ros2py.send_action_goal(
+            self.node, self.telecentric_projection_client, goal, timeout_sec=self.timeout
+        )
+        result = response.get_result()
+
+        self.assertFalse(response.timeout(), msg="Requesting projected depth map timed out.")
+        self.assertTrue(response.successful(), msg="Requesting projected depth map action not successful.")
+        self.assertEqual(result.error.code, 0, msg="Requesting projected depth map not successful.")
+
+        self.projected_depth_map = result.projected_depth_map
 
     def generate_line_estimate(self):
-        self.wait_for_server_succeed()
-
-        result = self.telecentric_projection_client.get_result()
-        image = result.projected_depth_map
         bridge = CvBridge()
 
         # Message to cv image
-        cv_image = bridge.imgmsg_to_cv2(image, desired_encoding="passthrough")
+        cv_image = bridge.imgmsg_to_cv2(self.projected_depth_map, desired_encoding="passthrough")
 
         # Convert it to a mono image (expressed in millimeters) via numpy
         mono8 = np.uint8(cv_image * 1000.0)
@@ -124,27 +132,41 @@ class TestTelecentricProjection(unittest.TestCase):
 
         self.line_parameters = [vx, vy, cx, cy]
 
-    def get_projected_point_cloud(self):
-        self.wait_for_server_succeed()
-        result = self.telecentric_projection_client.get_result()
+    def retrieve_projected_point_cloud(self):
+        goal = TelecentricProjection.Goal()
+        goal.view_pose = self.trafo
+        goal.frame = FRAME
+        goal.include_results_in_response = True
+
+        response = ros2py.send_action_goal(
+            self.node, self.telecentric_projection_client, goal, timeout_sec=self.timeout
+        )
+        result = response.get_result()
+
+        self.assertFalse(response.timeout(), msg="Requesting projected point cloud timed out.")
+        self.assertTrue(response.successful(), msg="Requesting projected point cloud action not successful.")
+        self.assertEqual(result.error.code, 0, msg="Requesting projected point cloud not successful.")
+
         self.projected_pc = result.projected_point_cloud
 
-    def wait_for_server_succeed(self):
-        if not self.telecentric_projection_client.wait_for_result(rospy.Duration(TIMEOUT)):
-            self.fail(msg="Waiting for result times out.")
-        if self.telecentric_projection_client.get_state() != GoalStatus.SUCCEEDED:
-            self.fail(msg="Action did not succeed.")
-
-    def callback(self, data):
+    def callback(self, msg):
         self.got_subscribed_cloud = True
-        self.subscribed_cloud = data
+        self.subscribed_cloud = msg
 
     def send_goal_with_publishing_point_cloud(self):
-        goal = TelecentricProjectionGoal()
+        goal = TelecentricProjection.Goal()
         goal.view_pose = self.trafo
         goal.frame = FRAME
         goal.publish_results = True
-        self.telecentric_projection_client.send_goal(goal)
+
+        response = ros2py.send_action_goal(
+            self.node, self.telecentric_projection_client, goal, timeout_sec=self.timeout
+        )
+        result = response.get_result()
+
+        self.assertFalse(response.timeout(), msg="Requesting publishing of point cloud timed out.")
+        self.assertTrue(response.successful(), msg="Requesting publishing of point cloud action not successful.")
+        self.assertEqual(result.error.code, 0, msg="Requesting publishing of point cloud not successful.")
 
     def test_found_line_paramters(self):
         self.assertAlmostEqual(self.line_parameters[0], 1.0, delta=0.05)
@@ -156,17 +178,15 @@ class TestTelecentricProjection(unittest.TestCase):
 
     def test_subscribed_point_cloud(self):
         if not self.got_subscribed_cloud:
-            # Wait 4 seconds to receive a point cloud from the subscriber.
-            time.sleep(4)
-            if not self.got_subscribed_cloud:
-                self.fail("Recieved no published point cloud!")
+            ros2py.sleep(self.node, 4)
+            self.assertTrue(self.got_subscribed_cloud, msg="Recieved no published point cloud!")
         cloud_points = list(pc2.read_points(self.subscribed_cloud, skip_nans=True))
-        self.assertTrue(len(cloud_points) != 0, msg=" The recieved point cloud is empty.")
+        self.assertTrue(len(cloud_points) != 0, msg="The recieved point cloud is empty.")
+
+
+def main():
+    ros2py_testing.run_ros1_test("test_telecentric_projection", TestTelecentricProjection)
 
 
 if __name__ == "__main__":
-    try:
-        rospy.init_node("test_telecentric_projection")
-        rostest.rosrun("ensenso_camera_test", "test_telecentric_projection", TestTelecentricProjection)
-    except rospy.ROSInterruptException:
-        pass
+    main()

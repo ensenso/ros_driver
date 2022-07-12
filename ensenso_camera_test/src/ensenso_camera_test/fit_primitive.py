@@ -1,15 +1,15 @@
 #!/usr/bin/env python
-import rospy
-import rostest
-
 import unittest
 
-import actionlib
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import FitPrimitiveAction, FitPrimitiveGoal, Primitive
-from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
+import ensenso_camera.ros2 as ros2py
 
-from helper import Point
+from ensenso_camera_msgs.msg import Primitive
+
+from ensenso_camera_test.helper import Point
+import ensenso_camera_test.ros2_testing as ros2py_testing
+
+FitPrimitive = ros2py.import_action("ensenso_camera_msgs", "FitPrimitive")
+RequestData = ros2py.import_action("ensenso_camera_msgs", "RequestData")
 
 INLIER_THRESHOLD = 0.005
 
@@ -48,6 +48,13 @@ def get_plane_fit_primitive():
     return primitive
 
 
+def format_error(error, note=None):
+    msg = "Error {}: {}".format(error.code, error.message)
+    if note:
+        msg = "{} ({})".format(note.strip(), msg)
+    return msg
+
+
 # Exact values of objects in the test scene
 class SphereTestValues:
     def __init__(self):
@@ -69,29 +76,33 @@ class PlaneTestValues:
 
 class TestFitPrimitive(unittest.TestCase):
     def setUp(self):
-        self.fit_primitive_client = actionlib.SimpleActionClient("fit_primitive", FitPrimitiveAction)
-        self.fit_primitive_client.wait_for_server()
+        self.node = ros2py.create_node("test_fit_primitive")
+        self.fit_primitive_client = ros2py.create_action_client(self.node, "fit_primitive", FitPrimitive)
+        self.request_data_client = ros2py.create_action_client(self.node, "request_data", RequestData)
 
-        self.request_data_client = actionlib.SimpleActionClient("request_data", RequestDataAction)
-        self.request_data_client.wait_for_server()
+        clients = [self.fit_primitive_client, self.request_data_client]
+        success = ros2py.wait_for_servers(self.node, clients, timeout_sec=ros2py_testing.TEST_TIMEOUT, exit=False)
+        self.assertTrue(success, msg="Timeout reached for servers.")
 
-        request_data_goal = RequestDataGoal()
+        request_data_goal = RequestData.Goal()
         request_data_goal.request_point_cloud = True
-        self.request_data_client.send_goal(request_data_goal)
-        self.request_data_client.wait_for_result()
+        response = ros2py.send_action_goal(self.node, self.request_data_client, request_data_goal)
 
-        result = self.request_data_client.get_result()
+        result = response.get_result()
         self.assertEqual(result.error.code, 0)
 
+    def tearDown(self):
+        ros2py.shutdown(self.node)
+
     def test_sphere(self):
-        goal = FitPrimitiveGoal()
+        goal = FitPrimitive.Goal()
         primitive = get_sphere_fit_primitive()
         goal.primitives.append(primitive)
         result = self.get_result(goal)
         self.result_check(result)
 
     def test_plane(self):
-        goal = FitPrimitiveGoal()
+        goal = FitPrimitive.Goal()
         primitive = get_plane_fit_primitive()
         goal.primitives.append(primitive)
 
@@ -99,7 +110,7 @@ class TestFitPrimitive(unittest.TestCase):
         self.result_check(result)
 
     def test_cylinder(self):
-        goal = FitPrimitiveGoal()
+        goal = FitPrimitive.Goal()
         primitive = get_cylinder_fit_primitive()
         goal.primitives.append(primitive)
 
@@ -126,17 +137,16 @@ class TestFitPrimitive(unittest.TestCase):
                 self.assertAlmostEqual(primitive.center.z, plane.center.z, delta=delta)
 
     def get_result(self, goal):
-        self.fit_primitive_client.send_goal(goal)
-        self.fit_primitive_client.wait_for_result()
-        self.assertEqual(self.fit_primitive_client.get_state(), GoalStatus.SUCCEEDED)
-        result = self.fit_primitive_client.get_result()
-        self.assertEqual(result.error.code, 0)
-        return result
+        response = ros2py.send_action_goal(self.node, self.fit_primitive_client, goal)
+        self.assertTrue(response.successful(), msg="Fit primitive action has not been successful.")
+        error = response.get_result().error
+        self.assertEqual(error.code, 0, msg=format_error(error, note="Fit primitive action exited with error!"))
+        return response.get_result()
+
+
+def main():
+    ros2py_testing.run_ros1_test("test_fit_primitive", TestFitPrimitive)
 
 
 if __name__ == "__main__":
-    try:
-        rospy.init_node("test_fit_primitive")
-        rostest.rosrun("ensenso_camera_test", "test_fit_primitive", TestFitPrimitive)
-    except rospy.ROSInterruptException:
-        pass
+    main()
