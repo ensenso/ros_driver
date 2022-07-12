@@ -6,9 +6,7 @@
 
 namespace ensenso_conversion
 {
-double fixTimestamp(double const& timestamp);
-
-double nxLibToRosTimestamp(double const& timestamp);
+double nxLibToRosTimestamp(double const& timestamp, bool isFileCamera = false);
 
 double nxLibToPclTimestamp(double const& timestamp);
 

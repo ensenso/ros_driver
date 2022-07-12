@@ -187,8 +187,8 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr retrieveTexturedPointCloud(NxLibItem cons
                                      cmdResult[itmImages][itmRenderPointMap], targetFrame);
 }
 
-sensor_msgs::ImagePtr retrieveRenderedDepthMap(NxLibItem const& cmdResult, std::string const& frame)
+sensor_msgs::ImagePtr retrieveRenderedDepthMap(NxLibItem const& cmdResult, std::string const& frame, bool isFileCamera)
 {
   sensor_msgs::ImagePtr renderedImage;
-  return depthImageFromNxLibNode(cmdResult[itmImages][itmRenderPointMap], frame);
+  return depthImageFromNxLibNode(cmdResult[itmImages][itmRenderPointMap], frame, isFileCamera);
 }

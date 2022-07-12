@@ -131,7 +131,7 @@ void MonoCamera::onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr 
 
   if (goal->request_raw_images)
   {
-    auto rawImages = imagesFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame);
+    auto rawImages = imagesFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame, params.isFileCamera);
     cameraInfo->header.stamp = rawImages[0]->header.stamp;
     cameraInfo->header.frame_id = params.cameraFrame;
     if (goal->include_results_in_response)
@@ -156,7 +156,8 @@ void MonoCamera::onRequestData(ensenso_camera_msgs::RequestDataMonoGoalConstPtr 
     rectify.parameters()[itmCameras] = params.serial;
     rectify.execute();
 
-    auto rectifiedImages = imagesFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame);
+    auto rectifiedImages =
+        imagesFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame, params.isFileCamera);
     rectifiedCameraInfo->header.stamp = rectifiedImages[0]->header.stamp;
     rectifiedCameraInfo->header.frame_id = params.cameraFrame;
     if (goal->include_results_in_response)

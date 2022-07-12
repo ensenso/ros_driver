@@ -288,7 +288,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   if (requestRawImages)
   {
-    auto rawImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame);
+    auto rawImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRaw], params.cameraFrame, params.isFileCamera);
 
     leftCameraInfo->header.stamp = rawImages[0].first->header.stamp;
     if (hasRightCamera())
@@ -346,7 +346,8 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   if (requestRectifiedImages)
   {
-    auto rectifiedImages = imagePairsFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame);
+    auto rectifiedImages =
+        imagePairsFromNxLibNode(cameraNode[itmImages][itmRectified], params.cameraFrame, params.isFileCamera);
 
     leftRectifiedCameraInfo->header.stamp = rectifiedImages[0].first->header.stamp;
     if (hasRightCamera())
@@ -387,7 +388,8 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
 
   if (requestDisparityMap)
   {
-    auto disparityMap = imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame);
+    auto disparityMap =
+        imageFromNxLibNode(cameraNode[itmImages][itmDisparityMap], params.cameraFrame, params.isFileCamera);
 
     depthImageCameraInfo->header.stamp = disparityMap->header.stamp;
 
@@ -463,7 +465,8 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       computePointMap.execute();
     }
 
-    auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.cameraFrame);
+    auto depthImage =
+        depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.cameraFrame, params.isFileCamera);
 
     depthImageCameraInfo->header.stamp = depthImage->header.stamp;
 
@@ -1103,7 +1106,7 @@ void StereoCamera::onTelecentricProjection(ensenso_camera_msgs::TelecentricProje
 
     if (goal->request_depth_image)
     {
-      auto renderedImage = retrieveRenderedDepthMap(renderPointMap.result(), goal->frame);
+      auto renderedImage = retrieveRenderedDepthMap(renderPointMap.result(), goal->frame, params.isFileCamera);
 
       if (goal->publish_results)
       {

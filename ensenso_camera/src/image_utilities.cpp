@@ -87,16 +87,18 @@ std::string imageEncoding(bool isFloat, int channels, int bytesPerElement)
   return "";
 }
 
-ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame)
+ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame, bool isFileCamera)
 {
   auto image = boost::make_shared<Image>();
 
   bool isFloat;
   int width, height, channels, bytesPerElement;
-  double timestamp;
-  node.getBinaryDataInfo(&width, &height, &channels, &bytesPerElement, &isFloat, &timestamp);
+  double nxLibTimestamp;
+  node.getBinaryDataInfo(&width, &height, &channels, &bytesPerElement, &isFloat, &nxLibTimestamp);
 
-  image->header.stamp.fromSec(ensenso_conversion::nxLibToRosTimestamp(timestamp));
+  double timestamp = ensenso_conversion::nxLibToRosTimestamp(nxLibTimestamp, isFileCamera);
+
+  image->header.stamp = ros::Time(timestamp);
   image->header.frame_id = frame;
   image->width = width;
   image->height = height;
@@ -108,27 +110,27 @@ ImagePtr imageFromNxLibNode(NxLibItem const& node, std::string const& frame)
   return image;
 }
 
-ImagePtrPair imagePairFromNxLibNode(NxLibItem const& node, std::string const& frame)
+ImagePtrPair imagePairFromNxLibNode(NxLibItem const& node, std::string const& frame, bool isFileCamera)
 {
   ImagePtr leftImage;
   ImagePtr rightImage;
 
   if (node[itmLeft].exists() && node[itmRight].exists())
   {
-    leftImage = imageFromNxLibNode(node[itmLeft], frame);
-    rightImage = imageFromNxLibNode(node[itmRight], frame);
+    leftImage = imageFromNxLibNode(node[itmLeft], frame, isFileCamera);
+    rightImage = imageFromNxLibNode(node[itmRight], frame, isFileCamera);
   }
   else
   {
     // Create a dummy pair with an empty right image in case of an S-series camera.
-    leftImage = imageFromNxLibNode(node, frame);
+    leftImage = imageFromNxLibNode(node, frame, isFileCamera);
     rightImage = nullptr;
   }
 
   return { leftImage, rightImage };
 }
 
-std::vector<ImagePtrPair> imagePairsFromNxLibNode(NxLibItem const& node, std::string const& frame)
+std::vector<ImagePtrPair> imagePairsFromNxLibNode(NxLibItem const& node, std::string const& frame, bool isFileCamera)
 {
   std::vector<ImagePtrPair> result;
 
@@ -136,18 +138,18 @@ std::vector<ImagePtrPair> imagePairsFromNxLibNode(NxLibItem const& node, std::st
   {
     for (int i = 0; i < node.count(); i++)
     {
-      result.push_back(imagePairFromNxLibNode(node[i], frame));
+      result.push_back(imagePairFromNxLibNode(node[i], frame, isFileCamera));
     }
   }
   else
   {
-    result.push_back(imagePairFromNxLibNode(node, frame));
+    result.push_back(imagePairFromNxLibNode(node, frame, isFileCamera));
   }
 
   return result;
 }
 
-std::vector<ImagePtr> imagesFromNxLibNode(NxLibItem const& node, std::string const& frame)
+std::vector<ImagePtr> imagesFromNxLibNode(NxLibItem const& node, std::string const& frame, bool isFileCamera)
 {
   std::vector<ImagePtr> result;
 
@@ -155,12 +157,12 @@ std::vector<ImagePtr> imagesFromNxLibNode(NxLibItem const& node, std::string con
   {
     for (int i = 0; i < node.count(); i++)
     {
-      result.push_back(imageFromNxLibNode(node[i], frame));
+      result.push_back(imageFromNxLibNode(node[i], frame, isFileCamera));
     }
   }
   else
   {
-    result.push_back(imageFromNxLibNode(node, frame));
+    result.push_back(imageFromNxLibNode(node, frame, isFileCamera));
   }
 
   return result;
@@ -168,32 +170,34 @@ std::vector<ImagePtr> imagesFromNxLibNode(NxLibItem const& node, std::string con
 
 ros::Time timestampFromNxLibNode(NxLibItem const& node)
 {
-  double timestamp;
-  node.getBinaryDataInfo(0, 0, 0, 0, 0, &timestamp);
+  double nxLibTimestamp;
+  node.getBinaryDataInfo(0, 0, 0, 0, 0, &nxLibTimestamp);
 
-  return ros::Time(ensenso_conversion::nxLibToRosTimestamp(timestamp));
+  return ros::Time(ensenso_conversion::nxLibToRosTimestamp(nxLibTimestamp));
 }
 
-ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame)
+ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame, bool isFileCamera)
 {
-  double timestamp;
+  double nxLibTimestamp;
   cv::Mat pointMap;
-  node.getBinaryData(pointMap, &timestamp);
+  node.getBinaryData(pointMap, &nxLibTimestamp);
 
-  cv::Mat depthImage;
-  cv::extractChannel(pointMap, depthImage, 2);
+  cv::Mat depthMap;
+  cv::extractChannel(pointMap, depthMap, 2);
 
   // Convert units from millimeters to meters.
-  depthImage /= 1000.0;
+  depthMap /= 1000.0;
+
+  double timestamp = ensenso_conversion::nxLibToRosTimestamp(nxLibTimestamp, isFileCamera);
 
   // Convert cv mat to ros image.
-  cv_bridge::CvImage out_msg;
-  out_msg.header.stamp.fromSec(ensenso_conversion::nxLibToRosTimestamp(timestamp));
-  out_msg.header.frame_id = frame;
-  out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
-  out_msg.image = depthImage;
+  cv_bridge::CvImage depthImage;
+  depthImage.header.stamp = ros::Time(timestamp);
+  depthImage.header.frame_id = frame;
+  depthImage.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+  depthImage.image = depthMap;
 
-  return out_msg.toImageMsg();
+  return depthImage.toImageMsg();
 }
 
 void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs::CameraInfoPtr const& info)
