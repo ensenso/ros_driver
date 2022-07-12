@@ -1,69 +1,64 @@
-#!/usr/bin/env python
-import rospy
+#!/usr/bin/env python3
 import sys
 
-import actionlib
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
-from ensenso_camera_msgs.msg import RequestDataMonoAction, RequestDataMonoGoal
+import ensenso_camera.ros2 as ros2py
+
+RequestData = ros2py.import_action("ensenso_camera_msgs", "RequestData")
+RequestDataMono = ros2py.import_action("ensenso_camera_msgs", "RequestDataMono")
 
 
-def main():
-    loop_rate = rospy.get_param("~rate", 0.25)
-    stereo_namespace = rospy.get_param("~stereo_ns", "stereo")
-    mono_namespace = rospy.get_param("~mono_ns", "mono")
-    timeout = rospy.get_param("~timeout", 60)
+def _main(node_name):
+    node = ros2py.create_node(node_name, args=sys.argv)
+
+    loop_rate = ros2py.get2_param("~rate", 0.25)
+    stereo_namespace = ros2py.get_param(node, "stereo_ns", "stereo")
+    mono_namespace = ros2py.get_param(node, "mono_ns", "mono")
+    timeout = ros2py.get_param(node, "timeout", 60)
 
     # Use different namespaces in order to prevent duplicate topic names.
     request_stereo_data_client_name = stereo_namespace.rstrip("/") + "/request_data"
     request_mono_data_client_name = mono_namespace.rstrip("/") + "/request_data"
 
-    request_stereo_data_client = actionlib.SimpleActionClient(request_stereo_data_client_name, RequestDataAction)
-    request_mono_data_client = actionlib.SimpleActionClient(request_mono_data_client_name, RequestDataMonoAction)
+    request_stereo_data_client = ros2py.create_action_client(node, request_stereo_data_client_name, RequestData)
+    request_mono_data_client = ros2py.create_action_client(node, request_mono_data_client_name, RequestDataMono)
 
-    clients_names = [request_stereo_data_client_name, request_mono_data_client_name]
     clients = [request_stereo_data_client, request_mono_data_client]
-    for client_name, client in zip(clients_names, clients):
-        rospy.loginfo("Trying to connect to: {}".format(client_name))
-        if not client.wait_for_server(rospy.Duration(timeout)):
-            rospy.logerr("The camera node is not running!")
-            sys.exit()
-        rospy.loginfo("Connected")
+    ros2py.wait_for_servers(node, clients, timeout_sec=timeout)
 
-    request_stereo_data_goal = RequestDataGoal()
+    request_stereo_data_goal = RequestData.Goal()
     request_stereo_data_goal.request_depth_image = True
 
-    request_mono_data_goal = RequestDataMonoGoal()
+    request_mono_data_goal = RequestDataMono.Goal()
     request_mono_data_goal.request_rectified_images = True
 
-    rate = rospy.Rate(loop_rate)
-    while not rospy.is_shutdown():
-        request_stereo_data_client.send_goal(request_stereo_data_goal)
-        request_mono_data_client.send_goal(request_mono_data_goal)
+    goals = [request_stereo_data_goal, request_mono_data_goal]
 
-        request_stereo_data_client.wait_for_result()
-        request_mono_data_client.wait_for_result()
+    def main_loop():
+        stereo_response, mono_response = ros2py.send_action_goals(node, clients, goals)
 
-        if request_stereo_data_client.get_state() != GoalStatus.SUCCEEDED:
-            rospy.logwarn("Stereo action was not successful.")
-        else:
-            error = request_stereo_data_client.get_result().error
-            if error.code != 0:
-                rospy.logerr("Stereo error {}: {}".format(error.code, error.message))
+        if not stereo_response.successful():
+            node.get_logger().warn("Stereo action was not successful.")
 
-        if request_mono_data_client.get_state() != GoalStatus.SUCCEEDED:
-            rospy.logwarn("Mono action was not successful.")
-        else:
-            error = request_mono_data_client.get_result().error
-            if error.code != 0:
-                rospy.logerr("Mono error {}: {}".format(error.code, error.message))
+        if not mono_response.successful():
+            node.get_logger().warn("Mono action was not successful.")
 
-        rate.sleep()
+        stereo_result = stereo_response.get_result()
+        if stereo_result.error.code != 0:
+            node.get_logger().error(ros2py.format_error(stereo_result.error, "Error while acquiring stereo data!"))
+            return
+
+        mono_result = mono_response.get_result()
+        if mono_result.error.code != 0:
+            node.get_logger().error(ros2py.format_error(mono_result.error, "Error while acquiring mono data!"))
+            return
+        pass
+
+    ros2py.execute_at_rate(node, main_loop, loop_rate)
+
+
+def main():
+    ros2py.wrap_main_function(_main, "ensenso_camera_request_data_linked")
 
 
 if __name__ == "__main__":
-    try:
-        rospy.init_node("ensenso_camera_request_data_linked")
-        main()
-    except rospy.ROSInterruptException:
-        pass
+    main()
