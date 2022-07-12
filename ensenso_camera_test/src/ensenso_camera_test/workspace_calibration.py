@@ -1,46 +1,51 @@
 #!/usr/bin/env python
-import rospy
-import rostest
-
 import random
 import unittest
 
-import actionlib
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import CalibrateWorkspaceAction, CalibrateWorkspaceGoal
-from ensenso_camera_msgs.msg import LocatePatternAction, LocatePatternGoal
+import ensenso_camera.ros2 as ros2py
+
+import ensenso_camera_test.ros2_testing as ros2py_testing
 
 from geometry_msgs.msg import Pose, Point, Quaternion
+
+CalibrateWorkspace = ros2py.import_action("ensenso_camera_msgs", "CalibrateWorkspace")
+LocatePattern = ros2py.import_action("ensenso_camera_msgs", "LocatePattern")
 
 tolerance = 0.001
 
 
 class TestWorkspaceCalibration(unittest.TestCase):
     def setUp(self):
-        self.calibration_client = actionlib.SimpleActionClient("calibrate_workspace", CalibrateWorkspaceAction)
-        self.calibration_client.wait_for_server()
-        self.locate_pattern_client = actionlib.SimpleActionClient("locate_pattern", LocatePatternAction)
-        self.locate_pattern_client.wait_for_server()
+        self.node = ros2py.create_node("test_workspace_calibration")
+        self.calibration_client = ros2py.create_action_client(self.node, "calibrate_workspace", CalibrateWorkspace)
+        self.locate_pattern_client = ros2py.create_action_client(self.node, "locate_pattern", LocatePattern)
+        ros2py.wait_for_server(self.node, self.locate_pattern_client)
 
     def test_workspace_calibration(self):
-        for i in range(5):
+        for _ in range(5):
             x = random.randint(-500, 500)
             y = random.randint(-500, 500)
             z = random.randint(-500, 500)
-            pose = Pose(Point(x, y, z), Quaternion(0, 0, 0, 1))
+
+            p = Point(x=float(x), y=float(y), z=float(z))
+
+            q = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
+            pose = Pose(position=p, orientation=q)
 
             # Calibrate for the random pose.
-            self.calibration_client.send_goal(CalibrateWorkspaceGoal(defined_pattern_pose=pose))
-            self.calibration_client.wait_for_result()
-            self.assertEqual(self.calibration_client.get_state(), GoalStatus.SUCCEEDED)
-            self.assertEqual(self.calibration_client.get_result().error.code, 0)
-            self.assertTrue(self.calibration_client.get_result().successful)
+            goal = CalibrateWorkspace.Goal(defined_pattern_pose=pose)
+            response = ros2py.send_action_goal(self.node, self.calibration_client, goal)
+            result = response.get_result()
+
+            self.assertTrue(response.successful())
+            self.assertEqual(result.error.code, 0)
+            self.assertTrue(result.successful)
 
             # Locate the pattern. It should now be at the random pose.
-            self.locate_pattern_client.send_goal(LocatePatternGoal())
-            self.locate_pattern_client.wait_for_result()
-            self.assertEqual(self.locate_pattern_client.get_state(), GoalStatus.SUCCEEDED)
-            result = self.locate_pattern_client.get_result()
+            response = ros2py.send_action_goal(self.node, self.locate_pattern_client, LocatePattern.Goal())
+            result = response.get_result()
+
+            self.assertTrue(response.successful())
             self.assertEqual(result.error.code, 0)
 
             self.assertTrue(result.found_pattern)
@@ -52,9 +57,9 @@ class TestWorkspaceCalibration(unittest.TestCase):
             self.assertTrue(abs(pose.position.z - z) < tolerance)
 
 
+def main():
+    ros2py_testing.run_ros1_test("test_workspace_calibration", TestWorkspaceCalibration)
+
+
 if __name__ == "__main__":
-    try:
-        rospy.init_node("test_workspace_calibration")
-        rostest.rosrun("ensenso_camera_test", "test_workspace_calibration", TestWorkspaceCalibration)
-    except rospy.ROSInterruptException:
-        pass
+    main()

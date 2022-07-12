@@ -1,22 +1,18 @@
 #!/usr/bin/env python
-import rospy
-import rostest
-
 import unittest
-
-import actionlib
-
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import TexturedPointCloudAction, TexturedPointCloudGoal
-from ensenso_camera_msgs.msg import RequestDataMonoAction, RequestDataMonoGoal
-from ensenso_camera_msgs.msg import RequestDataAction, RequestDataGoal
 
 import ctypes
 import struct
 
-import sensor_msgs.point_cloud2 as pc2
+import ensenso_camera.ros2 as ros2py
 
-WAIT_TIMEOUT = 20
+import ensenso_camera_test.ros2_testing as ros2py_testing
+
+pc2 = ros2py_testing.import_point_cloud2()
+
+TexturedPointCloud = ros2py.import_action("ensenso_camera_msgs", "TexturedPointCloud")
+RequestDataMono = ros2py.import_action("ensenso_camera_msgs", "RequestDataMono")
+RequestData = ros2py.import_action("ensenso_camera_msgs", "RequestData")
 
 STEREO_NAMESPACE = "stereo"
 MONO_NAMESPACE = "mono"
@@ -25,14 +21,21 @@ MONO_SERIAL = "color_mono"
 
 class TestColorizedPointCloud(unittest.TestCase):
     def setUp(self):
-        self.request_stereo = actionlib.SimpleActionClient(STEREO_NAMESPACE + "/request_data", RequestDataAction)
-        self.request_mono = actionlib.SimpleActionClient(MONO_NAMESPACE + "/request_data", RequestDataMonoAction)
-        self.colorize_point_cloud = actionlib.SimpleActionClient(
-            STEREO_NAMESPACE + "/texture_point_cloud", TexturedPointCloudAction
+        self.node = ros2py.create_node("test_colorized_point_cloud")
+        self.request_stereo_client = ros2py.create_action_client(
+            self.node, STEREO_NAMESPACE + "/request_data", RequestData
         )
-        for client in [self.request_mono, self.request_stereo, self.colorize_point_cloud]:
-            if not client.wait_for_server(rospy.Duration(WAIT_TIMEOUT)):
-                self.fail(msg="Timeout reached for servers.")
+        self.request_mono_client = ros2py.create_action_client(
+            self.node, MONO_NAMESPACE + "/request_data", RequestDataMono
+        )
+        self.colorize_point_cloud_client = ros2py.create_action_client(
+            self.node, STEREO_NAMESPACE + "/texture_point_cloud", TexturedPointCloud
+        )
+
+        clients = [self.request_stereo_client, self.request_mono_client, self.colorize_point_cloud_client]
+        success = ros2py.wait_for_servers(self.node, clients, timeout_sec=ros2py_testing.TEST_TIMEOUT, exit=False)
+        self.assertTrue(success, msg="Timeout reached for servers.")
+        self.colored_point_cloud = None
 
     def test_colorize_point_cloud(self):
         self.send_data_goals()
@@ -41,36 +44,43 @@ class TestColorizedPointCloud(unittest.TestCase):
         self.check_color()
 
     def send_data_goals(self):
-        goal_mono = RequestDataMonoGoal()
+        goal_stereo = RequestData.Goal()
+        goal_stereo.request_point_cloud = True
+        goal_mono = RequestDataMono.Goal()
         goal_mono.request_rectified_images = True
-        goal = RequestDataGoal()
-        goal.request_point_cloud = True
-        self.request_mono.send_goal(goal_mono)
-        self.request_stereo.send_goal(goal)
 
-        for client in [self.request_mono, self.request_stereo]:
-            if not client.wait_for_result(rospy.Duration(WAIT_TIMEOUT)):
-                self.fail(msg="Timeout reached for results.")
-            self.assertTrue(client.get_state() == GoalStatus.SUCCEEDED, msg="Request action has not been successful.")
+        goals = [goal_stereo, goal_mono]
+        clients = [self.request_stereo_client, self.request_mono_client]
+        stereo_response, mono_response = ros2py.send_action_goals(self.node, clients, goals)
+
+        self.assertFalse(stereo_response.timeout(), msg="Timeout reached for stereo results.")
+        self.assertFalse(mono_response.timeout(), msg="Timeout reached for mono results.")
+
+        self.assertTrue(stereo_response.successful(), msg="Request stereo data action has not been successful.")
+        self.assertTrue(mono_response.successful(), msg="Request mono data action has not been successful.")
 
     def aquire_data(self):
-        goal_texture = TexturedPointCloudGoal()
+        goal_texture = TexturedPointCloud.Goal()
         goal_texture.use_opengl = False
         goal_texture.include_results_in_response = True
         goal_texture.mono_serial = MONO_SERIAL
         goal_texture.far_plane = 4000.0
         goal_texture.near_plane = 100.0
-        self.colorize_point_cloud.send_goal(goal_texture)
-        if not self.colorize_point_cloud.wait_for_result(rospy.Duration(WAIT_TIMEOUT)):
-            self.fail(msg="Timeout reached for results.")
+
+        response = ros2py.send_action_goal(self.node, self.colorize_point_cloud_client, goal_texture)
+
+        self.assertFalse(response.timeout(), msg="Timeout reached for results.")
+        self.assertTrue(response.successful(), msg="Request textured point cloud action has not been successful.")
+
+        self.colored_point_cloud = response.get_result()
 
     def recieved_point_cloud(self):
-        result = self.colorize_point_cloud.get_result()
+        result = self.colored_point_cloud
         self.assertEqual(result.error.message, "", msg="Got an error with the result")
         self.cloud_points = list(pc2.read_points(result.point_cloud, skip_nans=True))
         self.assertTrue(
             len(self.cloud_points) != 0,
-            msg=" The recieved point cloud is empty. Recieved {} points".format(len(self.cloud_points)),
+            msg="The recieved point cloud is empty. Recieved {} points".format(len(self.cloud_points)),
         )
 
     def check_color(self):
@@ -93,9 +103,9 @@ class TestColorizedPointCloud(unittest.TestCase):
             self.assertTrue(b != 0.0, msg="b-value cannot be zero")
 
 
+def main():
+    ros2py_testing.run_ros1_test("test_colorized_point_cloud", TestColorizedPointCloud)
+
+
 if __name__ == "__main__":
-    try:
-        rospy.init_node("test_colorized_point_cloud")
-        rostest.rosrun("ensenso_camera_test", "test_colorized_point_cloud", TestColorizedPointCloud)
-    except rospy.ROSInterruptException:
-        pass
+    main()

@@ -1,20 +1,16 @@
 #!/usr/bin/env python
-import rospy
-import rostest
-
 import glob
 import os
 import unittest
 
-import actionlib
-import tf
+import ensenso_camera.ros2 as ros2py
 
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import CalibrateHandEyeAction, CalibrateHandEyeGoal
+from ensenso_camera_test.helper import Pose
+import ensenso_camera_test.ros2_testing as ros2py_testing
 
-from helper import Pose
+CalibrateHandEye = ros2py.import_action("ensenso_camera_msgs", "CalibrateHandEye")
 
-DATA_SET_DIRECTORY = "../data/hand_eye_calibration/"
+DATA_SET_DIRECTORY = ros2py_testing.get_test_data_path("hand_eye_calibration/")
 
 ROBOT_BASE_FRAME = "robot_base"
 ROBOT_WRIST_FRAME = "robot_wrist"
@@ -25,31 +21,34 @@ FRAMES_WITHOUT_PATTERNS = [2, 3]
 
 class TestHandEyeCalibration(unittest.TestCase):
     def setUp(self):
-        self.tf_broadcaster = tf.TransformBroadcaster()
+        self.node = ros2py.create_node("test_hand_eye_calibration")
+        self.tf_broadcaster = ros2py_testing.create_tf_broadcaster(self.node)
+        self.calibration_client = ros2py.create_action_client(self.node, "calibrate_hand_eye", CalibrateHandEye)
+        success = ros2py.wait_for_server(
+            self.node, self.calibration_client, timeout_sec=ros2py_testing.TEST_TIMEOUT, exit=False
+        )
+        self.assertTrue(success, msg="Timeout reached for servers.")
 
-        self.calibration_client = actionlib.SimpleActionClient("calibrate_hand_eye", CalibrateHandEyeAction)
-        self.calibration_client.wait_for_server()
+    def assert_goal_response(self, response, goal):
+        result = response.get_result()
+        self.assertTrue(response.successful())
+        self.assertEqual(result.error.code, 0)
+        self.assertEqual(result.command, goal.command)
 
-    def assert_goal_successful(self):
-        self.assertEqual(self.calibration_client.get_state(), GoalStatus.SUCCEEDED)
-        self.assertEqual(self.calibration_client.get_result().error.code, 0)
-
-    def send_calibration_goal(self, goal, feedback_cb=None, wait=True):
-        self.calibration_client.send_goal(goal, feedback_cb=feedback_cb)
-
-        if wait:
-            self.calibration_client.wait_for_result()
-            self.assert_goal_successful()
-            self.assertEqual(self.calibration_client.get_result().command, goal.command)
+    def send_calibration_goal(self, goal, feedback_callback=None):
+        response = ros2py.send_action_goal(self.node, self.calibration_client, goal, feedback_callback)
+        self.assert_goal_response(response, goal)
+        return response
 
     def _broadcast_tf(self, pose, child_frame, parent_frame):
-        self.tf_broadcaster.sendTransform(pose.position, pose.orientation, rospy.Time.now(), child_frame, parent_frame)
+        timestamp = self.node.get_clock().now()
+        ros2py_testing.send_tf_transform(self.tf_broadcaster, pose, timestamp, child_frame, parent_frame)
 
     def test_hand_eye_calibration(self):
-        self.send_calibration_goal(CalibrateHandEyeGoal(command=CalibrateHandEyeGoal.RESET))
+        response = self.send_calibration_goal(CalibrateHandEye.Goal(command=CalibrateHandEye.Goal.RESET))
 
-        result = self.calibration_client.get_result()
-        self.assertEqual(result.command, CalibrateHandEyeGoal.RESET)
+        result = response.get_result()
+        self.assertEqual(result.command, CalibrateHandEye.Goal.RESET)
         self.assertEqual(result.error_message, "")
         self.assertEqual(result.error.code, 0)
 
@@ -59,10 +58,10 @@ class TestHandEyeCalibration(unittest.TestCase):
             current_robot_pose = Pose.from_json(link_file)
 
             self._broadcast_tf(current_robot_pose, ROBOT_WRIST_FRAME, ROBOT_BASE_FRAME)
-            self.send_calibration_goal(CalibrateHandEyeGoal(command=CalibrateHandEyeGoal.CAPTURE_PATTERN))
+            response = self.send_calibration_goal(CalibrateHandEye.Goal(command=CalibrateHandEye.Goal.CAPTURE_PATTERN))
 
-            result = self.calibration_client.get_result()
-            self.assertEqual(result.command, CalibrateHandEyeGoal.CAPTURE_PATTERN)
+            result = response.get_result()
+            self.assertEqual(result.command, CalibrateHandEye.Goal.CAPTURE_PATTERN)
             self.assertEqual(result.error_message, "")
             self.assertEqual(result.error.code, 0)
 
@@ -84,19 +83,19 @@ class TestHandEyeCalibration(unittest.TestCase):
 
         self.last_feedback = None
 
+        @ros2py_testing.feedback_callback
         def on_feedback(feedback):
             self.last_feedback = feedback
 
-        self.send_calibration_goal(
-            CalibrateHandEyeGoal(command=CalibrateHandEyeGoal.START_CALIBRATION), feedback_cb=on_feedback
-        )
+        goal = CalibrateHandEye.Goal(command=CalibrateHandEye.Goal.START_CALIBRATION)
+        response = self.send_calibration_goal(goal, feedback_callback=on_feedback)
 
         self.assertIsNotNone(self.last_feedback)
         self.assertNotEqual(self.last_feedback.number_of_iterations, 0)
         self.assertNotEqual(self.last_feedback.residual, 0)
 
-        result = self.calibration_client.get_result()
-        self.assertEqual(result.command, CalibrateHandEyeGoal.START_CALIBRATION)
+        result = response.get_result()
+        self.assertEqual(result.command, CalibrateHandEye.Goal.START_CALIBRATION)
         self.assertEqual(result.error_message, "")
         self.assertEqual(result.error.code, 0)
 
@@ -110,9 +109,9 @@ class TestHandEyeCalibration(unittest.TestCase):
         self.assertTrue(final_pattern_pose.equals(Pose.from_message(result.pattern_pose)))
 
 
+def main():
+    ros2py_testing.run_ros1_test("test_hand_eye_calibration", TestHandEyeCalibration)
+
+
 if __name__ == "__main__":
-    try:
-        rospy.init_node("test_hand_eye_calibration")
-        rostest.rosrun("ensenso_camera_test", "test_hand_eye_calibration", TestHandEyeCalibration)
-    except rospy.ROSInterruptException:
-        pass
+    main()
