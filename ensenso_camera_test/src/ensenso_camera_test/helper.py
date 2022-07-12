@@ -1,7 +1,15 @@
 import json
 import math
 
-import tf
+from ensenso_camera_test.ros2_testing import import_tf_transformation_function
+
+quaternion_about_axis = import_tf_transformation_function("quaternion_about_axis")
+translation_matrix = import_tf_transformation_function("translation_matrix")
+quaternion_matrix = import_tf_transformation_function("quaternion_matrix")
+concatenate_matrices = import_tf_transformation_function("concatenate_matrices")
+inverse_matrix = import_tf_transformation_function("inverse_matrix")
+translation_from_matrix = import_tf_transformation_function("translation_from_matrix")
+quaternion_from_matrix = import_tf_transformation_function("quaternion_from_matrix")
 
 
 class Pose:
@@ -22,7 +30,7 @@ class Pose:
             transform["Translation"][2] / 1000,
         ]
         axis = (transform["Rotation"]["Axis"][0], transform["Rotation"]["Axis"][1], transform["Rotation"]["Axis"][2])
-        orientation = tf.transformations.quaternion_about_axis(transform["Rotation"]["Angle"], axis)
+        orientation = quaternion_about_axis(transform["Rotation"]["Angle"], axis)
 
         return cls(position, orientation)
 
@@ -37,13 +45,13 @@ class Pose:
         """
         Get the inverse of the pose.
         """
-        translation = tf.transformations.translation_matrix(self.position)
-        rotation = tf.transformations.quaternion_matrix(self.orientation)
-        transform = tf.transformations.concatenate_matrices(translation, rotation)
+        translation = translation_matrix(self.position)
+        rotation = quaternion_matrix(self.orientation)
+        transform = concatenate_matrices(translation, rotation)
 
-        inverse_transform = tf.transformations.inverse_matrix(transform)
-        translation = tf.transformations.translation_from_matrix(inverse_transform)
-        rotation = tf.transformations.quaternion_from_matrix(inverse_transform)
+        inverse_transform = inverse_matrix(transform)
+        translation = translation_from_matrix(inverse_transform)
+        rotation = quaternion_from_matrix(inverse_transform)
 
         return Pose(translation, rotation)
 
@@ -104,13 +112,13 @@ class RegionOfInterest:
         return cls(lower, upper)
 
     def write_to_message(self, message):
-        message.lower.x = self.lower[0]
-        message.lower.y = self.lower[1]
-        message.lower.z = self.lower[2]
+        message.lower.x = float(self.lower[0])
+        message.lower.y = float(self.lower[1])
+        message.lower.z = float(self.lower[2])
 
-        message.upper.x = self.upper[0]
-        message.upper.y = self.upper[1]
-        message.upper.z = self.upper[2]
+        message.upper.x = float(self.upper[0])
+        message.upper.y = float(self.upper[1])
+        message.upper.z = float(self.upper[2])
 
     def is_empty(self):
         for lower, upper in zip(self.lower, self.upper):

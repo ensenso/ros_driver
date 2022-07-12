@@ -1,46 +1,50 @@
 #!/usr/bin/env python
-import rospy
-import rostest
-
 import unittest
 
-import actionlib
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import GetParameterAction, GetParameterGoal
-from ensenso_camera_msgs.msg import SetParameterAction, SetParameterGoal
+import ensenso_camera.ros2 as ros2py
 
 from ensenso_camera_msgs.msg import Parameter
 
-from helper import RegionOfInterest
+from ensenso_camera_test.helper import RegionOfInterest
+import ensenso_camera_test.ros2_testing as ros2py_testing
+
+
+GetParameter = ros2py.import_action("ensenso_camera_msgs", "GetParameter")
+SetParameter = ros2py.import_action("ensenso_camera_msgs", "SetParameter")
 
 
 class TestParameter(unittest.TestCase):
     def setUp(self):
-        self.get_parameter_client = actionlib.SimpleActionClient("get_parameter", GetParameterAction)
-        self.get_parameter_client.wait_for_server()
-        self.set_parameter_client = actionlib.SimpleActionClient("set_parameter", SetParameterAction)
-        self.set_parameter_client.wait_for_server()
+        self.node = ros2py.create_node("test_parameter")
+        self.get_parameter_client = ros2py.create_action_client(self.node, "get_parameter", GetParameter)
+        self.set_parameter_client = ros2py.create_action_client(self.node, "set_parameter", SetParameter)
+
+        clients = [self.get_parameter_client, self.set_parameter_client]
+        ros2py.wait_for_servers(self.node, clients)
 
     def get_parameter(self, keys, parameter_set=""):
-        self.get_parameter_client.send_goal(GetParameterGoal(parameter_set=parameter_set, keys=keys))
-        self.get_parameter_client.wait_for_result()
+        goal = GetParameter.Goal(parameter_set=parameter_set, keys=keys)
+        response = ros2py.send_action_goal(self.node, self.get_parameter_client, goal)
+        result = response.get_result()
 
-        self.assertEqual(self.get_parameter_client.get_state(), GoalStatus.SUCCEEDED)
-        self.assertEqual(self.get_parameter_client.get_result().error.code, 0)
+        self.assertTrue(response.successful())
+        self.assertEqual(result.error.code, 0)
 
-        result = self.get_parameter_client.get_result()
-        self.assertTrue(abs(result.stamp.to_sec() - rospy.Time.now().to_sec()) < 1)
+        self.assertTrue(
+            abs(ros2py_testing.to_sec(result.stamp) - ros2py_testing.to_sec(self.node.get_clock().now())) < 1
+        )
 
         return result.results
 
     def set_parameter(self, parameters, parameter_set=""):
-        self.set_parameter_client.send_goal(SetParameterGoal(parameter_set=parameter_set, parameters=parameters))
-        self.set_parameter_client.wait_for_result()
+        goal = SetParameter.Goal(parameter_set=parameter_set, parameters=parameters)
+        response = ros2py.send_action_goal(self.node, self.set_parameter_client, goal)
+        result = response.get_result()
 
-        self.assertEqual(self.set_parameter_client.get_state(), GoalStatus.SUCCEEDED)
-        self.assertEqual(self.set_parameter_client.get_result().error.code, 0)
+        self.assertTrue(response.successful())
+        self.assertEqual(result.error.code, 0)
 
-        return self.set_parameter_client.get_result().results
+        return result.results
 
     def test_parameter(self):
         # We only test the trigger mode, because the other parameters are not
@@ -94,9 +98,9 @@ class TestParameter(unittest.TestCase):
         self.assertTrue(RegionOfInterest.from_message(result[0].region_of_interest_value).equals(test_roi))
 
 
+def main():
+    ros2py_testing.run_ros1_test("test_parameter", TestParameter)
+
+
 if __name__ == "__main__":
-    try:
-        rospy.init_node("test_parameter")
-        rostest.rosrun("ensenso_camera_test", "test_parameter", TestParameter)
-    except rospy.ROSInterruptException:
-        pass
+    main()

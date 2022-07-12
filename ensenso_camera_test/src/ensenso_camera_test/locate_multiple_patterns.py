@@ -1,24 +1,24 @@
 #!/usr/bin/env python
-import rospy
-import rostest
-
 import unittest
 
-import actionlib
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import LocatePatternAction, LocatePatternGoal
+import ensenso_camera.ros2 as ros2py
+
+import ensenso_camera_test.ros2_testing as ros2py_testing
+
+LocatePattern = ros2py.import_action("ensenso_camera_msgs", "LocatePattern")
 
 
-class TestLocatePattern(unittest.TestCase):
+class TestLocateMultiplePatterns(unittest.TestCase):
     def setUp(self):
-        self.locate_pattern_client = actionlib.SimpleActionClient("locate_pattern", LocatePatternAction)
-        self.locate_pattern_client.wait_for_server()
+        self.node = ros2py.create_node("test_locate_multiple_patterns")
+        self.locate_pattern_client = ros2py.create_action_client(self.node, "locate_pattern", LocatePattern)
+        ros2py.wait_for_server(self.node, self.locate_pattern_client)
 
     def test_locate_multiple_patterns(self):
-        self.locate_pattern_client.send_goal(LocatePatternGoal())
-        self.locate_pattern_client.wait_for_result()
-        self.assertEqual(self.locate_pattern_client.get_state(), GoalStatus.SUCCEEDED)
-        result = self.locate_pattern_client.get_result()
+        response = ros2py.send_action_goal(self.node, self.locate_pattern_client, LocatePattern.Goal())
+        result = response.get_result()
+
+        self.assertTrue(response.successful())
         self.assertEqual(result.error.code, 0)
 
         self.assertTrue(result.found_pattern)
@@ -26,9 +26,9 @@ class TestLocatePattern(unittest.TestCase):
         self.assertEqual(len(result.pattern_poses), 2)
 
 
+def main():
+    ros2py_testing.run_ros1_test("test_locate_multiple_patterns", TestLocateMultiplePatterns)
+
+
 if __name__ == "__main__":
-    try:
-        rospy.init_node("test_locate_multiple_patterns")
-        rostest.rosrun("ensenso_camera_test", "test_locate_multiple_patterns", TestLocatePattern)
-    except rospy.ROSInterruptException:
-        pass
+    main()
