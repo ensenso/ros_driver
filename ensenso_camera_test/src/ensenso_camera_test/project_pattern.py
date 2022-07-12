@@ -1,29 +1,29 @@
 #!/usr/bin/env python
-import rospy
-import rostest
-
 import unittest
 
-import actionlib
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import LocatePatternAction, LocatePatternGoal
-from ensenso_camera_msgs.msg import ProjectPatternAction, ProjectPatternGoal
+import ensenso_camera.ros2 as ros2py
 
-from helper import ImagePoint
+from ensenso_camera_test.helper import ImagePoint
+import ensenso_camera_test.ros2_testing as ros2py_testing
+
+LocatePattern = ros2py.import_action("ensenso_camera_msgs", "LocatePattern")
+ProjectPattern = ros2py.import_action("ensenso_camera_msgs", "ProjectPattern")
 
 
 class TestProjectPattern(unittest.TestCase):
     def setUp(self):
-        self.locate_pattern_client = actionlib.SimpleActionClient("locate_pattern", LocatePatternAction)
-        self.locate_pattern_client.wait_for_server()
-        self.project_pattern_client = actionlib.SimpleActionClient("project_pattern", ProjectPatternAction)
-        self.project_pattern_client.wait_for_server()
+        self.node = ros2py.create_node("test_project_pattern")
+        self.locate_pattern_client = ros2py.create_action_client(self.node, "locate_pattern", LocatePattern)
+        self.project_pattern_client = ros2py.create_action_client(self.node, "project_pattern", ProjectPattern)
+
+        clients = [self.locate_pattern_client, self.project_pattern_client]
+        ros2py.wait_for_servers(self.node, clients)
 
     def test_project_pattern(self):
-        self.locate_pattern_client.send_goal(LocatePatternGoal())
-        self.locate_pattern_client.wait_for_result()
-        self.assertEqual(self.locate_pattern_client.get_state(), GoalStatus.SUCCEEDED)
-        location_result = self.locate_pattern_client.get_result()
+        response = ros2py.send_action_goal(self.node, self.locate_pattern_client, LocatePattern.Goal())
+        location_result = response.get_result()
+
+        self.assertTrue(response.successful())
         self.assertEqual(location_result.error.code, 0)
 
         self.assertTrue(location_result.found_pattern)
@@ -35,18 +35,16 @@ class TestProjectPattern(unittest.TestCase):
 
         # Project the located pattern back into the camera. The result should be
         # the points that were detected in the image.
-
-        goal = ProjectPatternGoal()
+        goal = ProjectPattern.Goal()
         goal.grid_spacing = detected_pattern.grid_spacing
         goal.grid_size_x = detected_pattern.grid_size_x
         goal.grid_size_y = detected_pattern.grid_size_y
         goal.pattern_pose = detected_pattern_pose
 
-        self.project_pattern_client.send_goal(goal)
-        self.project_pattern_client.wait_for_result()
+        response = ros2py.send_action_goal(self.node, self.project_pattern_client, goal)
+        projection_result = response.get_result()
 
-        self.assertEqual(self.project_pattern_client.get_state(), GoalStatus.SUCCEEDED)
-        projection_result = self.project_pattern_client.get_result()
+        self.assertTrue(response.successful())
         self.assertEqual(projection_result.error.code, 0)
 
         self.assertEqual(projection_result.pattern_is_visible, True)
@@ -63,9 +61,9 @@ class TestProjectPattern(unittest.TestCase):
             self.assertTrue(reference_point.equals(projected_point))
 
 
+def main():
+    ros2py_testing.run_ros1_test("test_project_pattern", TestProjectPattern)
+
+
 if __name__ == "__main__":
-    try:
-        rospy.init_node("test_project_pattern")
-        rostest.rosrun("ensenso_camera_test", "test_project_pattern", TestProjectPattern)
-    except rospy.ROSInterruptException:
-        pass
+    main()
