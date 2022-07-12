@@ -30,6 +30,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   roscpp
   roslint
+  rospy
   tf2
   tf2_ros
   tf2_geometry_msgs
@@ -66,6 +67,8 @@ if(NOT $ENV{ENSENSO_INSTALL} STREQUAL "")
 else()
     message(FATAL_ERROR "Please install the Ensenso SDK")
 endif()
+
+catkin_python_setup()
 
 catkin_package(
   CATKIN_DEPENDS
