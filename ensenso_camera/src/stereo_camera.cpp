@@ -463,7 +463,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       computePointMap.execute();
     }
 
-    auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.targetFrame);
+    auto depthImage = depthImageFromNxLibNode(cameraNode[itmImages][itmPointMap], params.cameraFrame);
 
     depthImageCameraInfo->header.stamp = depthImage->header.stamp;
 
