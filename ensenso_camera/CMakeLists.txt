@@ -94,14 +94,14 @@ include_directories(
 add_library(ensenso_camera_nodelet
   src/calibration_pattern.cpp
   src/camera.cpp
-  src/camera_nodelet.cpp
+  src/camera_node.cpp
   src/conversion.cpp
   src/image_utilities.cpp
   src/mono_camera.cpp
-  src/mono_camera_nodelet.cpp
+  src/mono_camera_node.cpp
   src/pose_utilities.cpp
   src/stereo_camera.cpp
-  src/stereo_camera_nodelet.cpp
+  src/stereo_camera_node.cpp
   src/virtual_object_handler.cpp
 )
 target_link_libraries(
@@ -120,6 +120,7 @@ add_executable(
 target_link_libraries(
   ensenso_camera_node
   ${catkin_LIBRARIES}
+  ${ENSENSO_LIBRARIES}
 )
 
 # Standalone node based on the nodelet. Used for mono cameras.
@@ -130,6 +131,7 @@ add_executable(
 target_link_libraries(
   ensenso_camera_mono_node
   ${catkin_LIBRARIES}
+  ${ENSENSO_LIBRARIES}
 )
 
 add_executable(

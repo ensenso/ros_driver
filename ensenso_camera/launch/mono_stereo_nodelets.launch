@@ -18,7 +18,7 @@ nodelet manager. -->
   <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
 
   <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_stereo)" ns="$(arg stereo_ns)"
-        args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
+        args="load ensenso_camera/stereo_camera_node /manager_" output="screen">
     <param name="serial" type="string" value="$(arg serial_stereo)" />
     <param name="settings" type="string" value="$(arg settings_stereo)" />
     <param name="camera_frame" type="string" value="$(arg camera_frame)" />
@@ -30,7 +30,7 @@ nodelet manager. -->
   </node>
 
   <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_mono)" ns="$(arg mono_ns)"
-        args="load ensenso_camera/mono_camera_nodelet /manager_" output="screen">
+        args="load ensenso_camera/mono_camera_node /manager_" output="screen">
     <param name="serial" type="string" value="$(arg serial_mono)" />
     <param name="settings" type="string" value="$(arg settings_mono)" />
     <param name="link_frame" type="string" value="$(arg link_frame)" />
