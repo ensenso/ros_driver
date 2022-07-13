@@ -1,25 +1,23 @@
+#include "ensenso_camera/point_cloud_utilities.h"
+
 // Do not change the order of this block. Otherwise getBinaryData with CV::mat overload will not be recognized
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 
-#include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 
 #include <mutex>
 #include <string>
 
-using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
-using TexturedPointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
-
 /**
  * Texture the given point cloud from a rectified image. This assumes that the point cloud has the same format as the
  * image and we can therefore associate points with image pixels by their coordinates.
  */
-TexturedPointCloud::Ptr texturePointCloudFromRectifiedImage(cv::Mat const& image,
-                                                            PointCloud::ConstPtr const& pointCloud)
+ensenso::PointCloudColored::Ptr texturePointCloudFromRectifiedImage(cv::Mat const& image,
+                                                                    ensenso::PointCloud::ConstPtr const& pointCloud)
 {
-  auto texturedPointCloud = boost::make_shared<TexturedPointCloud>();
+  auto texturedPointCloud = boost::make_shared<ensenso::PointCloudColored>();
 
   if (static_cast<int>(pointCloud->width) != image.cols || static_cast<int>(pointCloud->height) != image.rows)
   {
@@ -77,7 +75,7 @@ private:
   ros::Publisher texturedPointCloudPublisher;
 
   sensor_msgs::ImageConstPtr latestImage;
-  PointCloud::ConstPtr latestPointCloud;
+  ensenso::PointCloud::ConstPtr latestPointCloud;
 
 public:
   TexturingNode()
@@ -87,7 +85,7 @@ public:
     imageSubscriber = imageTransport.subscribe("image", 10, &TexturingNode::onImageReceived, this);
     pointCloudSubscriber = nodeHandle.subscribe("point_cloud", 10, &TexturingNode::onPointCloudReceived, this);
 
-    texturedPointCloudPublisher = nodeHandle.advertise<TexturedPointCloud>("textured_point_cloud", 1);
+    texturedPointCloudPublisher = nodeHandle.advertise<ensenso::PointCloudColored>("textured_point_cloud", 1);
   }
 
 private:
@@ -98,7 +96,7 @@ private:
     latestImage = image;
   }
 
-  void onPointCloudReceived(PointCloud::ConstPtr const& pointCloud)
+  void onPointCloudReceived(ensenso::PointCloud::ConstPtr const& pointCloud)
   {
     std::lock_guard<std::mutex> lock(mutex);
 
@@ -121,7 +119,7 @@ private:
       ROS_ERROR("cv_bridge exception: %s", e.what());
     }
 
-    TexturedPointCloud::Ptr texturedPointCloud;
+    ensenso::PointCloudColored::Ptr texturedPointCloud;
     texturedPointCloud = texturePointCloudFromRectifiedImage(image->image, latestPointCloud);
 
     texturedPointCloudPublisher.publish(texturedPointCloud);
