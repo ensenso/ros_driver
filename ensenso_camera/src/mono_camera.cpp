@@ -294,7 +294,7 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
     result.mono_pattern_poses.resize(patternPoses.size());
     for (size_t i = 0; i < patternPoses.size(); i++)
     {
-      result.mono_pattern_poses[i] = stampedPoseFromTransform(patternPoses[i]);
+      result.mono_pattern_poses[i] = patternPoses[i];
     }
   }
   else
@@ -303,7 +303,7 @@ void MonoCamera::onLocatePattern(ensenso_camera_msgs::LocatePatternMonoGoalConst
     auto patternPose = estimatePatternPose(imageTimestamp, patternFrame);
 
     result.mono_pattern_poses.resize(1);
-    result.mono_pattern_poses[0] = stampedPoseFromTransform(patternPose);
+    result.mono_pattern_poses[0] = patternPose;
   }
 
   if (!goal->tf_frame.empty())
@@ -377,9 +377,8 @@ std::vector<MonoCalibrationPattern> MonoCamera::collectPattern(bool clearBuffer)
   return result;
 }
 
-geometry_msgs::TransformStamped MonoCamera::estimatePatternPose(ros::Time imageTimestamp,
-                                                                std::string const& targetFrame,
-                                                                bool latestPatternOnly) const
+geometry_msgs::PoseStamped MonoCamera::estimatePatternPose(ros::Time imageTimestamp, std::string const& targetFrame,
+                                                           bool latestPatternOnly) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
@@ -399,13 +398,14 @@ geometry_msgs::TransformStamped MonoCamera::estimatePatternPose(ros::Time imageT
   }
   estimatePatternPose.execute();
 
-  ROS_ASSERT(estimatePatternPose.result()[itmPatterns].count() == 1);
+  auto patterns = estimatePatternPose.result()[itmPatterns];
+  ROS_ASSERT(patterns.count() == 1);
 
-  return poseFromNxLib(estimatePatternPose.result()[itmPatterns][0][itmPatternPose], targetFrame, params.cameraFrame);
+  return stampedPoseFromNxLib(patterns[0][itmPatternPose], targetFrame, imageTimestamp);
 }
 
-std::vector<geometry_msgs::TransformStamped> MonoCamera::estimatePatternPoses(ros::Time imageTimestamp,
-                                                                              std::string const& targetFrame) const
+std::vector<geometry_msgs::PoseStamped> MonoCamera::estimatePatternPoses(ros::Time imageTimestamp,
+                                                                         std::string const& targetFrame) const
 {
   updateGlobalLink(imageTimestamp, targetFrame);
 
@@ -416,15 +416,14 @@ std::vector<geometry_msgs::TransformStamped> MonoCamera::estimatePatternPoses(ro
 
   estimatePatternPose.execute();
 
-  int numberOfPatterns = estimatePatternPose.result()[itmPatterns].count();
+  auto patterns = estimatePatternPose.result()[itmPatterns];
 
-  std::vector<geometry_msgs::TransformStamped> result;
-  result.reserve(numberOfPatterns);
+  std::vector<geometry_msgs::PoseStamped> result;
+  result.reserve(patterns.count());
 
-  for (int i = 0; i < numberOfPatterns; i++)
+  for (int i = 0; i < patterns.count(); i++)
   {
-    result.push_back(
-        poseFromNxLib(estimatePatternPose.result()[itmPatterns][i][itmPatternPose], targetFrame, params.cameraFrame));
+    result.push_back(stampedPoseFromNxLib(patterns[i][itmPatternPose], targetFrame, imageTimestamp));
   }
 
   return result;

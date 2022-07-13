@@ -44,12 +44,12 @@ private:
 
   void updateCameraInfo() override;
 
-  geometry_msgs::TransformStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
-                                                      std::string const& targetFrame = "",
-                                                      bool latestPatternOnly = false) const override;
+  geometry_msgs::PoseStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
+                                                 std::string const& targetFrame = "",
+                                                 bool latestPatternOnly = false) const override;
 
-  std::vector<geometry_msgs::TransformStamped> estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(),
-                                                                    std::string const& targetFrame = "") const override;
+  std::vector<geometry_msgs::PoseStamped> estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(),
+                                                               std::string const& targetFrame = "") const override;
 
   /**
    * Advertise all camera topics.
