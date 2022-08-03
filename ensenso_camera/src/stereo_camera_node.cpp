@@ -1,6 +1,6 @@
-#include "ensenso_camera/stereo_camera_nodelet.h"
+#include "ensenso_camera/stereo_camera_node.h"
 
-#include "ensenso_camera/camera_nodelet.h"
+#include "ensenso_camera/camera_node.h"
 
 REGISTER_NODE(ensenso_camera::StereoCamera)
 
