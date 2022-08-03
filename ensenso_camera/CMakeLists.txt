@@ -100,7 +100,6 @@ add_library(ensenso_camera_nodelet
   src/mono_camera.cpp
   src/mono_camera_nodelet.cpp
   src/nxlib_initialize_finalize.cpp
-  src/point_cloud_utilities.cpp
   src/pose_utilities.cpp
   src/stereo_camera.cpp
   src/stereo_camera_nodelet.cpp

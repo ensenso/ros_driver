@@ -2,10 +2,6 @@
 
 #include <pcl_ros/point_cloud.h>
 
-#include <string>
-
-#include "nxLib.h"
-
 namespace ensenso
 {
 using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
@@ -32,25 +28,3 @@ struct PointCloudROI
     return (minX >= maxX || minY >= maxY || minZ >= maxZ);
   }
 };
-
-/**
- * Convert the given binary NxLib node to a PCL point cloud.
- */
-ensenso::PointCloud::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
-                                             bool isFileCamera = false, PointCloudROI const* roi = nullptr);
-
-/**
- * Create a PCL point cloud with normals from the given NxLib nodes.
- */
-ensenso::PointCloudNormals::Ptr pointCloudWithNormalsFromNxLib(NxLibItem const& pointMapNode,
-                                                               NxLibItem const& normalNode, std::string const& frame,
-                                                               bool isFileCamera = false,
-                                                               PointCloudROI const* roi = nullptr);
-
-/**
- * Create a PCL point cloud with texture from the given NxLib nodes.
- */
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudTexturedFromNxLib(NxLibItem const& imageNode,
-                                                                   NxLibItem const& pointsNode,
-                                                                   std::string const& frame, bool isFileCamera = false,
-                                                                   PointCloudROI const* roi = nullptr);
