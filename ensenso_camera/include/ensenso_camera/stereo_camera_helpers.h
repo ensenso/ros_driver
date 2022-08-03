@@ -1,12 +1,14 @@
 #pragma once
 
-#include "nxLib.h"
-#include "pose_utilities.h"
+#include "ensenso_camera/point_cloud_utilities.h"
+#include "ensenso_camera/pose_utilities.h"
 
 #include <tf2/LinearMath/Transform.h>
 #include <boost/optional.hpp>
 #include <string>
 #include <vector>
+
+#include "nxLib.h"
 
 class RenderPointMapParams
 {
@@ -171,15 +173,13 @@ void setRenderParams(NxLibItem const& cmdParams, RenderPointMapParams const* par
   }
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr retrieveRenderedPointCloud(NxLibItem const& cmdResult, std::string const& frame,
-                                                               bool isFileCamera = false)
+ensenso::pcl::PointCloud::Ptr retrieveRenderedPointCloud(NxLibItem const& cmdResult, std::string const& frame)
 {
   return pointCloudFromNxLib(cmdResult[itmImages][itmRenderPointMap], frame, isFileCamera);
 }
 
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr retrieveTexturedPointCloud(NxLibItem const& cmdResult,
-                                                                  std::string const& targetFrame,
-                                                                  bool isFileCamera = false)
+ensenso::pcl::PointCloudColored::Ptr retrieveTexturedPointCloud(NxLibItem const& cmdResult,
+                                                                std::string const& targetFrame)
 {
   return pointCloudTexturedFromNxLib(cmdResult[itmImages][itmRenderPointMapTexture],
                                      cmdResult[itmImages][itmRenderPointMap], targetFrame, isFileCamera);
