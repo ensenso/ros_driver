@@ -6,6 +6,16 @@
 
 #include "nxLib.h"
 
+namespace ensenso
+{
+namespace pcl
+{
+using PointCloud = ::pcl::PointCloud<::pcl::PointXYZ>;
+using PointCloudNormals = ::pcl::PointCloud<::pcl::PointNormal>;
+using PointCloudColored = ::pcl::PointCloud<::pcl::PointXYZRGB>;
+}  // namespace pcl
+}  // namespace ensenso
+
 struct PointCloudROI
 {
   float minX = 0;
@@ -29,17 +39,16 @@ struct PointCloudROI
 /**
  * Convert the given binary NxLib node to a PCL point cloud.
  */
-pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
-                                                        bool isFileCamera = false, PointCloudROI const* roi = nullptr);
+ensenso::pcl::PointCloud::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
+                                                  bool isFileCamera = false, PointCloudROI const* roi = nullptr);
 
 /**
  * Create a PCL point cloud with normals from the given NxLib nodes.
  */
-pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem const& pointMapNode,
-                                                                      NxLibItem const& normalNode,
-                                                                      std::string const& frame,
-                                                                      bool isFileCamera = false,
-                                                                      PointCloudROI const* roi = nullptr);
+ensenso::pcl::PointCloudNormals::Ptr pointCloudWithNormalsFromNxLib(NxLibItem const& pointMapNode,
+                                                                    NxLibItem const& normalNode,
+                                                                    std::string const& frame, bool isFileCamera = false,
+                                                                    PointCloudROI const* roi = nullptr);
 
 /**
  * Create a PCL point cloud with texture from the given NxLib nodes.
