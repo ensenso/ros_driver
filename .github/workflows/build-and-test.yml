@@ -48,11 +48,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
-        ros_distro: [noetic]
-        ros_version: [1]
+        os: [ubuntu-22.04]
+        ros_distro: [humble]
+        ros_version: [2]
         ensenso_sdk_version: [3.3.1385, 3.2.489, 3.1.996]
         include:
+        # Ubuntu 20.04 - foxy
+          - os: ubuntu-20.04
+            ros_distro: foxy
+            ros_version: 2
+            ensenso_sdk_version: 3.3.1385
+          - os: ubuntu-20.04
+            ros_distro: foxy
+            ros_version: 2
+            ensenso_sdk_version: 3.2.489
+          - os: ubuntu-20.04
+            ros_distro: foxy
+            ros_version: 2
+            ensenso_sdk_version: 3.1.996
+        # Ubuntu 20.04 - noetic
+          - os: ubuntu-20.04
+            ros_distro: noetic
+            ros_version: 1
+            ensenso_sdk_version: 3.3.1385
+          - os: ubuntu-20.04
+            ros_distro: noetic
+            ros_version: 1
+            ensenso_sdk_version: 3.2.489
+          - os: ubuntu-20.04
+            ros_distro: noetic
+            ros_version: 1
+            ensenso_sdk_version: 3.1.996
         # Ubuntu 18.04 - melodic
           - os: ubuntu-18.04
             ros_distro: melodic
@@ -70,11 +96,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Prepare repo for ROS2 build
+        if: ${{ matrix.ros_version == '2' }}
+        run: ./.github/scripts/prepare_ros2_build.sh
+        shell: bash
+        env:
+          ROS_VERSION: ${{matrix.ros_version}}
+          ROS_DISTRO: ${{matrix.ros_distro}}
+
       - name: Industrial CI - Build and Test
         uses: 'ros-industrial/industrial_ci@master'
         env:
-          AFTER_INSTALL_TARGET_DEPENDENCIES: "./.github/ci/install_ensenso_sdk.sh"
+          AFTER_INSTALL_TARGET_DEPENDENCIES: "./.github/scripts/install_external_dependencies.sh"
           CATKIN_LINT: true
           CATKIN_LINT_ARGS: "--resolve-env"
           DOCKER_RUN_OPTS: "-e ENSENSO_INSTALL=/opt/ensenso -e ENSENSO_SDK_VERSION=${{matrix.ensenso_sdk_version}}"
           ROS_DISTRO: ${{matrix.ros_distro}}
+          ROS_PYTHON_VERSION: 3
