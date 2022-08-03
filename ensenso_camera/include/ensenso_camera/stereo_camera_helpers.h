@@ -175,20 +175,22 @@ void setRenderParams(NxLibItem const& cmdParams, RenderPointMapParams const* par
   }
 }
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr retrieveRenderedPointCloud(NxLibItem const& cmdResult, std::string const& frame)
+pcl::PointCloud<pcl::PointXYZ>::Ptr retrieveRenderedPointCloud(NxLibItem const& cmdResult, std::string const& frame,
+                                                               bool isFileCamera = false)
 {
-  return pointCloudFromNxLib(cmdResult[itmImages][itmRenderPointMap], frame);
+  return pointCloudFromNxLib(cmdResult[itmImages][itmRenderPointMap], frame, isFileCamera);
 }
 
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr retrieveTexturedPointCloud(NxLibItem const& cmdResult,
-                                                                  std::string const& targetFrame)
+                                                                  std::string const& targetFrame,
+                                                                  bool isFileCamera = false)
 {
   return pointCloudTexturedFromNxLib(cmdResult[itmImages][itmRenderPointMapTexture],
-                                     cmdResult[itmImages][itmRenderPointMap], targetFrame);
+                                     cmdResult[itmImages][itmRenderPointMap], targetFrame, isFileCamera);
 }
 
-sensor_msgs::ImagePtr retrieveRenderedDepthMap(NxLibItem const& cmdResult, std::string const& frame)
+sensor_msgs::ImagePtr retrieveRenderedDepthMap(NxLibItem const& cmdResult, std::string const& frame, bool isFileCamera)
 {
   sensor_msgs::ImagePtr renderedImage;
-  return depthImageFromNxLibNode(cmdResult[itmImages][itmRenderPointMap], frame);
+  return depthImageFromNxLibNode(cmdResult[itmImages][itmRenderPointMap], frame, isFileCamera);
 }

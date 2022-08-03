@@ -218,7 +218,7 @@ void Camera::onAccessTree(const ensenso_camera_msgs::AccessTreeGoalConstPtr& goa
     try
     {
       // This could load any image that does not belong to the node's camera, so we do not know its frame.
-      result.binary_data = *imageFromNxLibNode(item, "");
+      result.binary_data = *imageFromNxLibNode(item, "", params.isFileCamera);
     }
     catch (NxLibException&)
     {

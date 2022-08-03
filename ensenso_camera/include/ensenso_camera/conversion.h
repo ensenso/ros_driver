@@ -6,11 +6,9 @@
 
 namespace ensenso_conversion
 {
-double fixTimestamp(double const& timestamp);
+double nxLibToRosTimestamp(double const& timestamp, bool isFileCamera = false);
 
-double nxLibToRosTimestamp(double const& timestamp);
-
-double nxLibToPclTimestamp(double const& timestamp);
+double nxLibToPclTimestamp(double const& timestamp, bool isFileCamera = false);
 
 // Internally units are used with millimeters instead of meters, but ROS uses meters most often.
 const int conversionFactor = 1000;

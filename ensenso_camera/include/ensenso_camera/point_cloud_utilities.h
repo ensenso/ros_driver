@@ -30,7 +30,7 @@ struct PointCloudROI
  * Convert the given binary NxLib node to a PCL point cloud.
  */
 pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
-                                                        PointCloudROI const* roi = nullptr);
+                                                        bool isFileCamera = false, PointCloudROI const* roi = nullptr);
 
 /**
  * Create a PCL point cloud with normals from the given NxLib nodes.
@@ -38,6 +38,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
 pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem const& pointMapNode,
                                                                       NxLibItem const& normalNode,
                                                                       std::string const& frame,
+                                                                      bool isFileCamera = false,
                                                                       PointCloudROI const* roi = nullptr);
 
 /**
@@ -45,5 +46,5 @@ pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem 
  */
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudTexturedFromNxLib(NxLibItem const& imageNode,
                                                                    NxLibItem const& pointsNode,
-                                                                   std::string const& frame,
+                                                                   std::string const& frame, bool isFileCamera = false,
                                                                    PointCloudROI const* roi = nullptr);
