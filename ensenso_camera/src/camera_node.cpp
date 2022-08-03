@@ -1,4 +1,4 @@
-#include "ensenso_camera/camera_nodelet.h"
+#include "ensenso_camera/camera_node.h"
 
 #include "ensenso_camera/mono_camera.h"
 #include "ensenso_camera/nxlib_initialize_finalize.h"

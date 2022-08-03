@@ -17,7 +17,7 @@
   <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
 
   <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial)"
-        args="load ensenso_camera/stereo_camera_nodelet /manager_" output="screen">
+        args="load ensenso_camera/stereo_camera_node /manager_" output="screen">
     <param name="serial" type="string" value="$(arg serial)" />
     <param name="settings" type="string" value="$(arg settings)" />
     <param name="camera_frame" type="string" value="$(arg camera_frame)" />
