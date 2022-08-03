@@ -1,6 +1,6 @@
-#include "ensenso_camera/mono_camera_nodelet.h"
+#include "ensenso_camera/mono_camera_node.h"
 
-#include "ensenso_camera/camera_nodelet.h"
+#include "ensenso_camera/camera_node.h"
 
 REGISTER_NODE(ensenso_camera::MonoCamera)
 
