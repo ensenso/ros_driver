@@ -8,8 +8,7 @@
 #include <string>
 #include <vector>
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame,
-                                                        bool isFileCamera, PointCloudROI const* roi)
+ensenso::PointCloud::Ptr pointCloudFromNxLib(NxLibItem const& node, std::string const& frame, bool isFileCamera, PointCloudROI const* roi)
 {
   int width, height;
   double timestamp;
@@ -18,7 +17,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloudFromNxLib(NxLibItem const& node, s
   node.getBinaryDataInfo(&width, &height, 0, 0, 0, &timestamp);
   node.getBinaryData(data, 0);
 
-  auto cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  auto cloud = boost::make_shared<ensenso::PointCloud>();
 
   cloud->header.stamp = ensenso_conversion::nxLibToPclTimestamp(timestamp, isFileCamera);
   cloud->header.frame_id = frame;
@@ -58,7 +57,7 @@ pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem 
   pointMapNode.getBinaryData(pointData, 0);
   normalNode.getBinaryData(normalData, 0);
 
-  auto cloud = boost::make_shared<pcl::PointCloud<pcl::PointNormal>>();
+  auto cloud = boost::make_shared<ensenso::PointCloudNormals>();
 
   cloud->header.stamp = ensenso_conversion::nxLibToPclTimestamp(timestamp, isFileCamera);
   cloud->header.frame_id = frame;
@@ -89,10 +88,10 @@ pcl::PointCloud<pcl::PointNormal>::Ptr pointCloudWithNormalsFromNxLib(NxLibItem 
 
   return cloud;
 }
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudTexturedFromNxLib(NxLibItem const& imageNode,
-                                                                   NxLibItem const& pointsNode,
-                                                                   std::string const& frame, bool isFileCamera,
-                                                                   PointCloudROI const* roi)
+
+ensenso::PointCloudColored::Ptr pointCloudTexturedFromNxLib(NxLibItem const& imageNode, NxLibItem const& pointsNode,
+                                                            std::string const& frame, bool isFileCamera, 
+                                                            PointCloudROI const* roi)
 {
   double timestamp;
 
@@ -104,7 +103,7 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloudTexturedFromNxLib(NxLibItem con
   pointsNode.getBinaryData(data, &timestamp);
   imageNode.getBinaryData(imageData, 0);
 
-  auto cloud_colored = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
+  auto cloud_colored = boost::make_shared<ensenso::PointCloudColored>();
 
   cloud_colored->header.stamp = ensenso_conversion::nxLibToPclTimestamp(timestamp, isFileCamera);
   cloud_colored->header.frame_id = frame;
