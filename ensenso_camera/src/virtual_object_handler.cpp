@@ -32,8 +32,6 @@ VirtualObjectHandler::VirtualObjectHandler(const std::string& filename, const st
                                            const std::string& cameraFrame)
   : objectsFrame(objectsFrame), cameraFrame(cameraFrame)
 {
-  nxLibInitialize(false);
-
   // Read the file contents and assign it to the objects tag
   auto objects = NxLibItem{ itmObjects };
   objects.setJson(readFile(filename));

@@ -14,7 +14,6 @@ StereoCameraNodelet::StereoCameraNodelet() : cameraType(valStereo)
 StereoCameraNodelet::~StereoCameraNodelet()
 {
   camera->close();
-  nxLibFinalize();
 }
 
 void StereoCameraNodelet::onInit()
