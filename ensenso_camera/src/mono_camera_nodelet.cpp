@@ -14,7 +14,6 @@ MonoCameraNodelet::MonoCameraNodelet() : cameraType(valMonocular)
 MonoCameraNodelet::~MonoCameraNodelet()
 {
   camera->close();
-  nxLibFinalize();
 }
 
 void MonoCameraNodelet::onInit()

@@ -1,6 +1,7 @@
 #include "ensenso_camera/camera_nodelet.h"
 
 #include "ensenso_camera/mono_camera.h"
+#include "ensenso_camera/nxlib_initialize_finalize.h"
 #include "ensenso_camera/stereo_camera.h"
 
 #include "nxLib.h"
@@ -12,13 +13,7 @@ namespace camera_nodelet
 void abortInit(std::string const& errorMsg)
 {
   ROS_ERROR("%s. Shutting down nodelet.", errorMsg.c_str());
-  try
-  {
-    nxLibFinalize();
-  }
-  catch (NxLibException& e)
-  {
-  }
+  // nxLibFinalize is implicitly invoked in NxLibInitializeFinalize destructor.
   exit(EXIT_FAILURE);
 }
 
@@ -27,7 +22,7 @@ void initNxLib(ros::NodeHandle& nh)
   ROS_DEBUG("Initializing the NxLib...");
   try
   {
-    nxLibInitialize(true);
+    NxLibInitializeFinalize::instance();
   }
   catch (NxLibException& e)
   {
