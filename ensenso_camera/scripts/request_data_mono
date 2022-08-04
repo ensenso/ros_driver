@@ -1,52 +1,47 @@
-#!/usr/bin/env python
-import rospy
+#!/usr/bin/env python3
 import sys
 
-import actionlib
-from actionlib_msgs.msg import GoalStatus
-from ensenso_camera_msgs.msg import RequestDataMonoAction, RequestDataMonoGoal
+import ensenso_camera.ros2 as ros2py
+
+RequestDataMono = ros2py.import_action("ensenso_camera_msgs", "RequestDataMono")
 
 
-def main():
-    loop_rate = rospy.get_param("~rate", 0.5)
-    namespace = rospy.get_param("~namespace", None)
-    timeout = rospy.get_param("~timeout", 60)
+def _main(node_name):
+    node = ros2py.create_node(node_name, args=sys.argv)
 
-    goal = RequestDataMonoGoal()
-    goal.parameter_set = rospy.get_param("~parameter_set", "")
+    loop_rate = ros2py.get_param(node, "rate", 0.5)
+    namespace = ros2py.get_param(node, "namespace", "")
+    timeout = ros2py.get_param(node, "timeout", 60)
 
-    goal.request_raw_images = rospy.get_param("~raw_images", True)
-    goal.request_rectified_images = rospy.get_param("~rectified_images", True)
+    goal = RequestDataMono.Goal()
+    goal.parameter_set = ros2py.get_param(node, "parameter_set", "")
+
+    goal.request_raw_images = ros2py.get_param(node, "raw_images", True)
+    goal.request_rectified_images = ros2py.get_param(node, "rectified_images", True)
 
     goal.publish_results = True
 
-    request_data_client_name = "request_data" if namespace is None else namespace.rstrip("/") + "/request_data"
-    request_data_client = actionlib.SimpleActionClient(request_data_client_name, RequestDataMonoAction)
+    request_data_client_name = "request_data" if namespace == "" else namespace.rstrip("/") + "/request_data"
+    request_data_client = ros2py.create_action_client(node, request_data_client_name, RequestDataMono)
 
-    rospy.loginfo("Trying to connect to: {}".format(request_data_client_name))
-    if not request_data_client.wait_for_server(rospy.Duration(timeout)):
-        rospy.logerr("The camera node is not running!")
-        sys.exit()
-    rospy.loginfo("Connected")
+    ros2py.wait_for_server(node, request_data_client, timeout_sec=timeout)
 
-    rate = rospy.Rate(loop_rate)
-    while not rospy.is_shutdown():
-        request_data_client.send_goal(goal)
-        request_data_client.wait_for_result()
+    def main_loop():
+        response = ros2py.send_action_goal(node, request_data_client, goal)
+        if not response.successful():
+            node.get_logger().warn("Action was not successful.")
+            return
 
-        if request_data_client.get_state() != GoalStatus.SUCCEEDED:
-            rospy.logwarn("Action was not successful.")
-        else:
-            result = request_data_client.get_result()
-            if result.error.code != 0:
-                rospy.logerr("Error {}: {}".format(result.error.code, result.error.message))
+        result = response.get_result()
+        if result.error.code != 0:
+            node.get_logger().error(ros2py.format_error(result.error))
 
-        rate.sleep()
+    ros2py.execute_at_rate(node, main_loop, loop_rate)
+
+
+def main():
+    ros2py.wrap_main_function(_main, "ensenso_camera_request_data_mono")
 
 
 if __name__ == "__main__":
-    try:
-        rospy.init_node("ensenso_camera_request_data_mono")
-        main()
-    except rospy.ROSInterruptException:
-        pass
+    main()
