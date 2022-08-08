@@ -1,5 +1,7 @@
 #include "ensenso_camera/pose_utilities.h"
 
+#include "ensenso_camera/ros2_logging.h"
+
 #include <string>
 
 namespace
@@ -95,7 +97,7 @@ void writeTransformToNxLib(tf2::Transform const& transform, NxLibItem const& nod
   }
   else
   {
-    ROS_ERROR("Given transform is not valid for writing to the NxLib, using identity transform instead");
+    ENSENSO_ERROR("Given transform is not valid for writing to the NxLib, using identity transform instead");
     // Use an identity transformation as a reasonable default value.
     node[itmTranslation][0] = 0;
     node[itmTranslation][1] = 0;
@@ -154,7 +156,7 @@ tf2::Transform transformFromNxLib(NxLibItem const& node)
   return transform;
 }
 
-StampedPoseMsg stampedPoseFromNxLib(NxLibItem const& node, std::string const& parentFrame, ros::Time timestamp)
+StampedPoseMsg stampedPoseFromNxLib(NxLibItem const& node, std::string const& parentFrame, ensenso::ros::Time timestamp)
 {
   StampedTransformMsg stampedTransform;
   tf2::Transform transform = transformFromNxLib(node);
@@ -237,7 +239,7 @@ PoseMsg poseFromTransform(tf2::Transform const& transform)
 }
 
 StampedTransformMsg fromTf(tf2::Transform const& transform, std::string parentFrame, std::string childFrame,
-                           ros::Time timestamp)
+                           ensenso::ros::Time timestamp)
 {
   StampedTransformMsg tStamped;
   tf2::convert(transform, tStamped.transform);
@@ -255,13 +257,13 @@ tf2::Transform getLatestTransform(tf2_ros::Buffer const& tfBuffer, std::string c
   try
   {
     StampedTransformMsg tStamped;
-    tStamped = tfBuffer.lookupTransform(cameraFrame, targetFrame, ros::Time(0));
+    tStamped = tfBuffer.lookupTransform(cameraFrame, targetFrame, ensenso::ros::Time(0));
 
     transform = fromMsg(tStamped.transform);
   }
   catch (tf2::TransformException& ex)
   {
-    ROS_WARN("%s", ex.what());
+    ENSENSO_WARN("%s", ex.what());
   }
   return transform;
 }

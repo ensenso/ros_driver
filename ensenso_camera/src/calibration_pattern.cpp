@@ -62,19 +62,19 @@ MonoCalibrationPattern::MonoCalibrationPattern(NxLibItem const& node) : Calibrat
 {
 }
 
-MonoCalibrationPattern::MonoCalibrationPattern(ensenso_camera_msgs::MonoCalibrationPattern const& message)
+MonoCalibrationPattern::MonoCalibrationPattern(ensenso::msg::MonoCalibrationPattern const& message)
   : CalibrationPattern(message)
 {
   readFromMessage(message);
 }
 
-void MonoCalibrationPattern::readFromMessage(ensenso_camera_msgs::MonoCalibrationPattern const& message)
+void MonoCalibrationPattern::readFromMessage(ensenso::msg::MonoCalibrationPattern const& message)
 {
   points.clear();
   points.insert(points.begin(), message.points.begin(), message.points.end());
 }
 
-void MonoCalibrationPattern::writeToMessage(ensenso_camera_msgs::MonoCalibrationPattern& message)
+void MonoCalibrationPattern::writeToMessage(ensenso::msg::MonoCalibrationPattern& message)
 {
   CalibrationPattern::writeMetaDataToMessage(message);
 
@@ -92,9 +92,9 @@ void MonoCalibrationPattern::writeToNxLib(NxLibItem const& node)
   }
 }
 
-ensenso_camera_msgs::MonoCalibrationPattern MonoCalibrationPattern::toRosMsg() const
+ensenso::msg::MonoCalibrationPattern MonoCalibrationPattern::toRosMsg() const
 {
-  ensenso_camera_msgs::MonoCalibrationPattern rosMonoPattern = CalibrationPattern::toRosMessage();
+  ensenso::msg::MonoCalibrationPattern rosMonoPattern = CalibrationPattern::toRosMessage();
 
   for (auto const& point : points)
   {
@@ -104,12 +104,12 @@ ensenso_camera_msgs::MonoCalibrationPattern MonoCalibrationPattern::toRosMsg() c
   return rosMonoPattern;
 }
 
-void StereoCalibrationPattern::writeToMessage(ensenso_camera_msgs::StereoCalibrationPattern& message) const
+void StereoCalibrationPattern::writeToMessage(ensenso::msg::StereoCalibrationPattern& message) const
 {
   message = toRosMsg();
 }
 
-void StereoCalibrationPattern::readFromMessage(ensenso_camera_msgs::StereoCalibrationPattern const& message)
+void StereoCalibrationPattern::readFromMessage(ensenso::msg::StereoCalibrationPattern const& message)
 {
   leftPoints.clear();
   leftPoints.insert(leftPoints.begin(), message.left_points.begin(), message.left_points.end());
@@ -137,15 +137,15 @@ StereoCalibrationPattern::StereoCalibrationPattern(NxLibItem const& node) : Cali
 {
 }
 
-StereoCalibrationPattern::StereoCalibrationPattern(ensenso_camera_msgs::StereoCalibrationPattern const& message)
+StereoCalibrationPattern::StereoCalibrationPattern(ensenso::msg::StereoCalibrationPattern const& message)
   : CalibrationPattern(message)
 {
   readFromMessage(message);
 }
 
-ensenso_camera_msgs::StereoCalibrationPattern StereoCalibrationPattern::toRosMsg() const
+ensenso::msg::StereoCalibrationPattern StereoCalibrationPattern::toRosMsg() const
 {
-  ensenso_camera_msgs::StereoCalibrationPattern rosStereoPattern = CalibrationPattern::toRosMessage();
+  ensenso::msg::StereoCalibrationPattern rosStereoPattern = CalibrationPattern::toRosMessage();
 
   for (auto const& point : leftPoints)
   {

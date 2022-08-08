@@ -1,12 +1,24 @@
 #pragma once
 
-#include "ensenso_camera_msgs/StereoCalibrationPattern.h"
-#include "ensenso_camera_msgs/MonoCalibrationPattern.h"
+#include "ensenso_camera/ros2_namespace.h"
+
+#ifdef ROS2
+#include "ensenso_camera_msgs/msg/image_point.hpp"
+#include "ensenso_camera_msgs/msg/mono_calibration_pattern.hpp"
+#include "ensenso_camera_msgs/msg/stereo_calibration_pattern.hpp"
+#else
 #include "ensenso_camera_msgs/ImagePoint.h"
+#include "ensenso_camera_msgs/MonoCalibrationPattern.h"
+#include "ensenso_camera_msgs/StereoCalibrationPattern.h"
+#endif
 
 #include <vector>
 
 #include "nxLib.h"
+
+USING_ENSENSO_CAMERA_MSG(ImagePoint)
+USING_ENSENSO_CAMERA_MSG(MonoCalibrationPattern)
+USING_ENSENSO_CAMERA_MSG(StereoCalibrationPattern)
 
 template <typename MessageType>
 class CalibrationPattern
@@ -27,33 +39,33 @@ protected:
   MessageType toRosMessage() const;
 };
 
-class MonoCalibrationPattern : CalibrationPattern<ensenso_camera_msgs::MonoCalibrationPattern>
+class MonoCalibrationPattern : CalibrationPattern<ensenso::msg::MonoCalibrationPattern>
 {
 public:
-  std::vector<ensenso_camera_msgs::ImagePoint> points;
+  std::vector<ensenso::msg::ImagePoint> points;
 
 public:
   explicit MonoCalibrationPattern(NxLibItem const& node);
-  explicit MonoCalibrationPattern(ensenso_camera_msgs::MonoCalibrationPattern const& message);
+  explicit MonoCalibrationPattern(ensenso::msg::MonoCalibrationPattern const& message);
 
-  void readFromMessage(ensenso_camera_msgs::MonoCalibrationPattern const& message);
-  void writeToMessage(ensenso_camera_msgs::MonoCalibrationPattern& message);
+  void readFromMessage(ensenso::msg::MonoCalibrationPattern const& message);
+  void writeToMessage(ensenso::msg::MonoCalibrationPattern& message);
   void writeToNxLib(NxLibItem const& node);
-  ensenso_camera_msgs::MonoCalibrationPattern toRosMsg() const;
+  ensenso::msg::MonoCalibrationPattern toRosMsg() const;
 };
 
-class StereoCalibrationPattern : CalibrationPattern<ensenso_camera_msgs::StereoCalibrationPattern>
+class StereoCalibrationPattern : CalibrationPattern<ensenso::msg::StereoCalibrationPattern>
 {
 public:
-  std::vector<ensenso_camera_msgs::ImagePoint> leftPoints;
-  std::vector<ensenso_camera_msgs::ImagePoint> rightPoints;
+  std::vector<ensenso::msg::ImagePoint> leftPoints;
+  std::vector<ensenso::msg::ImagePoint> rightPoints;
 
 public:
   explicit StereoCalibrationPattern(NxLibItem const& node);
-  explicit StereoCalibrationPattern(ensenso_camera_msgs::StereoCalibrationPattern const& message);
+  explicit StereoCalibrationPattern(ensenso::msg::StereoCalibrationPattern const& message);
 
-  void writeToMessage(ensenso_camera_msgs::StereoCalibrationPattern& message) const;
-  void readFromMessage(ensenso_camera_msgs::StereoCalibrationPattern const& message);
+  void writeToMessage(ensenso::msg::StereoCalibrationPattern& message) const;
+  void readFromMessage(ensenso::msg::StereoCalibrationPattern const& message);
   void writeToNxLib(NxLibItem const& node, bool right = false);
-  ensenso_camera_msgs::StereoCalibrationPattern toRosMsg() const;
+  ensenso::msg::StereoCalibrationPattern toRosMsg() const;
 };

@@ -1,17 +1,28 @@
 #pragma once
 
+#include "ensenso_camera/ros2_namespace.h"
+#include "ensenso_camera/ros2_time.h"
+
+#ifdef ROS2
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#else
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
+#endif
+
 #include <utility>
 #include <string>
 #include <vector>
 
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/CameraInfo.h>
-
 #include "nxLib.h"
 
-using Image = sensor_msgs::Image;
-using ImagePtr = sensor_msgs::ImagePtr;
-using ImagePtrPair = std::pair<sensor_msgs::ImagePtr, sensor_msgs::ImagePtr>;
+USING_MSG(sensor_msgs, Image)
+USING_MSG(sensor_msgs, CameraInfo)
+
+using Image = sensor_msgs::msg::Image;
+using ImagePtr = sensor_msgs::msg::ImagePtr;
+using ImagePtrPair = std::pair<ImagePtr, ImagePtr>;
 
 /**
  * Convert the given binary NxLib node to a ROS image message.
@@ -38,7 +49,7 @@ std::vector<ImagePtr> imagesFromNxLibNode(NxLibItem const& node, std::string con
 /**
  * Get the timestamp from an NxLib image node.
  */
-ros::Time timestampFromNxLibNode(NxLibItem const& node);
+ensenso::ros::Time timestampFromNxLibNode(NxLibItem const& node);
 
 /**
  * Get the z-channel from the calculated point cloud and transform it into a sensor_msgs/Image depth image defined in
@@ -49,4 +60,4 @@ ImagePtr depthImageFromNxLibNode(NxLibItem const& node, std::string const& frame
 /**
  * Gets the corresponding distortion parameters from the Item.
  */
-void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs::CameraInfoPtr const& info);
+void fillDistortionParamsFromNxLib(NxLibItem const& distortionItem, sensor_msgs::msg::CameraInfoPtr const& info);

@@ -2,22 +2,33 @@
 
 #include "ensenso_camera/camera.h"
 
-#include <ensenso_camera/virtual_object_handler.h>
+#include "ensenso_camera/ros2_pcl.h"
 
-#include <ensenso_camera_msgs/RequestDataAction.h>
+#ifdef ROS2
+#include <ensenso_camera_msgs/action/locate_pattern.hpp>
+#include <ensenso_camera_msgs/action/project_pattern.hpp>
+#include <ensenso_camera_msgs/action/request_data.hpp>
+#include <ensenso_camera_msgs/action/telecentric_projection.hpp>
+#include <ensenso_camera_msgs/action/textured_point_cloud.hpp>
+#else
 #include <ensenso_camera_msgs/LocatePatternAction.h>
 #include <ensenso_camera_msgs/ProjectPatternAction.h>
-#include <ensenso_camera_msgs/TexturedPointCloudAction.h>
+#include <ensenso_camera_msgs/RequestDataAction.h>
 #include <ensenso_camera_msgs/TelecentricProjectionAction.h>
+#include <ensenso_camera_msgs/TexturedPointCloudAction.h>
+#endif
 
-using CalibrateHandEyeServer = QueuedActionServer<ensenso_camera_msgs::CalibrateHandEyeAction>;
-using CalibrateWorkspaceServer = QueuedActionServer<ensenso_camera_msgs::CalibrateWorkspaceAction>;
-using FitPrimitiveServer = QueuedActionServer<ensenso_camera_msgs::FitPrimitiveAction>;
-using RequestDataServer = QueuedActionServer<ensenso_camera_msgs::RequestDataAction>;
-using LocatePatternServer = QueuedActionServer<ensenso_camera_msgs::LocatePatternAction>;
-using ProjectPatternServer = QueuedActionServer<ensenso_camera_msgs::ProjectPatternAction>;
-using TexturedPointCloudServer = QueuedActionServer<ensenso_camera_msgs::TexturedPointCloudAction>;
-using TelecentricProjectionServer = QueuedActionServer<ensenso_camera_msgs::TelecentricProjectionAction>;
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(CalibrateHandEye)
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(CalibrateWorkspace)
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(FitPrimitive)
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(LocatePattern)
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(ProjectPattern)
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(RequestData)
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(TelecentricProjection)
+USING_ENSENSO_CAMERA_ACTION_WITH_SERVER(TexturedPointCloud)
+
+USING_ENSENSO_CAMERA_MSG(Parameter)
+USING_ENSENSO_CAMERA_MSG(Primitive)
 
 /**
  * Indicates whether the projector and front light should be turned on or off automatically.
@@ -32,17 +43,17 @@ enum ProjectorState
 class StereoCamera : public Camera
 {
 private:
-  sensor_msgs::CameraInfoPtr leftCameraInfo;
-  sensor_msgs::CameraInfoPtr rightCameraInfo;
-  sensor_msgs::CameraInfoPtr leftRectifiedCameraInfo;
-  sensor_msgs::CameraInfoPtr rightRectifiedCameraInfo;
+  sensor_msgs::msg::CameraInfoPtr leftCameraInfo;
+  sensor_msgs::msg::CameraInfoPtr rightCameraInfo;
+  sensor_msgs::msg::CameraInfoPtr leftRectifiedCameraInfo;
+  sensor_msgs::msg::CameraInfoPtr rightRectifiedCameraInfo;
 
-  std::unique_ptr<RequestDataServer> requestDataServer;
   std::unique_ptr<CalibrateHandEyeServer> calibrateHandEyeServer;
   std::unique_ptr<CalibrateWorkspaceServer> calibrateWorkspaceServer;
   std::unique_ptr<FitPrimitiveServer> fitPrimitiveServer;
   std::unique_ptr<LocatePatternServer> locatePatternServer;
   std::unique_ptr<ProjectPatternServer> projectPatternServer;
+  std::unique_ptr<RequestDataServer> requestDataServer;
   std::unique_ptr<TexturedPointCloudServer> texturedPointCloudServer;
   std::unique_ptr<TelecentricProjectionServer> telecentricProjectionServer;
 
@@ -54,10 +65,10 @@ private:
   image_transport::CameraPublisher depthImagePublisher;
   image_transport::Publisher projectedImagePublisher;
 
-  ros::Publisher pointCloudPublisher;
-  ros::Publisher pointCloudNormalsPublisher;
-  ros::Publisher pointCloudColoredPublisher;
-  ros::Publisher pointCloudProjectedPublisher;
+  POINT_CLOUD_PUBLISHER(ensenso::PointCloud) pointCloudPublisher;
+  POINT_CLOUD_PUBLISHER(ensenso::PointCloudNormals) pointCloudNormalsPublisher;
+  POINT_CLOUD_PUBLISHER(ensenso::PointCloudColored) pointCloudColoredPublisher;
+  POINT_CLOUD_PUBLISHER(ensenso::PointCloud) pointCloudProjectedPublisher;
 
   // Information that we remember between the different steps of the hand-eye calibration. We save the pattern buffer
   // outside of the NxLib, because otherwise we could not use the LocatePattern action while a hand-eye calibration is
@@ -66,51 +77,51 @@ private:
   std::vector<tf2::Transform> handEyeCalibrationRobotTransforms;
 
 public:
-  StereoCamera(ros::NodeHandle nh, CameraParameters params);
+  StereoCamera(ensenso::ros::NodeHandle& nh, CameraParameters params);
 
   void init() override;
 
-  void onSetParameter(ensenso_camera_msgs::SetParameterGoalConstPtr const& goal) override;
+  void onSetParameter(ensenso::action::SetParameterGoalConstPtr const& goal) override;
 
   /**
    * Callback for the `request_data` action.
    */
-  void onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr const& goal);
+  void onRequestData(ensenso::action::RequestDataGoalConstPtr const& goal);
 
   /**
    * Callback for the `locate_pattern` action.
    */
-  void onLocatePattern(ensenso_camera_msgs::LocatePatternGoalConstPtr const& goal);
+  void onLocatePattern(ensenso::action::LocatePatternGoalConstPtr const& goal);
 
   /**
    * Callback for the `project_pattern` action.
    */
-  void onProjectPattern(ensenso_camera_msgs::ProjectPatternGoalConstPtr const& goal);
+  void onProjectPattern(ensenso::action::ProjectPatternGoalConstPtr const& goal);
 
   /**
    * Callback for the `calibrate_hand_eye` action.
    */
-  void onCalibrateHandEye(ensenso_camera_msgs::CalibrateHandEyeGoalConstPtr const& goal);
+  void onCalibrateHandEye(ensenso::action::CalibrateHandEyeGoalConstPtr const& goal);
 
   /**
    * Callback for the `calibrate_workspace` action.
    */
-  void onCalibrateWorkspace(ensenso_camera_msgs::CalibrateWorkspaceGoalConstPtr const& goal);
+  void onCalibrateWorkspace(ensenso::action::CalibrateWorkspaceGoalConstPtr const& goal);
 
   /**
    * Callback for the `fit_primitive` action.
    */
-  void onFitPrimitive(ensenso_camera_msgs::FitPrimitiveGoalConstPtr const& goal);
+  void onFitPrimitive(ensenso::action::FitPrimitiveGoalConstPtr const& goal);
 
   /**
    * Callback for the `texture_point_cloud` action.
    */
-  void onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudGoalConstPtr const& goal);
+  void onTexturedPointCloud(ensenso::action::TexturedPointCloudGoalConstPtr const& goal);
 
   /**
    * Callback for the `project_telecentric` action.
    */
-  void onTelecentricProjection(ensenso_camera_msgs::TelecentricProjectionGoalConstPtr const& goal);
+  void onTelecentricProjection(ensenso::action::TelecentricProjectionGoalConstPtr const& goal);
 
 private:
   void updateCameraTypeSpecifics() override;
@@ -119,18 +130,18 @@ private:
 
   void updateCameraInfo() override;
 
-  virtual geometry_msgs::PoseStamped estimatePatternPose(ros::Time imageTimestamp = ros::Time::now(),
-                                                         std::string const& targetFrame = "",
-                                                         bool latestPatternOnly = false) const override;
+  geometry_msgs::msg::PoseStamped estimatePatternPose(ensenso::ros::Time imageTimestamp,
+                                                      std::string const& targetFrame = "",
+                                                      bool latestPatternOnly = false) const override;
 
-  virtual std::vector<geometry_msgs::PoseStamped>
-  estimatePatternPoses(ros::Time imageTimestamp = ros::Time::now(), std::string const& targetFrame = "") const override;
+  std::vector<geometry_msgs::msg::PoseStamped> estimatePatternPoses(ensenso::ros::Time imageTimestamp,
+                                                                    std::string const& targetFrame = "") const override;
 
-  ros::Time capture() const override;
+  ensenso::ros::Time capture() const override;
 
-  ensenso_camera_msgs::ParameterPtr readParameter(std::string const& key) const override;
+  ensenso::msg::ParameterPtr readParameter(std::string const& key) const override;
 
-  void writeParameter(ensenso_camera_msgs::Parameter const& parameter) override;
+  void writeParameter(ensenso::msg::Parameter const& parameter) override;
 
   /**
    * Advertise all camera topics.
@@ -158,7 +169,7 @@ private:
    * Grab the timestamp of the last captured (raw) image. Handle the different image sources across different camera
    * models (file camera, S-Series, XR-Series or normal stereo camera).
    */
-  ros::Time timestampOfCapturedImage() const;
+  ensenso::ros::Time timestampOfCapturedImage() const;
 
   /**
    * Try to collect patterns on the current images. For the command to be successful, the patterns must be decodable and
@@ -172,7 +183,7 @@ private:
    * When the right flag is set, use the calibration from the right camera instead from the left.
    * The rectified flag indicates whether the images are already rectified.
    */
-  void fillCameraInfoFromNxLib(sensor_msgs::CameraInfoPtr const& info, bool right, bool rectified = false) const;
+  void fillCameraInfoFromNxLib(sensor_msgs::msg::CameraInfoPtr const& info, bool right, bool rectified = false) const;
 
   /**
    * Return whether this camera is an S-series camera.
@@ -207,5 +218,5 @@ private:
   /**
    * Add the NxLib internal disparity map offset to the given camera info.
    */
-  void addDisparityMapOffset(sensor_msgs::CameraInfoPtr const& info) const;
+  void addDisparityMapOffset(sensor_msgs::msg::CameraInfoPtr const& info) const;
 };
