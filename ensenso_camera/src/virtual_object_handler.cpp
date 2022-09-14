@@ -1,16 +1,22 @@
-#include <ensenso_camera/virtual_object_handler.h>
+#include "ensenso_camera/virtual_object_handler.h"
 
-#include <ensenso_camera/pose_utilities.h>
+#include "ensenso_camera/pose_utilities.h"
+
+#include "ensenso_camera/ros2/core.h"
+#include "ensenso_camera/ros2/logging.h"
+#include "ensenso_camera/ros2/tf2.h"
+#include "ensenso_camera/ros2/time.h"
+
+#include "ensenso_camera/ros2/visualization_msgs/marker.h"
+#include "ensenso_camera/ros2/visualization_msgs/marker_array.h"
+
+#include <tf2/LinearMath/Quaternion.h>
 
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 
-#include <tf2/LinearMath/Quaternion.h>
-
-#include <visualization_msgs/MarkerArray.h>
-
-#include <nxLib.h>
+#include "nxLib.h"
 
 using namespace ensenso_camera;
 
@@ -32,24 +38,25 @@ std::string readFile(const std::string& filename)
 /// Class responsible for publishing NxLib virtual objects as ROS visualization_msgs::MarkerArray
 struct VirtualObjectMarkerPublisher
 {
-  VirtualObjectMarkerPublisher(const std::string& topic, double publishRate, const NxLibItem& objects,
-                               const std::string& frame, std::atomic_bool& stop_)
-    : rate(publishRate), stop(stop_)
+  VirtualObjectMarkerPublisher(ensenso::ros::NodeHandle& nh, const std::string& topic, double publishRate,
+                               const NxLibItem& objects, const std::string& frame, std::atomic_bool& stop_)
+    : nh(nh), rate(publishRate), stop(stop_)
   {
     // Create output topic
-    publisher = m_node_handle.advertise<visualization_msgs::MarkerArray>(topic, 1);
+    publisher = ensenso::ros::create_publisher<visualization_msgs::msg::MarkerArray>(nh, topic, 1);
 
     // Collect markers
     for (int i = 0; i < objects.count(); ++i)
     {
       auto& object = objects[i];
 
-      visualization_msgs::Marker marker;
-      marker.ns = ros::this_node::getName();
+      visualization_msgs::msg::Marker marker;
+
+      marker.ns = ensenso::ros::get_node_name(nh);
       marker.id = i;
-      marker.header.stamp = ros::Time::now();
+      marker.header.stamp = ensenso::ros::now(nh);
       marker.header.frame_id = frame;
-      marker.action = visualization_msgs::Marker::MODIFY;  // Note: ADD = MODIFY
+      marker.action = visualization_msgs::msg::Marker::MODIFY;  // Note: ADD = MODIFY
 
       // Set color
       const auto color = object[itmLighting][itmColor];
@@ -78,7 +85,7 @@ struct VirtualObjectMarkerPublisher
       // Set type and deal with object-specific properties
       if (filename.exists())
       {
-        marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+        marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
         marker.mesh_resource = "file://" + filename.asString();
 
         // Scale from mm to m
@@ -88,7 +95,7 @@ struct VirtualObjectMarkerPublisher
       }
       else if (type.asString() == valSphere)
       {
-        marker.type = visualization_msgs::Marker::SPHERE;
+        marker.type = visualization_msgs::msg::Marker::SPHERE;
 
         // Sphere scale is diameter in meters
         marker.scale.x = object[itmRadius].asDouble() * 2.0 / 1000.0;
@@ -97,7 +104,7 @@ struct VirtualObjectMarkerPublisher
       }
       else if (type.asString() == valCylinder)
       {
-        marker.type = visualization_msgs::Marker::CYLINDER;
+        marker.type = visualization_msgs::msg::Marker::CYLINDER;
 
         /// Cylinder scale x/y is diameter in meters, z is height in meters.
         marker.scale.x = object[itmRadius].asDouble() * 2.0 / 1000.0;
@@ -110,7 +117,7 @@ struct VirtualObjectMarkerPublisher
       }
       else if (type.asString() == valCube)
       {
-        marker.type = visualization_msgs::Marker::CUBE;
+        marker.type = visualization_msgs::msg::Marker::CUBE;
 
         marker.scale.x = object[itmWidth].asDouble() / 1000.0;
         marker.scale.y = object[itmWidth].asDouble() / 1000.0;
@@ -118,7 +125,7 @@ struct VirtualObjectMarkerPublisher
       }
       else if (type.asString() == valCuboid)
       {
-        marker.type = visualization_msgs::Marker::CUBE;
+        marker.type = visualization_msgs::msg::Marker::CUBE;
 
         marker.scale.x = object[itmWidth].asDouble() / 1000.0;
         marker.scale.z = object[itmHeight].asDouble() / 1000.0;
@@ -136,25 +143,25 @@ struct VirtualObjectMarkerPublisher
 
   void run()
   {
-    while (ros::ok() && !stop)
+    while (ensenso::ros::ok() && !stop)
     {
-      publisher.publish(markers);
+      publisher->publish(markers);
       rate.sleep();
     }
   }
 
-  ros::NodeHandle m_node_handle;
-  ros::Publisher publisher;
-  ros::Rate rate;
-  visualization_msgs::MarkerArray markers;
+  ensenso::ros::NodeHandle nh;
+  ensenso::ros::Publisher<visualization_msgs::msg::MarkerArray> publisher;
+  ensenso::ros::Rate rate;
+  visualization_msgs::msg::MarkerArray markers;
   std::atomic_bool& stop;
 };
 }  // namespace
 
-VirtualObjectHandler::VirtualObjectHandler(const std::string& filename, const std::string& objectsFrame,
-                                           const std::string& linkFrame, const std::string& markerTopic,
-                                           double markerPublishRate)
-  : objectsFrame(objectsFrame), linkFrame(linkFrame)
+VirtualObjectHandler::VirtualObjectHandler(ensenso::ros::NodeHandle& nh, const std::string& filename,
+                                           const std::string& objectsFrame, const std::string& linkFrame,
+                                           const std::string& markerTopic, double markerPublishRate)
+  : objectsFrame(objectsFrame), linkFrame(linkFrame), tfBuffer(TF2_BUFFER_CTOR_ARGS(nh))
 {
   // Read the file contents and assign it to the objects tag
   auto objects = NxLibItem{ itmObjects };
@@ -169,8 +176,9 @@ VirtualObjectHandler::VirtualObjectHandler(const std::string& filename, const st
   // Create publisher thread
   if (!markerTopic.empty())
   {
-    markerThread = std::thread([=]() {
-      VirtualObjectMarkerPublisher publisher{ markerTopic, markerPublishRate, objects, objectsFrame, stopMarkerThread };
+    markerThread = std::thread([&]() {
+      VirtualObjectMarkerPublisher publisher{ nh,      markerTopic,  markerPublishRate,
+                                              objects, objectsFrame, stopMarkerThread };
       publisher.run();
     });
   }
@@ -198,11 +206,11 @@ void VirtualObjectHandler::updateObjectLinks()
   tf2::Transform cameraTransform;
   try
   {
-    cameraTransform = fromMsg(tfBuffer.lookupTransform(linkFrame, objectsFrame, ros::Time(0)).transform);
+    cameraTransform = fromMsg(tfBuffer.lookupTransform(linkFrame, objectsFrame, ensenso::ros::Time(0)).transform);
   }
   catch (const tf2::TransformException& e)
   {
-    ROS_WARN("Could not look up the virtual object pose due to the tf error: %s", e.what());
+    ENSENSO_WARN("Could not look up the virtual object pose due to the TF error: %s", e.what());
     return;
   }
 

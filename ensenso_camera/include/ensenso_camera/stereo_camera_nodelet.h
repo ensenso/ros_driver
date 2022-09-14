@@ -1,23 +1,12 @@
 #pragma once
 
-#include "ensenso_camera/stereo_camera.h"
+#include "ensenso_camera/ros2/node.h"
 
-#include <nodelet/nodelet.h>
+#include "ensenso_camera/stereo_camera.h"
 
 #include <memory>
 
 namespace ensenso_camera
 {
-class StereoCameraNodelet : public nodelet::Nodelet
-{
-public:
-  StereoCameraNodelet();
-  ~StereoCameraNodelet();
-
-  void onInit() override;
-
-private:
-  std::string cameraType;
-  std::unique_ptr<StereoCamera> camera;
-};
+GENERATE_NODE_CLASS(StereoCamera)
 }  // namespace ensenso_camera
