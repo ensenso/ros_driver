@@ -1,8 +1,8 @@
 #pragma once
 
-#include "nxLib.h"
-
 #include <string>
+
+#include "nxLib.h"
 
 struct NxLibVersion
 {

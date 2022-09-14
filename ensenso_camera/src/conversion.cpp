@@ -1,7 +1,8 @@
 #include "ensenso_camera/conversion.h"
 
-#include "ros/ros.h"
+#include "ensenso_camera/ros2/logging.h"
 
+#include <chrono>
 #include <cmath>
 
 namespace ensenso_conversion
@@ -10,20 +11,29 @@ namespace
 {
 double const NXLIB_TIMESTAMP_OFFSET = 11644473600;
 
+double timeNowAsSeconds()
+{
+  // TODO Check if this also works with Windows and Mac in ROS2
+  auto t = std::chrono::system_clock::now();
+  auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(t.time_since_epoch()).count();
+  return (double)nanoseconds / 1e09;
+}
+
 double fixTimestamp(double const& timestamp, bool isFileCamera = false)
 {
+  // Due to a bug in the NxLib of SDK 3.2.489, S-series file cameras have missing timestamps.
+  // TODO Remove this check as soon as we only support SDK versions that include the bug fix (SDK-2860).
   if (std::isnan(timestamp))
   {
-    // Due to a bug in the NxLib of SDK 3.2.489, S-series file cameras have missing timestamps.
-    // TODO: Remove this check as soon as we only support SDK versions that include the bug fix (SDK-2860).
-    ROS_WARN("NxLib timestamp is \'nan\', using current ROS time instead.");
-    return ros::Time::now().toSec();
+    ENSENSO_WARN("NxLib timestamp is \'nan\', using current ROS time instead.");
+    return timeNowAsSeconds();
   }
   else if (isFileCamera)
   {
     // File camera timestamps are too old for ROS, use the current time instead.
-    return ros::Time::now().toSec();
+    return timeNowAsSeconds();
   }
+
   return timestamp - NXLIB_TIMESTAMP_OFFSET;
 }
 }  // namespace
@@ -39,9 +49,9 @@ double nxLibToPclTimestamp(double const& timestamp, bool isFileCamera)
   return nxLibToRosTimestamp(timestamp, isFileCamera) * 1e6;
 }
 
-geometry_msgs::Point32 toRosPoint(NxLibItem const& itemArray, bool convertUnits)
+geometry_msgs::msg::Point32 toRosPoint(NxLibItem const& itemArray, bool convertUnits)
 {
-  geometry_msgs::Point32 point;
+  geometry_msgs::msg::Point32 point;
   if (convertUnits)
   {
     point.x = itemArray[0].asDouble() / conversionFactor;
@@ -58,7 +68,7 @@ geometry_msgs::Point32 toRosPoint(NxLibItem const& itemArray, bool convertUnits)
   return point;
 }
 
-NxLibItem toEnsensoPoint(geometry_msgs::Point32 const& point, bool convertUnits)
+NxLibItem toEnsensoPoint(geometry_msgs::msg::Point32 const& point, bool convertUnits)
 {
   NxLibItem itemPoint;
   if (convertUnits)

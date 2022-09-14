@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pcl_ros/point_cloud.h>
+#include "ensenso_camera/ros2/pcl.h"
 
 namespace ensenso
 {
