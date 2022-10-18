@@ -19,7 +19,7 @@ using TexturedPointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
 TexturedPointCloud::Ptr texturePointCloudFromRectifiedImage(cv::Mat const& image,
                                                             PointCloud::ConstPtr const& pointCloud)
 {
-  auto texturedPointCloud = boost::make_shared<TexturedPointCloud>();
+  auto texturedPointCloud = std::make_shared<TexturedPointCloud>();
 
   if (static_cast<int>(pointCloud->width) != image.cols || static_cast<int>(pointCloud->height) != image.rows)
   {
@@ -98,11 +98,11 @@ private:
     latestImage = image;
   }
 
-  void onPointCloudReceived(PointCloud::ConstPtr const& pointCloud)
+  void onPointCloudReceived(boost::shared_ptr<const PointCloud> const& pointCloud)
   {
     std::lock_guard<std::mutex> lock(mutex);
 
-    latestPointCloud = pointCloud;
+    latestPointCloud = std::make_shared<const PointCloud>(*pointCloud);
     texture();
   }
 
@@ -124,7 +124,7 @@ private:
     TexturedPointCloud::Ptr texturedPointCloud;
     texturedPointCloud = texturePointCloudFromRectifiedImage(image->image, latestPointCloud);
 
-    texturedPointCloudPublisher.publish(texturedPointCloud);
+    texturedPointCloudPublisher.publish(*texturedPointCloud);
   }
 };
 

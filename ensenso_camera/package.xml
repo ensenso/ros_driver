@@ -17,6 +17,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>roslint</build_depend>
+  <depend>ensenso_sdk</depend>
   <depend>actionlib</depend>
   <depend>cv_bridge</depend>
   <depend>diagnostic_msgs</depend>

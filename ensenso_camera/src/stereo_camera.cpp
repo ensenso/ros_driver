@@ -426,7 +426,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       }
       if (publishResults)
       {
-        pointCloudPublisher.publish(pointCloud);
+        pointCloudPublisher.publish(*pointCloud);
       }
     }
     else
@@ -443,7 +443,7 @@ void StereoCamera::onRequestData(ensenso_camera_msgs::RequestDataGoalConstPtr co
       }
       if (publishResults)
       {
-        pointCloudPublisher.publish(pointCloud);
+        pointCloudPublisher.publish(*pointCloud);
       }
     }
   }
@@ -1164,7 +1164,7 @@ void StereoCamera::onTexturedPointCloud(ensenso_camera_msgs::TexturedPointCloudG
     auto cloudColored = retrieveTexturedPointCloud(renderPointMap.result(), params.targetFrame);
     if (goal->publish_results)
     {
-      pointCloudPublisherColor.publish(cloudColored);
+      pointCloudPublisherColor.publish(*cloudColored);
     }
     if (goal->include_results_in_response)
     {
