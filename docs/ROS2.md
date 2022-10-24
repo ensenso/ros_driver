@@ -65,7 +65,7 @@ ros2 launch ensenso_camera <tab><tab>
 ```
 
 ## Limitations
-Since ROS2 does not support type masquerading (yet and probably never), poinct clouds in ROS2 are published as
+Since ROS2 does not support type masquerading (yet and probably never), point clouds in ROS2 are published as
 `sensor_msgs::msg::PointCloud2` and not directly as `pcl::PointCloud<T>` messages as in ROS1. This requires the user to
 convert the received point cloud in case `pcl` format is desired.
 
