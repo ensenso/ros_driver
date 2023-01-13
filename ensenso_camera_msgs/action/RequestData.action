@@ -1,8 +1,10 @@
 # The parameter set that is used for capturing the image for this data set.
 string parameter_set
 
-# Enable these flags for every type of data that you want to receive from the camera.
-# If none of the flags is given, the point cloud flag is automatically set.
+# Enable these flags for every type of data that you want to request from the
+# camera. If none of the flags is given, the point cloud flag is automatically
+# set. Note that the data is published by default and not included in the result
+# of this action (see below).
 bool request_raw_images
 bool request_rectified_images
 bool request_disparity_map
