@@ -23,7 +23,9 @@ def _main(node_name):
     goal.request_point_cloud = ros2py.get_param(node, "point_cloud", True)
     goal.request_normals = ros2py.get_param(node, "normals", True)
 
+    # By default the data is published and not included in the action response.
     goal.publish_results = True
+    goal.include_results_in_response = False
 
     request_data_client_name = "request_data" if namespace == "" else namespace.rstrip("/") + "/request_data"
     request_data_client = ros2py.create_action_client(node, request_data_client_name, RequestData)
