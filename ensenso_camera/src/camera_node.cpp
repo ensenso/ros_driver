@@ -103,12 +103,13 @@ std::string getSerialOfFirstCamera(ensenso::ros::NodeHandle& nh, std::string con
   bool foundAppropriateCamera = false;
 
   // Try to find the first camera that matches the type of the camera node.
-  NxLibItem cameras = NxLibItem()[itmCameras][itmBySerialNo];
+  NxLibItem cameras = NxLibItem()[itmCameras];
   for (int i = 0; i < cameras.count(); i++)
   {
     NxLibItem camera = cameras[i];
     NxLibItem cameraType = camera[itmType];
-    if (camera[itmStatus][itmAvailable].asBool() && cameraType.exists() && cameraType.asString() == cameraNodeType)
+    if (camera[itmStatus][itmAvailable].exists() && camera[itmStatus][itmAvailable].asBool() && cameraType.exists() &&
+        cameraType.asString() == cameraNodeType)
     {
       foundAppropriateCamera = true;
       serial = camera.name();
