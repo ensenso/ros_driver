@@ -477,6 +477,11 @@ bool Camera::open()
   {
     try
     {
+      if (params.serial.empty())
+      {
+        ENSENSO_ERROR(nh, "The serial is empty, please proivde a valid one!");
+        return false;
+      }
       if (params.serial.size() > 15)
       {
         ENSENSO_ERROR(nh, "The serial '%s' is too long!", params.serial.c_str());
