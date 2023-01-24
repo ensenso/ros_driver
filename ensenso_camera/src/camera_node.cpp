@@ -108,11 +108,16 @@ std::string getSerialOfFirstCamera(ensenso::ros::NodeHandle& nh, std::string con
   {
     NxLibItem camera = cameras[i];
     NxLibItem cameraType = camera[itmType];
-    if (camera[itmStatus][itmAvailable].asBool() && cameraType.exists() && cameraType.asString() == cameraNodeType)
-    {
-      foundAppropriateCamera = true;
-      serial = camera.name();
-      break;
+    try {
+      if (camera[itmStatus][itmAvailable].asBool() && cameraType.exists() &&
+          cameraType.asString() == cameraNodeType) {
+          foundAppropriateCamera = true;
+          serial = camera.name();
+          break;
+      }
+    } catch (const NxLibException& e) {
+      ENSENSO_WARN(nh, "Got exception: '%s' when getting camera serial: '%s'. Camera %i\\%i",
+                   e.getErrorText().c_str(), serial.c_str(), i+1, cameras.count());
     }
   }
 
