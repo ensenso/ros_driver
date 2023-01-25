@@ -16,6 +16,11 @@ def launch_setup(context, *args, **kwargs):
     link_frame = ensenso.fix_empty_string(LaunchConfiguration("link_frame").perform(context))
     robot_frame = ensenso.fix_empty_string(LaunchConfiguration("robot_frame").perform(context))
     wrist_frame = ensenso.fix_empty_string(LaunchConfiguration("wrist_frame").perform(context))
+    objects_file = ensenso.fix_empty_string(LaunchConfiguration("objects_file").perform(context))
+    objects_frame = ensenso.fix_empty_string(LaunchConfiguration("objects_frame").perform(context))
+    visualization_marker_topic = ensenso.fix_empty_string(
+        LaunchConfiguration("visualization_marker_topic").perform(context)
+    )
 
     node = Node(
         package="ensenso_camera",
@@ -35,6 +40,10 @@ def launch_setup(context, *args, **kwargs):
                 "wrist_frame": wrist_frame,
                 "tcp_port": LaunchConfiguration("tcp_port"),
                 "wait_for_camera": LaunchConfiguration("wait_for_camera"),
+                "objects_file": objects_file,
+                "objects_frame": objects_frame,
+                "visualization_marker_topic": visualization_marker_topic,
+                "visualization_marker_rate": LaunchConfiguration("visualization_marker_rate"),
             }
         ],
     )
@@ -55,6 +64,12 @@ def generate_launch_description():
     wrist_frame_launch_arg = DeclareLaunchArgument("wrist_frame", default_value=ensenso.EMPTY_STRING)
     tcp_port_launch_arg = DeclareLaunchArgument("tcp_port", default_value="-1")
     wait_for_camera_launch_arg = DeclareLaunchArgument("wait_for_camera", default_value="False")
+    objects_file_launch_arg = DeclareLaunchArgument("objects_file", default_value=ensenso.EMPTY_STRING)
+    objects_frame_launch_arg = DeclareLaunchArgument("objects_frame", default_value=ensenso.EMPTY_STRING)
+    visualization_marker_topic_launch_arg = DeclareLaunchArgument(
+        "visualization_marker_topic", default_value=ensenso.EMPTY_STRING
+    )
+    visualization_marker_rate_launch_arg = DeclareLaunchArgument("visualization_marker_rate", default_value="1.0")
 
     return LaunchDescription(
         [
@@ -70,6 +85,10 @@ def generate_launch_description():
             wrist_frame_launch_arg,
             tcp_port_launch_arg,
             wait_for_camera_launch_arg,
+            objects_file_launch_arg,
+            objects_frame_launch_arg,
+            visualization_marker_topic_launch_arg,
+            visualization_marker_rate_launch_arg,
             OpaqueFunction(function=launch_setup),
         ]
     )
