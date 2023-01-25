@@ -121,7 +121,11 @@ extern "C" {
   node->declare_parameter<std::string>("robot_frame", "");                                                             \
   node->declare_parameter<std::string>("wrist_frame", "");                                                             \
   node->declare_parameter<int>("tcp_port", -1);                                                                        \
-  node->declare_parameter<bool>("wait_for_camera", false);
+  node->declare_parameter<bool>("wait_for_camera", false);                                                             \
+  node->declare_parameter<std::string>("objects_file", "");                                                            \
+  node->declare_parameter<std::string>("objects_frame", "");                                                           \
+  node->declare_parameter<std::string>("visualization_marker_topic", "");                                              \
+  node->declare_parameter<double>("visualization_marker_rate", 1.0);
 
 namespace ensenso
 {
