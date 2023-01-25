@@ -32,7 +32,7 @@ copy_to_nonexistent_dir () {
 }
 
 if [[ $ROS_VERSION -eq "2" ]]; then
-	echo "Preparing repository for ROS2"
+    echo "Preparing repository for ROS2"
 
     ignore_ros1_package "ensenso_camera"
     ignore_ros1_package "ensenso_camera_msgs"
