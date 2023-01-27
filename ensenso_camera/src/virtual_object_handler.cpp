@@ -176,8 +176,9 @@ VirtualObjectHandler::VirtualObjectHandler(ensenso::ros::NodeHandle& nh, const s
   // Create publisher thread
   if (!markerTopic.empty())
   {
-    markerThread = std::thread([&]() {
-      VirtualObjectMarkerPublisher publisher{ nh,      markerTopic,  markerPublishRate,
+    auto nh_ptr = &nh;
+    markerThread = std::thread([=]() {
+      VirtualObjectMarkerPublisher publisher{ *nh_ptr, markerTopic,  markerPublishRate,
                                               objects, objectsFrame, stopMarkerThread };
       publisher.run();
     });
