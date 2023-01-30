@@ -38,9 +38,9 @@ std::string readFile(const std::string& filename)
 /// Class responsible for publishing NxLib virtual objects as ROS visualization_msgs::MarkerArray
 struct VirtualObjectMarkerPublisher
 {
-  VirtualObjectMarkerPublisher(ensenso::ros::NodeHandle& nh, const std::string& topic, double publishRate,
+  VirtualObjectMarkerPublisher(ensenso::ros::NodeHandle _nh, const std::string& topic, double publishRate,
                                const NxLibItem& objects, const std::string& frame, std::atomic_bool& stop_)
-    : nh(nh), rate(publishRate), stop(stop_)
+    : nh(std::move(_nh)), rate(publishRate), stop(stop_)
   {
     // Create output topic
     publisher = ensenso::ros::create_publisher<visualization_msgs::msg::MarkerArray>(nh, topic, 1);
@@ -176,7 +176,7 @@ VirtualObjectHandler::VirtualObjectHandler(ensenso::ros::NodeHandle& nh, const s
   // Create publisher thread
   if (!markerTopic.empty())
   {
-    markerThread = std::thread([&]() {
+    markerThread = std::thread([=]() {
       VirtualObjectMarkerPublisher publisher{ nh,      markerTopic,  markerPublishRate,
                                               objects, objectsFrame, stopMarkerThread };
       publisher.run();
