@@ -54,7 +54,7 @@ struct VirtualObjectMarkerPublisher
 
       marker.ns = ensenso::ros::get_node_name(nh);
       marker.id = i;
-      marker.header.stamp = ensenso::ros::now(nh);
+      marker.header.stamp = ensenso::ros::Time(0);
       marker.header.frame_id = frame;
       marker.action = visualization_msgs::msg::Marker::MODIFY;  // Note: ADD = MODIFY
 
