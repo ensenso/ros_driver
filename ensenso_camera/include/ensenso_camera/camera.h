@@ -221,7 +221,8 @@ struct CameraParameters
   /**
    * The tf frame in which the user wants to receive the data from the camera. All data is automatically transformed
    * using the current tf transformation between linkFrame and targetFrame (this includes the point cloud as well as
-   * poses of calibration patterns). By default, targetFrame is the same as cameraFrame, if not defined.
+   * poses of calibration patterns). If neither the linkFrame nor the targetFrame parameter is given, it defaults to the
+   * cameraFrame. If the linkFrame but not the targetFrame is given, it defaults to the linkFrame.
    */
   std::string targetFrame;
 

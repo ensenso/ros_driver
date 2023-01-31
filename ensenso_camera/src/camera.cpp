@@ -43,6 +43,10 @@ CameraParameters::CameraParameters(ensenso::ros::NodeHandle& nh, std::string con
     linkFrame = cameraFrame;
     targetFrame = cameraFrame;
   }
+  else if (!linkFrame.empty() && targetFrame.empty())
+  {
+    targetFrame = linkFrame;
+  }
 
   if (cameraType != valMonocular)
   {
