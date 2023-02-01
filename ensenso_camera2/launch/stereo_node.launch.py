@@ -9,6 +9,7 @@ from ensenso_camera import ros2_launch as ensenso
 
 
 def launch_setup(context, *args, **kwargs):
+    namespace = ensenso.fix_empty_string(LaunchConfiguration("namespace").perform(context))
     settings = ensenso.fix_empty_string(LaunchConfiguration("settings").perform(context))
     file_camera_path = ensenso.fix_empty_string(LaunchConfiguration("file_camera_path").perform(context))
     camera_frame = ensenso.fix_empty_string(LaunchConfiguration("camera_frame").perform(context))
@@ -26,6 +27,7 @@ def launch_setup(context, *args, **kwargs):
         package="ensenso_camera",
         executable="ensenso_camera_node",
         name="ensenso_camera_node",
+        namespace=namespace,
         parameters=[
             {
                 "serial": LaunchConfiguration("serial"),
@@ -52,6 +54,7 @@ def launch_setup(context, *args, **kwargs):
 
 
 def generate_launch_description():
+    namespace_arg = DeclareLaunchArgument("namespace", default_value=ensenso.EMPTY_STRING)
     serial_launch_arg = DeclareLaunchArgument("serial", default_value="stereo_cam")
     settings_launch_arg = DeclareLaunchArgument("settings", default_value=ensenso.EMPTY_STRING)
     file_camera_path_launch_arg = DeclareLaunchArgument("file_camera_path", default_value=ensenso.EMPTY_STRING)
@@ -73,6 +76,7 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            namespace_arg,
             serial_launch_arg,
             settings_launch_arg,
             file_camera_path_launch_arg,
