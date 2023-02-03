@@ -25,7 +25,6 @@ class HzTestSampler:
 
         self.node = ros2py.create_node(self.test_name)
         self.subscription = self.node.create_subscription(self.msg_type, self.topic, self.subscription_callback, 10)
-        ros2py.spin(self.node)
 
     def run(self):
         loop_rate = self.node.create_rate(0.1)

@@ -40,6 +40,8 @@ if is_ros2():
 
     from action_msgs.msg import GoalStatus
     from rclpy.action import ActionClient
+    from rclpy.callback_groups import ReentrantCallbackGroup
+    from rclpy.executors import MultiThreadedExecutor
 
     def import_action(package_name, action_name):
         return import_from_module(package_name + ".action", action_name)
@@ -63,34 +65,36 @@ if is_ros2():
         def __init__(self, node, client, goal, feedback_callback=None):
             self._node = node
             self._client = client
+            self._event = threading.Event()
             self._goal = goal
             self._feedback_callback = feedback_callback
             self._response = None
+            self._result = None
 
         def send_goal(self):
-            self._goal_handle_future = self._client.send_goal_async(self._goal, self._feedback_callback)
+            self._event.clear()
+            send_goal_future = self._client.send_goal_async(self._goal, feedback_callback=self._feedback_callback)
+            send_goal_future.add_done_callback(self.response_callback)
 
         def wait_for_response(self, timeout_sec=None):
-            if self._node.spinning:
-                wait_until_future_complete(self._node, self._goal_handle_future)
-            else:
-                rclpy.spin_until_future_complete(self._node, self._goal_handle_future, timeout_sec=timeout_sec)
+            # Separate sending goal and waiting for response so that we can handle several clients at once by sending
+            # all the goals first and then waiting until all clients have received the response.
+            self._event.wait(timeout_sec)
+            self._response = ActionResponse(self._result.status, self._result.result)
 
-            goal_handle = self._goal_handle_future.result()
-
+        def response_callback(self, future):
+            goal_handle = future.result()
             # ROS2 does not provide means to check whether the retrieval of an action result timed out, but it provides
             # an `accepted()` method.
             if not goal_handle.accepted:
                 self._response = ActionResponse(GoalStatus.STATUS_ABORTED)
                 return
+            get_result_future = goal_handle.get_result_async()
+            get_result_future.add_done_callback(self.result_callback)
 
-            result_future = goal_handle.get_result_async()
-            if self._node.spinning:
-                wait_until_future_complete(self._node, result_future)
-            else:
-                rclpy.spin_until_future_complete(self._node, result_future, timeout_sec=timeout_sec)
-
-            self._response = ActionResponse(result_future.result().status, result_future.result().result)
+        def result_callback(self, future):
+            self._result = future.result()
+            self._event.set()
 
         def get_response(self):
             return self._response
@@ -103,10 +107,6 @@ if is_ros2():
         rate = node.create_rate(frequency)
         rate.sleep()
 
-    def wait_until_future_complete(node, future):
-        while not future.done():
-            sleep(node, 0.1)
-
     def wrap_main_function(main, node_name):
         try:
             main(node_name)
@@ -116,13 +116,12 @@ if is_ros2():
     def create_node(name, args=sys.argv):
         rclpy.init(args=args)
         node = rclpy.create_node(name)
-        node.thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
-        node.spinning = False
-        return node
-
-    def spin(node):
-        node.thread.start()
+        executor = MultiThreadedExecutor()
+        node.thread = threading.Thread(target=rclpy.spin, args=(node, executor), daemon=True)
+        node.callback_group = ReentrantCallbackGroup()
         node.spinning = True
+        node.thread.start()
+        return node
 
     def ok():
         return rclpy.ok()
@@ -180,7 +179,6 @@ if is_ros2():
         """
         action_handler = ActionHandler(node, client, goal, feedback_callback)
         action_handler.send_goal()
-
         action_handler.wait_for_response(timeout_sec)
         return action_handler.get_response()
 
@@ -202,14 +200,13 @@ if is_ros2():
         return responses
 
     def create_action_client(node, action_name, action):
-        return ActionClient(node, action, action_name)
+        return ActionClient(node, action, action_name, callback_group=node.callback_group)
 
     def execute_at_rate(node, func, rate_in_hz):
         # As explained in https://answers.ros.org/question/358343/, we have to spin because Rate in ROS2 registers a
         # callback with a ROS timer and without spinning the callback is never executed and thus the timer will never
         # wake up and trigger.
         try:
-            spin(node)
             rate = node.create_rate(rate_in_hz)
             while rclpy.ok():
                 func()
