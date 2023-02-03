@@ -62,10 +62,6 @@ class TestTelecentricProjection(unittest.TestCase):
         # Test the subscribed cloud
         self.send_goal_with_publishing_point_cloud()
 
-        # Explicitly spin the node so that the subscription callback will be executed, because the test cases do not
-        # send any further actions, which would implicitly spin the node
-        ros2py.spin(self.node)
-
     def tearDown(self):
         if os.path.isfile(IMAGE_PATH_MONO8):
             os.remove(IMAGE_PATH_MONO8)
