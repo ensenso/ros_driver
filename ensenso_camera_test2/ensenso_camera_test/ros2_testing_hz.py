@@ -52,10 +52,8 @@ def test_func(self):
     measured_rates = HzTestSampler(self.test_name, self.msg_type, self.topic, self.params.duration_in_s).run()
     self.assertTrue(len(measured_rates) > 0, msg=f"No messages received on topic {self.topic}")
 
-    # TODO Find out why some of the GitHub action runs fail with very large rate deviations and reenable checking for
-    # the actual average rate.
-    # average_rate = sum(measured_rates) / len(measured_rates)
-    # self.assertAlmostEqual(average_rate, self.params.rate_in_hz, delta=self.params.tolerance_in_hz)
+    average_rate = sum(measured_rates) / len(measured_rates)
+    self.assertAlmostEqual(average_rate, self.params.rate_in_hz, delta=self.params.tolerance_in_hz)
 
 
 def HzTest(test_name, msg_type, topic, params):
