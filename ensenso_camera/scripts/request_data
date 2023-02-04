@@ -42,6 +42,8 @@ def _main(node_name):
         if result.error.code != 0:
             node.get_logger().error(ros2py.format_error(result.error))
 
+        node.get_logger().info("Data successfully requested.")
+
     ros2py.execute_at_rate(node, main_loop, loop_rate)
 
 

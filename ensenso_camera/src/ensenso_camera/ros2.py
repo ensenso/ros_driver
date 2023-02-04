@@ -145,11 +145,13 @@ if is_ros2():
         """
         Returns True if the client established a server connection in the given amount of time, False otherwise.
         """
+        node.get_logger().info("Connecting to action server {} ...".format(client._action_name))
         if not client.wait_for_server(timeout_sec):
             node.get_logger().error(SERVER_TIMEOUT_ERROR_MESSAGE)
             if exit:
                 sys.exit()
             return False
+        node.get_logger().info("Connected!")
         return True
 
     def wait_for_servers(node, clients, timeout_sec=None, exit=False):
@@ -335,11 +337,13 @@ else:
         Returns True if the client established a server connection in the given amount of time, False otherwise.
         """
         timeout = rospy.Duration() if timeout_sec is None else rospy.Duration(timeout_sec)
+        node.get_logger().info("Connecting to action server {} ...".format(client.action_client.ns))
         if not client.wait_for_server(timeout):
             node.get_logger().error(SERVER_TIMEOUT_ERROR_MESSAGE)
             if exit:
                 sys.exit()
             return False
+        node.get_logger().info("Connected!")
         return True
 
     def wait_for_servers(node, clients, timeout_sec=None, exit=True):

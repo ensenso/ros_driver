@@ -64,6 +64,7 @@ def _main(node_name):
         texture_goal.far_plane = 4000.0
         texture_goal.near_plane = 100.0
 
+        node.get_logger().info("Texturing point cloud.")
         ros2py.send_action_goal(node, texture_point_cloud_client, texture_goal)
 
     ros2py.execute_at_rate(node, main_loop, loop_rate)

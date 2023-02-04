@@ -51,7 +51,8 @@ def _main(node_name):
         if mono_result.error.code != 0:
             node.get_logger().error(ros2py.format_error(mono_result.error, "Error while acquiring mono data!"))
             return
-        pass
+
+        node.get_logger().info("Data successfully requested.")
 
     ros2py.execute_at_rate(node, main_loop, loop_rate)
 

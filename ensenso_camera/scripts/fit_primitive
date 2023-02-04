@@ -139,6 +139,7 @@ def _main(node_name):
                 marker_array.markers.append(marker)
                 marker_id += 1
 
+        node.get_logger().info("Publishing marker array with {} elements.".format(len(marker_array.markers)))
         marker_publisher.publish(marker_array)
 
     ros2py.execute_at_rate(node, main_loop, loop_rate)
