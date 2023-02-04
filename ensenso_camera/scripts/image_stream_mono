@@ -45,6 +45,7 @@ def _main(node_name):
             image = result.rectified_images[0]
         else:
             image = result.raw_images[0]
+        node.get_logger().info("Publishing image.")
         image_publisher.publish(image)
 
     ros2py.execute_at_rate(node, main_loop, loop_rate)
