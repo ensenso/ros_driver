@@ -27,22 +27,15 @@ class QueuedActionServer
 {
 public:
   using ActionServerSharedPtr = typename rclcpp_action::Server<ActionT>::SharedPtr;
-
   using Goal = typename ActionT::Goal;
   using GoalConstSharedPtr = std::shared_ptr<const Goal>;
-
   using GoalHandle = typename rclcpp_action::ServerGoalHandle<ActionT>;
   using GoalHandleSharedPtr = std::shared_ptr<GoalHandle>;
-
+  using ExecuteCallback = std::function<void(GoalConstSharedPtr)>;
   using GoalUUID = rclcpp_action::GoalUUID;
-
-  using Result = typename ActionT::Result;
-
   using Feedback = typename ActionT::Feedback;
   using FeedbackConstSharedPtr = std::shared_ptr<const Feedback>;
-
-  // using ExecuteCallback = ensenso::std::function<void(GoalConstSharedPtr)>;
-  using ExecuteCallback = std::function<void(GoalConstSharedPtr)>;
+  using Result = typename ActionT::Result;
 
 public:
   QueuedActionServer(ensenso::ros::NodeHandle nh, std::string const& name, ExecuteCallback callback,
