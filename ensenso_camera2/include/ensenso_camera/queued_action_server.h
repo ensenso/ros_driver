@@ -42,11 +42,29 @@ public:
                      bool autoStart = false)
     : nh(nh), name(name), callback(callback)
   {
+    // -----------------------------------------------------------------------------------------------------------------
+    // Disable result caching by setting the timeout to 100ms. The default value of 15min caused the stereo_camera node
+    // to have a huge RAM usage when e.g. the request_data result included images.
+    // See: - https://design.ros2.org/articles/actions.html#result-caching
+    //      - https://answers.ros.org/question/366054
+    // -----------------------------------------------------------------------------------------------------------------
+    // BUG:
+    // Setting the timeout to value 0, which should discard a goal result immediately after responding to any pending
+    // result request as described in the linked article above, does not yet work with our code as expected. Some tests
+    // fail because the goal result status is UNKNOWN (0) and not SUCCEEDED (4). The current assumption is that the goal
+    // gets deleted before the result callback is executed.
+    // -----------------------------------------------------------------------------------------------------------------
+    // TODO:
+    // Find our whether this is a bug on our side or within the ROS2 action server implementation.
+    // -----------------------------------------------------------------------------------------------------------------
+    auto options = rcl_action_server_get_default_options();
+    options.result_timeout.nanoseconds = 1e6 * 100;  // 100ms
+
     this->actionServer = rclcpp_action::create_server<ActionT>(
         nh->get_base_interface(), nh->get_clock_interface(), nh->get_logging_interface(), nh->get_waitables_interface(),
         name, std::bind(&QueuedActionServer::onGoalReceived, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&QueuedActionServer::onCancelReceived, this, std::placeholders::_1),
-        std::bind(&QueuedActionServer::onGoalAccepted, this, std::placeholders::_1));
+        std::bind(&QueuedActionServer::onGoalAccepted, this, std::placeholders::_1), options);
 
     if (autoStart)
     {
