@@ -41,7 +41,7 @@ struct VirtualObjectMarkerPublisher
   VirtualObjectMarkerPublisher(ensenso::ros::NodeHandle _nh, const std::string& topic, double publishRate,
                                const NxLibItem& objects, const std::string& frame, std::atomic_bool& stop_)
     : nh(std::move(_nh)), rate(publishRate), stop(stop_)
-  {
+  { 
     // Create output topic
     publisher = ensenso::ros::create_publisher<visualization_msgs::msg::MarkerArray>(nh, topic, 1);
 
@@ -55,7 +55,7 @@ struct VirtualObjectMarkerPublisher
       marker.ns = ensenso::ros::get_node_name(nh);
       marker.id = i;
       marker.header.stamp = ensenso::ros::Time(0);
-      marker.header.frame_id = frame;
+      marker.header.frame_id = object[itmLink][itmTarget].asString();
       marker.action = visualization_msgs::msg::Marker::MODIFY;  // Note: ADD = MODIFY
 
       // Set color
@@ -171,6 +171,7 @@ VirtualObjectHandler::VirtualObjectHandler(ensenso::ros::NodeHandle& nh, const s
   for (int i = 0; i < objects.count(); ++i)
   {
     originalTransforms.push_back(transformFromNxLib(objects[i][itmLink]));
+    objectFrames.push_back(objects[i][itmLink][itmTarget].asString());
   }
 
   // Create publisher thread
@@ -201,22 +202,24 @@ void VirtualObjectHandler::updateObjectLinks()
   {
     return;
   }
-
-  // Find transform from the frame in which the objects were defined to the current optical frame
+  
   tf2::Transform cameraTransform;
-  try
-  {
-    cameraTransform = fromMsg(tfBuffer.lookupTransform(linkFrame, objectsFrame, ensenso::ros::Time(0)).transform);
-  }
-  catch (const tf2::TransformException& e)
-  {
-    ENSENSO_WARN("Could not look up the virtual object pose due to the TF error: %s", e.what());
-    return;
-  }
 
   // Apply the transform to all of the original transforms
   for (size_t i = 0; i < originalTransforms.size(); ++i)
   {
+    // Find transform from the frame in which the objects were defined to the current optical frame
+    try
+    {
+      cameraTransform = fromMsg(tfBuffer.lookupTransform(linkFrame, objectFrames[i], ensenso::ros::Time(0)).transform);
+    }
+    catch (const tf2::TransformException& e)
+    {
+      ENSENSO_WARN("Could not look up the virtual object pose due to the TF error: %s", e.what());
+      return;
+    }
+    
+    // Transform object back to original frame
     tf2::Transform objectTransform = cameraTransform * originalTransforms[i];
     NxLibItem objectLink = NxLibItem{ itmObjects }[static_cast<int>(i)][itmLink];
     writeTransformToNxLib(objectTransform.inverse(), objectLink);
