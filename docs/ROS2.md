@@ -64,6 +64,17 @@ ros2 launch ensenso_camera <tab><tab>
 
 ```
 
+## Documentation
+The usage is basically the same as for ROS1 except of course for the different ROS2 CLI as shown above.
+
+There is no documentation platform for third-party packages for ROS2 yet, but since we neither changed the API nor the
+message and action definitions for ROS2, you can simply refer to our [ROS1 wiki](http://wiki.ros.org/ensenso_driver).
+
+We still provide the same nodes as for ROS1, but one thing that has changed from ROS1 to ROS2 is that there are no
+nodelets in ROS2 (the concept has been replaced by that of a `Component`), which is why the launch file names have
+changed and some launch files have even been removed. Please keep this in mind when doing the
+[tutorials](http://wiki.ros.org/ensenso_driver/Tutorials) on nodelets.
+
 ## Limitations
 Since ROS2 does not support type masquerading (yet and probably never), point clouds in ROS2 are published as
 `sensor_msgs::msg::PointCloud2` and not directly as `pcl::PointCloud<T>` messages as in ROS1. This requires the user to

@@ -5,7 +5,8 @@
 
 To get started with the package, take a look at the [ROS wiki](http://wiki.ros.org/ensenso_driver).
 
-If you want to use the package with ROS2, follow our [instructions](docs/ROS2.md) on how to build for ROS2.
+If you want to use the package with ROS2, see our [ROS2 documentation](docs/ROS2.md) on how to build for ROS2 and for
+further information.
 
 ## Remarks
  * For using this package, you need to have the [Ensenso SDK](https://www.ensenso.com/support/sdk-download) installed.
