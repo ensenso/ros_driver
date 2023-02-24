@@ -202,26 +202,24 @@ void VirtualObjectHandler::updateObjectLinks()
   {
     return;
   }
-  
-  tf2::Transform cameraTransform;
-
+  auto objects = NxLibItem()[itmObjects];
   // Apply the transform to all of the original transforms
-  for (size_t i = 0; i < originalTransforms.size(); ++i)
+  for (int i = 0; i < objects.count(); ++i)
   {
-    // Find transform from the frame in which the objects were defined to the current optical frame
+    auto objectLink = objects[i][itmLink];
     try
     {
-      cameraTransform = fromMsg(tfBuffer.lookupTransform(linkFrame, objectFrames[i], ensenso::ros::Time(0)).transform);
+      // Find the transformation from the object frame to the current optical frame
+      auto objectFrame = objectLink[itmTarget].asString();
+      auto cameraTransform = fromMsg(tfBuffer.lookupTransform(linkFrame, objectFrame, ensenso::ros::Time(0)).transform);
+      // Transform object back to original frame
+      tf2::Transform objectTransform = cameraTransform * originalTransforms[i];
+      writeTransformToNxLib(objectTransform.inverse(), objectLink);
     }
     catch (const tf2::TransformException& e)
     {
       ENSENSO_WARN("Could not look up the virtual object pose due to the TF error: %s", e.what());
       return;
     }
-    
-    // Transform object back to original frame
-    tf2::Transform objectTransform = cameraTransform * originalTransforms[i];
-    NxLibItem objectLink = NxLibItem{ itmObjects }[static_cast<int>(i)][itmLink];
-    writeTransformToNxLib(objectTransform.inverse(), objectLink);
   }
-}
+}  
