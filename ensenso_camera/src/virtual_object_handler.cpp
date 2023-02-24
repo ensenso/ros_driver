@@ -39,23 +39,32 @@ std::string readFile(const std::string& filename)
 struct VirtualObjectMarkerPublisher
 {
   VirtualObjectMarkerPublisher(ensenso::ros::NodeHandle _nh, const std::string& topic, double publishRate,
-                               const NxLibItem& objects, const std::string& frame, std::atomic_bool& stop_)
+                               const std::string& frame, std::atomic_bool& stop_)
     : nh(std::move(_nh)), rate(publishRate), stop(stop_)
-  { 
+  {
     // Create output topic
     publisher = ensenso::ros::create_publisher<visualization_msgs::msg::MarkerArray>(nh, topic, 1);
+
+    auto objects = NxLibItem()[itmObjects];
 
     // Collect markers
     for (int i = 0; i < objects.count(); ++i)
     {
       auto& object = objects[i];
 
+      std::string objectFrame = frame;
+      if (object[itmLink][itmTarget].isString())
+      {
+        objectFrame = object[itmLink][itmTarget].asString();
+      }
+      ENSENSO_WARN(nh, "frame: %s", objectFrame.c_str());
+
       visualization_msgs::msg::Marker marker;
 
       marker.ns = ensenso::ros::get_node_name(nh);
       marker.id = i;
       marker.header.stamp = ensenso::ros::Time(0);
-      marker.header.frame_id = object[itmLink][itmTarget].asString();
+      marker.header.frame_id = objectFrame;
       marker.action = visualization_msgs::msg::Marker::MODIFY;  // Note: ADD = MODIFY
 
       // Set color
@@ -164,22 +173,20 @@ VirtualObjectHandler::VirtualObjectHandler(ensenso::ros::NodeHandle& nh, const s
   : objectsFrame(objectsFrame), linkFrame(linkFrame), tfBuffer(TF2_BUFFER_CTOR_ARGS(nh))
 {
   // Read the file contents and assign it to the objects tag
-  auto objects = NxLibItem{ itmObjects };
+  auto objects = NxLibItem()[itmObjects];
   objects.setJson(readFile(filename));
 
   // Get the original transforms from file
   for (int i = 0; i < objects.count(); ++i)
   {
     originalTransforms.push_back(transformFromNxLib(objects[i][itmLink]));
-    objectFrames.push_back(objects[i][itmLink][itmTarget].asString());
   }
 
   // Create publisher thread
   if (!markerTopic.empty())
   {
     markerThread = std::thread([=]() {
-      VirtualObjectMarkerPublisher publisher{ nh,      markerTopic,  markerPublishRate,
-                                              objects, objectsFrame, stopMarkerThread };
+      VirtualObjectMarkerPublisher publisher{ nh, markerTopic, markerPublishRate, objectsFrame, stopMarkerThread };
       publisher.run();
     });
   }
@@ -222,4 +229,4 @@ void VirtualObjectHandler::updateObjectLinks()
       return;
     }
   }
-}  
+}
