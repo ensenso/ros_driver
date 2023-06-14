@@ -392,9 +392,10 @@ void Camera::updateGlobalLink(ensenso::ros::Time time, std::string targetFrame, 
   }
   else
   {
-    transformMsg = tfBuffer->lookupTransform(params.linkFrame, targetFrame, time,
-                                             ensenso::ros::durationFromSeconds(TF_REQUEST_TIMEOUT));
-    transformationCache[targetFrame] = transformMsg;
+//      transformMsg = tfBuffer->lookupTransform(params.linkFrame, targetFrame, time,
+//                                             ensenso::ros::durationFromSeconds(TF_REQUEST_TIMEOUT));
+      transformMsg = tfBuffer->lookupTransform(params.linkFrame, targetFrame, ensenso::ros::Time{0});
+      transformationCache[targetFrame] = transformMsg;
   }
   tf2::Transform transform;
   tf2::convert(transformMsg.transform, transform);
