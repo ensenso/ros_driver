@@ -26,7 +26,7 @@ jobs:
     name: "code-check"
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Industrial CI - C++ ClangFormat
         uses: 'ros-industrial/industrial_ci@master'
@@ -81,7 +81,7 @@ jobs:
             ensenso_sdk_version: 3.3.1417
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Prepare repo for ROS2 build
         if: ${{ matrix.ros_version == '2' }}
