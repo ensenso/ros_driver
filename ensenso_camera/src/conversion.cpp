@@ -21,10 +21,9 @@ double timeNowAsSeconds()
 
 double fixTimestamp(double const& timestamp, bool isFileCamera = false)
 {
-  // Due to a bug in the NxLib of SDK 3.2.489, S-series file cameras have missing timestamps.
-  // TODO Remove this check as soon as we only support SDK versions that include the bug fix (SDK-2860).
   if (std::isnan(timestamp))
   {
+    // Handle missing timestamps.
     ENSENSO_WARN("NxLib timestamp is \'nan\', using current ROS time instead.");
     return timeNowAsSeconds();
   }
