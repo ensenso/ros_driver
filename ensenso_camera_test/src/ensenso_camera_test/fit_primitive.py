@@ -16,7 +16,7 @@ INLIER_THRESHOLD = 0.005
 
 # All used parameters with a length unit use meters as unit
 
-# Input parameters for "fit_primitive" action
+
 def get_cylinder_fit_primitive():
     primitive = Primitive()
     primitive.type = Primitive.CYLINDER

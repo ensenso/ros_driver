@@ -32,13 +32,13 @@ jobs:
         uses: 'ros-industrial/industrial_ci@master'
         env:
           CLANG_FORMAT_CHECK: file
-          ROS_DISTRO: melodic
+          ROS_DISTRO: noetic
 
       - name: Industrial CI - Python Black
         uses: 'ros-industrial/industrial_ci@master'
         env:
           BLACK_CHECK: true
-          ROS_DISTRO: melodic
+          ROS_DISTRO: noetic
 
   build_and_test:
     needs: skip_duplicate_workflow_check
