@@ -51,13 +51,13 @@ jobs:
         os: [ubuntu-22.04]
         ros_distro: [humble]
         ros_version: [2]
-        ensenso_sdk_version: [3.5.1375, 3.4.743, 3.3.1417]
+        ensenso_sdk_version: [3.5.1394, 3.4.743, 3.3.1417]
         include:
         # Ubuntu 20.04 - foxy
           - os: ubuntu-20.04
             ros_distro: foxy
             ros_version: 2
-            ensenso_sdk_version: 3.5.1375
+            ensenso_sdk_version: 3.5.1394
           - os: ubuntu-20.04
             ros_distro: foxy
             ros_version: 2
@@ -70,7 +70,7 @@ jobs:
           - os: ubuntu-20.04
             ros_distro: noetic
             ros_version: 1
-            ensenso_sdk_version: 3.5.1375
+            ensenso_sdk_version: 3.5.1394
           - os: ubuntu-20.04
             ros_distro: noetic
             ros_version: 1
