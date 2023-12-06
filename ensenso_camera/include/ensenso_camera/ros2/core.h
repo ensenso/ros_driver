@@ -49,13 +49,20 @@ inline ::std::string get_node_name(NodeHandle& nh)
 template <typename T>
 inline bool get_parameter(NodeHandle& nh, const char* name, T& parameter)
 {
-  return nh->node()->get_parameter(name, parameter);
+  try
+  {
+    return nh->node()->get_parameter(name, parameter);
+  }
+  catch (...)
+  {
+    return false;
+  }
 }
 
 template <typename T>
 inline bool get_parameter(NodeHandle& nh, ::std::string const& name, T& parameter)
 {
-  return nh->node()->get_parameter(name, parameter);
+  return get_parameter(nh, name.c_str(), parameter);
 }
 
 inline bool ok()
