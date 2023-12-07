@@ -5,7 +5,7 @@ stereo camera to the mono camera'a frame. -->
 
 <launch>
   <arg name="serial_stereo" doc="Serial of the stereo camera (default: first found stereo camera)" default="" />
-  <arg name="serial_mono" doc="Serial of the mono mamera (default: first found mono camera)" default="" />
+  <arg name="serial_mono" doc="Serial of the mono camera (default: first found mono camera)" default="" />
   <arg name="stereo_ns" doc="Namespace of the stereo camera" default="stereo" />
   <arg name="mono_ns" doc="Namespace of the mono camera" default="mono" />
   <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="" />

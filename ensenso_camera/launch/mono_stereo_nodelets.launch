@@ -3,7 +3,7 @@ nodelet manager. -->
 
 <launch>
   <arg name="serial_stereo" doc="Serial of the stereo camera (default: first found stereo camera)" default="" />
-  <arg name="serial_mono" doc="Serial of the mono mamera (default: first found mono camera)" default="" />
+  <arg name="serial_mono" doc="Serial of the mono camera (default: first found mono camera)" default="" />
   <arg name="settings_stereo" doc="JSON file with stereo camera parameters" default="" />
   <arg name="settings_mono" doc="JSON file with mono camera parameters" default="" />
   <arg name="stereo_ns" doc="Namespace of the stereo camera" default="stereo" />
