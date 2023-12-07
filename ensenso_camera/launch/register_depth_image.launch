@@ -9,16 +9,18 @@ stereo camera to the mono camera'a frame. -->
   <arg name="stereo_ns" doc="Namespace of the stereo camera" default="stereo" />
   <arg name="mono_ns" doc="Namespace of the mono camera" default="mono" />
   <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="" />
+  <arg name="node_name_stereo" doc="Node name of the stereo camera" default="$(arg serial_stereo)" />
+  <arg name="node_name_mono" doc="Node name of the mono camera" default="$(arg serial_mono)" />
 
   <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
 
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_stereo)" ns="$(arg stereo_ns)"
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg node_name_stereo)" ns="$(arg stereo_ns)"
         args="load ensenso_camera/stereo_camera_node /manager_" output="screen">
     <param name="serial" type="string" value="$(arg serial_stereo)" />
     <param name="target_frame" type="string" value="$(arg target_frame)" />
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial_mono)" ns="$(arg mono_ns)"
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg node_name_mono)" ns="$(arg mono_ns)"
         args="load ensenso_camera/mono_camera_node /manager_" output="screen">
     <param name="serial" type="string" value="$(arg serial_mono)" />
     <param name="link_frame" value="optical_frame_$(arg serial_stereo)" />

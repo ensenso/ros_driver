@@ -14,6 +14,8 @@ nodelet manager and run the color_point_cloud Python node. -->
   <arg name="tcp_port" doc="The TCP port to open on the NxLib (-1=off, 0=autoSelect, >0=portNumber)" default="-1" />
   <arg name="threads" doc="The number of threads used by the NxLib for this node (-1=autoDetect)" default="-1" />
   <arg name="wait_for_camera" doc="Whether this node should wait for the camera to become available" default="false" />
+  <arg name="node_name_stereo" doc="Node name of the stereo camera" default="$(arg serial_stereo)" />
+  <arg name="node_name_mono" doc="Node name of the mono camera" default="$(arg serial_mono)" />
 
   <include file="$(find ensenso_camera)/launch/mono_stereo_nodelets.launch">
     <arg name="serial_stereo" value="$(arg serial_stereo)" />
@@ -28,6 +30,8 @@ nodelet manager and run the color_point_cloud Python node. -->
     <arg name="tcp_port" value="$(arg tcp_port)" />
     <arg name="threads" value="$(arg threads)" />
     <arg name="wait_for_camera" value="$(arg wait_for_camera)" />
+    <arg name="node_name_stereo" value="$(arg node_name_stereo)" />
+    <arg name="node_name_mono" value="$(arg node_name_mono)" />
   </include>
 
   <node pkg="ensenso_camera" type="color_point_cloud" name="color_point_cloud">
