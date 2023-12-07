@@ -198,7 +198,7 @@ struct CameraParameters
   /**
    * Whether the node should wait for the camera to become available.
    */
-  bool wait_for_camera = false;
+  bool waitForCamera = false;
 
   /**
    * The tf frame in which the data is captured by the camera.
