@@ -23,7 +23,7 @@ CameraParameters::CameraParameters(ensenso::ros::NodeHandle& nh, std::string con
   isFileCamera = !fileCameraPath.empty();
 
   ensenso::ros::get_parameter(nh, "fixed", fixed);
-  ensenso::ros::get_parameter(nh, "wait_for_camera", wait_for_camera);
+  ensenso::ros::get_parameter(nh, "wait_for_camera", waitForCamera);
 
   ensenso::ros::get_parameter(nh, "camera_frame", cameraFrame);
   if (cameraFrame.empty())
@@ -513,7 +513,7 @@ bool Camera::open()
     return false;
   }
 
-  if (params.wait_for_camera)
+  if (params.waitForCamera)
   {
     while (!cameraIsAvailable() && ensenso::ros::ok())
     {
