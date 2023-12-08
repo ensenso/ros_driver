@@ -23,12 +23,6 @@ def is_ros2():
     return os.environ["ROS_VERSION"] == "2"
 
 
-def choose_wrapper(name):
-    prefix = "__2_" if is_ros2() else "__1_"
-    function_name = prefix + name
-    return getattr(sys.modules[__name__], function_name, None)
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 # ROS2
 # ----------------------------------------------------------------------------------------------------------------------
