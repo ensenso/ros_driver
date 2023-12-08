@@ -10,6 +10,7 @@ further information.
 
 ## Remarks
  * For using this package, you need to have the [Ensenso SDK](https://www.ensenso.com/support/sdk-download) installed.
+ * Ensenso C-Series cameras require at least version 2.1.1
  * Ensenso S- and XR-Series cameras require at least version 1.7.0.
  * Version 1.7.0 and newer requires at least Ensenso SDK 3.0.
  * Version 1.6.3 and older requires at least Ensenso SDK 2.0. Older versions are not supported.
