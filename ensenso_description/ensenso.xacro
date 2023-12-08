@@ -7,6 +7,9 @@
 <material name="Ensenso/Black">
   <color rgba="0.0 0.0 0.0 1.0"/>
 </material>
+<material name="Ensenso/DarkGrey">
+  <color rgba="0.35 0.35 0.35 1.0"/>
+</material>
 
 <xacro:macro name="ensenso_Sx_Series" params="name margin:=0.03">
     <link name="${name}">
@@ -178,6 +181,58 @@
         <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 ${0.033+0.05/2}"/>
         <geometry>
           <box size="${margin+0.4950} ${margin+0.066} ${margin+0.09+0.05}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Left lens -->
+    <joint name="${name}_left_lens_joint" type="fixed">
+      <parent link="${name}"/>
+      <child link="${name}_left_lens_frame"/>
+      <origin xyz="-0.22125 0 0.063" rpy="0 0 0"/>
+    </joint>
+    <link name="${name}_left_lens_frame"/>
+  </xacro:macro>
+
+  <xacro:macro name="ensenso_CxS_Series" params="name margin:=0.03">
+    <link name="${name}">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://ensenso_description/stl_meshes/Cx-S.stl"/>
+        </geometry>
+        <material name="Ensenso/DarkGrey"/>
+      </visual>
+      <collision>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 ${0.10/2}"/>
+        <geometry>
+          <box size="${margin+0.300} ${margin+0.06} ${margin+0.10+0.02}"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Left lens -->
+    <joint name="${name}_left_lens_joint" type="fixed">
+      <parent link="${name}"/>
+      <child link="${name}_left_lens_frame"/>
+      <origin xyz="-0.123 0.0 0.063" rpy="0 0 0"/>
+    </joint>
+    <link name="${name}_left_lens_frame"/>
+  </xacro:macro>
+
+  <xacro:macro name="ensenso_CxM_Series" params="name margin:=0.03">
+    <link name="${name}">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://ensenso_description/stl_meshes/Cx-M.stl"/>
+        </geometry>
+        <material name="Ensenso/DarkGrey"/>
+      </visual>
+      <collision>
+        <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 ${0.10/2}"/>
+        <geometry>
+          <box size="${margin+0.510} ${margin+0.06} ${margin+0.10+0.02}"/>
         </geometry>
       </collision>
     </link>
