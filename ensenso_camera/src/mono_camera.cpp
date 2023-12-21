@@ -38,6 +38,10 @@ ensenso::ros::Time MonoCamera::capture() const
 
   NxLibCommand capture(cmdCapture, params.serial);
   capture.parameters()[itmCameras] = params.serial;
+  if (params.captureTimeout > 0)
+  {
+    capture.parameters()[itmTimeout] = params.captureTimeout;
+  }
   capture.execute();
 
   NxLibItem imageNode = cameraNode[itmImages][itmRaw];
