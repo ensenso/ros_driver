@@ -48,6 +48,8 @@ CameraParameters::CameraParameters(ensenso::ros::NodeHandle& nh, std::string con
     targetFrame = linkFrame;
   }
 
+  ensenso::ros::get_parameter(nh, "capture_timeout", captureTimeout);
+
   if (cameraType != valMonocular)
   {
     ensenso::ros::get_parameter(nh, "robot_frame", robotFrame);
@@ -65,8 +67,6 @@ CameraParameters::CameraParameters(ensenso::ros::NodeHandle& nh, std::string con
         robotFrame = targetFrame;
       }
     }
-
-    ensenso::ros::get_parameter(nh, "capture_timeout", captureTimeout);
 
     // Load virtual objects and create the handler.
     std::string objectsFile = "";

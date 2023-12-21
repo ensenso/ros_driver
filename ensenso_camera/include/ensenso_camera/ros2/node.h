@@ -122,6 +122,7 @@ extern "C" {
   node->declare_parameter<std::string>("wrist_frame", "");                                                             \
   node->declare_parameter<int>("tcp_port", -1);                                                                        \
   node->declare_parameter<bool>("wait_for_camera", false);                                                             \
+  node->declare_parameter<int>("capture_timeout", 0);                                                                  \
   node->declare_parameter<std::string>("objects_file", "");                                                            \
   node->declare_parameter<std::string>("objects_frame", "");                                                           \
   node->declare_parameter<std::string>("visualization_marker_topic", "");                                              \
