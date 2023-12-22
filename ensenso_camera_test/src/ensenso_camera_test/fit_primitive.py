@@ -48,13 +48,6 @@ def get_plane_fit_primitive():
     return primitive
 
 
-def format_error(error, note=None):
-    msg = "Error {}: {}".format(error.code, error.message)
-    if note:
-        msg = "{} ({})".format(note.strip(), msg)
-    return msg
-
-
 # Exact values of objects in the test scene
 class SphereTestValues:
     def __init__(self):
@@ -140,7 +133,7 @@ class TestFitPrimitive(unittest.TestCase):
         response = ros2py.send_action_goal(self.node, self.fit_primitive_client, goal)
         self.assertTrue(response.successful(), msg="Fit primitive action has not been successful.")
         error = response.get_result().error
-        self.assertEqual(error.code, 0, msg=format_error(error, note="Fit primitive action exited with error!"))
+        self.assertEqual(error.code, 0, msg=ros2py.format_error(error, note="Fit primitive action exited with error!"))
         return response.get_result()
 
 
