@@ -51,34 +51,34 @@ jobs:
         os: [ubuntu-22.04]
         ros_distro: [humble]
         ros_version: [2]
-        ensenso_sdk_version: [3.5.1419, 3.4.743, 3.3.1417]
+        ensenso_sdk_version: [3.6.1606, 3.5.1419, 3.4.743]
         include:
         # Ubuntu 20.04 - foxy
           - os: ubuntu-20.04
             ros_distro: foxy
             ros_version: 2
+            ensenso_sdk_version: 3.6.1606
+          - os: ubuntu-20.04
+            ros_distro: foxy
+            ros_version: 2
             ensenso_sdk_version: 3.5.1419
           - os: ubuntu-20.04
             ros_distro: foxy
             ros_version: 2
             ensenso_sdk_version: 3.4.743
-          - os: ubuntu-20.04
-            ros_distro: foxy
-            ros_version: 2
-            ensenso_sdk_version: 3.3.1417
         # Ubuntu 20.04 - noetic
           - os: ubuntu-20.04
             ros_distro: noetic
             ros_version: 1
+            ensenso_sdk_version: 3.6.1606
+          - os: ubuntu-20.04
+            ros_distro: noetic
+            ros_version: 1
             ensenso_sdk_version: 3.5.1419
           - os: ubuntu-20.04
             ros_distro: noetic
             ros_version: 1
             ensenso_sdk_version: 3.4.743
-          - os: ubuntu-20.04
-            ros_distro: noetic
-            ros_version: 1
-            ensenso_sdk_version: 3.3.1417
     steps:
       - name: Checkout
         uses: actions/checkout@v4
