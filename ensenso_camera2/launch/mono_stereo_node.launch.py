@@ -65,6 +65,7 @@ def launch_setup(context, *args, **kwargs):
                         "link_frame": stereo_link_frame,
                         "tcp_port": LaunchConfiguration("mono_tcp_port"),
                         "wait_for_camera": LaunchConfiguration("mono_wait_for_camera"),
+                        "capture_timeout": LaunchConfiguration("mono_capture_timeout"),
                     }
                 ],
             ),
@@ -98,6 +99,7 @@ def generate_launch_description():
     mono_threads_launch_arg = DeclareLaunchArgument("mono_threads", default_value="-1")
     mono_tcp_port_launch_arg = DeclareLaunchArgument("mono_tcp_port", default_value="-1")
     mono_wait_for_camera_launch_arg = DeclareLaunchArgument("mono_wait_for_camera", default_value="False")
+    mono_capture_timeout_arg = DeclareLaunchArgument("mono_capture_timeout", default_value="1000")
 
     return LaunchDescription(
         [
@@ -122,6 +124,7 @@ def generate_launch_description():
             mono_threads_launch_arg,
             mono_tcp_port_launch_arg,
             mono_wait_for_camera_launch_arg,
+            mono_capture_timeout_arg,
             # Place Node/ComposableNodeContainer objects at the end, otherwise the
             # arguments from above are unknown to the objects.
             OpaqueFunction(function=launch_setup),
