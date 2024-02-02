@@ -9,7 +9,8 @@ nodelet manager and run the color_point_cloud Python node. -->
   <arg name="stereo_ns" doc="Namespace of the stereo camera" default="stereo" />
   <arg name="mono_ns" doc="Namespace of the mono camera" default="mono" />
   <arg name="camera_frame" doc="The stereo camera's tf frame (default: optical_frame_SERIAL_STEREO)" default="" />
-  <arg name="link_frame" doc="The stereo camera's link tf frame (default: camera_frame)" default="" />
+  <arg name="stereo_link_frame" doc="The stereo camera's link tf frame (default: camera_frame)" default="" />
+  <arg name="mono_link_frame" doc="The mono camera's link tf frame (default: camera_frame)" default="" />
   <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="" />
   <arg name="tcp_port" doc="The TCP port to open on the NxLib (-1=off, 0=autoSelect, >0=portNumber)" default="-1" />
   <arg name="threads" doc="The number of threads used by the NxLib for this node (-1=autoDetect)" default="-1" />
@@ -26,7 +27,8 @@ nodelet manager and run the color_point_cloud Python node. -->
     <arg name="stereo_ns" value="$(arg stereo_ns)" />
     <arg name="mono_ns" value="$(arg mono_ns)" />
     <arg name="camera_frame" value="$(arg camera_frame)" />
-    <arg name="link_frame" value="$(arg link_frame)" />
+    <arg name="stereo_link_frame" value="$(arg stereo_link_frame)" />
+    <arg name="mono_link_frame" value="$(arg mono_link_frame)" />
     <arg name="target_frame" value="$(arg target_frame)" />
     <arg name="tcp_port" value="$(arg tcp_port)" />
     <arg name="threads" value="$(arg threads)" />

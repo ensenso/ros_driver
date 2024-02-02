@@ -9,7 +9,8 @@ nodelet manager. -->
   <arg name="stereo_ns" doc="Namespace of the stereo camera" default="stereo" />
   <arg name="mono_ns" doc="Namespace of the mono camera" default="mono" />
   <arg name="camera_frame" doc="The stereo camera's tf frame (default: optical_frame_SERIAL_STEREO)" default="" />
-  <arg name="link_frame" doc="The stereo camera's link tf frame (default: camera_frame)" default="" />
+  <arg name="stereo_link_frame" doc="The stereo camera's link tf frame (default: camera_frame)" default="" />
+  <arg name="mono_link_frame" doc="The mono camera's link tf frame (default: camera_frame)" default="" />
   <arg name="target_frame" doc="The tf frame the data will be returned in (default: camera_frame)" default="" />
   <arg name="tcp_port" doc="The TCP port to open on the NxLib (-1=off, 0=autoSelect, >0=portNumber)" default="-1" />
   <arg name="threads" doc="The number of threads used by the NxLib for this node (-1=autoDetect)" default="-1" />
@@ -25,7 +26,7 @@ nodelet manager. -->
     <param name="serial" type="string" value="$(arg serial_stereo)" />
     <param name="settings" type="string" value="$(arg settings_stereo)" />
     <param name="camera_frame" type="string" value="$(arg camera_frame)" />
-    <param name="link_frame" type="string" value="$(arg link_frame)" />
+    <param name="link_frame" type="string" value="$(arg stereo_link_frame)" />
     <param name="target_frame" type="string" value="$(arg target_frame)" />
     <param name="tcp_port" type="int" value="$(arg tcp_port)" />
     <param name="threads" type="int" value="$(arg threads)" />
@@ -36,7 +37,7 @@ nodelet manager. -->
         args="load ensenso_camera/mono_camera_node /manager_" output="screen">
     <param name="serial" type="string" value="$(arg serial_mono)" />
     <param name="settings" type="string" value="$(arg settings_mono)" />
-    <param name="link_frame" type="string" value="$(arg link_frame)" />
+    <param name="link_frame" type="string" value="$(arg mono_link_frame)" />
     <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
     <param name="capture_timeout" type="int" value="$(arg mono_capture_timeout)" />
   </node>
