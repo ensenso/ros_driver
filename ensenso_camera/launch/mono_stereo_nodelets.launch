@@ -16,6 +16,7 @@ nodelet manager. -->
   <arg name="wait_for_camera" doc="Whether this node should wait for the camera to become available" default="false" />
   <arg name="node_name_stereo" doc="Node name of the stereo camera" default="$(arg serial_stereo)" />
   <arg name="node_name_mono" doc="Node name of the mono camera" default="$(arg serial_mono)" />
+  <arg name="mono_capture_timeout" doc="Capture timeout of the mono camera" default="1000" />
 
   <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
 
@@ -37,5 +38,6 @@ nodelet manager. -->
     <param name="settings" type="string" value="$(arg settings_mono)" />
     <param name="link_frame" type="string" value="$(arg link_frame)" />
     <param name="wait_for_camera" type="bool" value="$(arg wait_for_camera)" />
+    <param name="capture_timeout" type="int" value="$(arg mono_capture_timeout)" />
   </node>
 </launch>
