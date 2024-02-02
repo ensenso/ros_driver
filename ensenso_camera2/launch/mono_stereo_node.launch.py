@@ -14,10 +14,11 @@ def launch_setup(context, *args, **kwargs):
     stereo_file_camera_path = ensenso.fix_empty_string(LaunchConfiguration("stereo_path").perform(context))
     stereo_camera_frame = ensenso.fix_empty_string(LaunchConfiguration("camera_frame").perform(context))
     stereo_target_frame = ensenso.fix_empty_string(LaunchConfiguration("target_frame").perform(context))
-    stereo_link_frame = ensenso.fix_empty_string(LaunchConfiguration("link_frame").perform(context))
+    stereo_link_frame = ensenso.fix_empty_string(LaunchConfiguration("stereo_link_frame").perform(context))
     stereo_robot_frame = ensenso.fix_empty_string(LaunchConfiguration("robot_frame").perform(context))
     stereo_wrist_frame = ensenso.fix_empty_string(LaunchConfiguration("wrist_frame").perform(context))
 
+    mono_link_frame = ensenso.fix_empty_string(LaunchConfiguration("mono_link_frame").perform(context))
     mono_settings = ensenso.fix_empty_string(LaunchConfiguration("mono_settings").perform(context))
     mono_file_camera_path = ensenso.fix_empty_string(LaunchConfiguration("mono_path").perform(context))
 
@@ -62,7 +63,7 @@ def launch_setup(context, *args, **kwargs):
                         "fixed": LaunchConfiguration("mono_fixed"),
                         "threads": LaunchConfiguration("mono_threads"),
                         # Link the mono to the stereo camera!
-                        "link_frame": stereo_link_frame,
+                        "link_frame": mono_link_frame,
                         "tcp_port": LaunchConfiguration("mono_tcp_port"),
                         "wait_for_camera": LaunchConfiguration("mono_wait_for_camera"),
                         "capture_timeout": LaunchConfiguration("mono_capture_timeout"),
@@ -85,7 +86,7 @@ def generate_launch_description():
     stereo_threads_launch_arg = DeclareLaunchArgument("stereo_threads", default_value="-1")
     stereo_camera_frame_launch_arg = DeclareLaunchArgument("camera_frame", default_value=ensenso.EMPTY_STRING)
     stereo_target_frame_launch_arg = DeclareLaunchArgument("target_frame", default_value=ensenso.EMPTY_STRING)
-    stereo_link_frame_launch_arg = DeclareLaunchArgument("link_frame", default_value=ensenso.EMPTY_STRING)
+    stereo_link_frame_launch_arg = DeclareLaunchArgument("stereo_link_frame", default_value=ensenso.EMPTY_STRING)
     stereo_robot_frame_launch_arg = DeclareLaunchArgument("robot_frame", default_value=ensenso.EMPTY_STRING)
     stereo_wrist_frame_launch_arg = DeclareLaunchArgument("wrist_frame", default_value=ensenso.EMPTY_STRING)
     stereo_tcp_port_launch_arg = DeclareLaunchArgument("stereo_tcp_port", default_value="-1")
@@ -97,6 +98,7 @@ def generate_launch_description():
     mono_file_camera_path_launch_arg = DeclareLaunchArgument("mono_path", default_value=ensenso.EMPTY_STRING)
     mono_fixed_launch_arg = DeclareLaunchArgument("mono_fixed", default_value="False")
     mono_threads_launch_arg = DeclareLaunchArgument("mono_threads", default_value="-1")
+    mono_link_frame_launch_arg = DeclareLaunchArgument("mono_link_frame", default_value=ensenso.EMPTY_STRING)
     mono_tcp_port_launch_arg = DeclareLaunchArgument("mono_tcp_port", default_value="-1")
     mono_wait_for_camera_launch_arg = DeclareLaunchArgument("mono_wait_for_camera", default_value="False")
     mono_capture_timeout_arg = DeclareLaunchArgument("mono_capture_timeout", default_value="1000")
@@ -122,6 +124,7 @@ def generate_launch_description():
             mono_file_camera_path_launch_arg,
             mono_fixed_launch_arg,
             mono_threads_launch_arg,
+            mono_link_frame_launch_arg,
             mono_tcp_port_launch_arg,
             mono_wait_for_camera_launch_arg,
             mono_capture_timeout_arg,
