@@ -16,6 +16,7 @@ nodelet manager and run the color_point_cloud Python node. -->
   <arg name="wait_for_camera" doc="Whether this node should wait for the camera to become available" default="false" />
   <arg name="node_name_stereo" doc="Node name of the stereo camera" default="$(arg serial_stereo)" />
   <arg name="node_name_mono" doc="Node name of the mono camera" default="$(arg serial_mono)" />
+  <arg name="mono_capture_timeout" doc="Capture timeout of the mono camera" default="1000" />
 
   <include file="$(find ensenso_camera)/launch/mono_stereo_nodelets.launch">
     <arg name="serial_stereo" value="$(arg serial_stereo)" />
@@ -32,6 +33,7 @@ nodelet manager and run the color_point_cloud Python node. -->
     <arg name="wait_for_camera" value="$(arg wait_for_camera)" />
     <arg name="node_name_stereo" value="$(arg node_name_stereo)" />
     <arg name="node_name_mono" value="$(arg node_name_mono)" />
+    <arg name="mono_capture_timeout" value="$(arg mono_capture_timeout)" />
   </include>
 
   <node pkg="ensenso_camera" type="color_point_cloud" name="color_point_cloud">
