@@ -18,9 +18,9 @@ further information.
 
 ## Report a Bug
 
-For general problems with your camera or the Ensenso SDK, please contact the [IDS support](https://en.ids-imaging.com/support.html).
+For general problems with your camera or the Ensenso SDK, please visit the [Ensenso community forum](https://community.ensenso.com) or contact the [IDS support](https://en.ids-imaging.com/support.html).
 
-Any bugs or feature requests for the ROS driver can be reported in the [issue tracker](https://github.com/ensenso/ros_driver/issues).
+Bugs of the ROS driver can be reported directly in the [issue tracker](https://github.com/ensenso/ros_driver/issues).
 
 ## Acknowledgements
 
