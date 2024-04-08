@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ensenso Community Forum
+    url: https://community.ensenso.com
+    about: Please ask and answer questions here.
+  - name: IDS Support
+    url: https://en.ids-imaging.com/support.html
+    about: Contact the IDS support in case you have confidential information to share.
