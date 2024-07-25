@@ -931,7 +931,15 @@ void StereoCamera::onCalibrateHandEye(ensenso::action::CalibrateHandEyeGoalConst
     }
 
     // NxLib time is in milliseconds, ROS expects time to be in seconds.
-    result.calibration_time = calibrateHandEye.result()[itmTime].asDouble() / 1000;
+    if (calibrateHandEye.result()[itmTime].exists())
+    {
+      // Fallback for NxLib < 4.0.
+      result.calibration_time = calibrateHandEye.result()[itmTime].asDouble() / 1000;
+    }
+    else
+    {
+      result.calibration_time = calibrateHandEye.slot()[itmStatus][itmTime].asDouble() / 1000;
+    }
 
     result.number_of_iterations = calibrateHandEye.result()[itmIterations].asInt();
     result.residual = getCalibrationResidual(calibrateHandEye.result());
