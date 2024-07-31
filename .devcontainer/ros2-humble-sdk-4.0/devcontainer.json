@@ -1,0 +1,37 @@
+{
+  "name": "ROS2-SDK-4.0",
+  "privileged": true,
+  "remoteUser": "benny",
+  "build": {
+    "dockerfile": "../Dockerfile-ROS2",
+    "args": {
+      "USERNAME": "benny",
+      "ENSENSO_SDK_VERSION": "4.0.1486"
+    }
+  },
+  "workspaceFolder": "/home/ws/",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/ws/src/driver,type=bind",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-themes",
+        "twxs.cmake",
+        "donjayamanne.python-extension-pack",
+        "eamodio.gitlens",
+        "ms-iot.vscode-ros"
+      ]
+    }
+  },
+  "containerEnv": {
+    "DISPLAY": "unix:0",
+    "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST",
+    "ROS_DOMAIN_ID": "42"
+  },
+  "runArgs": ["--net=host", "-e", "DISPLAY=${env:DISPLAY}"],
+  "mounts": [
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
+    "source=/dev/dri,target=/dev/dri,type=bind,consistency=cached"
+  ],
+  "postCreateCommand": "sudo chown -R $(whoami):$(whoami) /home/ws && /home/ws/src/driver/.devcontainer/scripts/setup_workspace_ros2.sh"
+}
