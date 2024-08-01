@@ -26,7 +26,7 @@ FRAME = "Workspace"
 
 class TestTelecentricProjection(unittest.TestCase):
     def setUp(self):
-        self.node = ros2py.create_node("test_project_pattern")
+        self.node = ros2py.create_node("test_telecentric_projection")
         self.telecentric_projection_client = ros2py.create_action_client(
             self.node, "project_telecentric", TelecentricProjection
         )
