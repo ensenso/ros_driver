@@ -497,6 +497,7 @@ bool Camera::open()
       createCamera.parameters()[itmFolderPath] = params.fileCameraPath;
       createCamera.execute();
 
+      ENSENSO_INFO(nh, "Successfully created the file camera");
       createdFileCamera = true;
     }
     catch (NxLibException& e)
