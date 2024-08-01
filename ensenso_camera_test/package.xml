@@ -16,6 +16,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>roslint</build_depend>
+  <depend>depth_image_proc</depend>
   <depend>ensenso_camera</depend>
   <depend>ensenso_camera_msgs</depend>
   <depend>rospy</depend>

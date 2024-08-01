@@ -16,6 +16,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
+  <depend>depth_image_proc</depend>
   <depend>ensenso_camera</depend>
   <depend>ensenso_camera_msgs</depend>
   <depend>launch_testing_ament_cmake</depend>
