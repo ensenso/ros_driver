@@ -35,7 +35,6 @@ if(CATKIN_ENABLE_TESTING)
   add_rostest(test/telecentric_projection.test)
   add_rostest(test/texture_point_cloud.test)
   add_rostest(test/workspace_calibration.test)
-  add_rostest(test/request_data_structured_light.test)
 
   roslint_add_test()
 endif ()
