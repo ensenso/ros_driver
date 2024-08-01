@@ -215,7 +215,7 @@
     <joint name="${name}_left_lens_joint" type="fixed">
       <parent link="${name}"/>
       <child link="${name}_left_lens_frame"/>
-      <origin xyz="-0.123 0.0 0.063" rpy="0 0 0"/>
+      <origin xyz="${-0.240/2} 0.0 0.032" rpy="0 0 0"/>
     </joint>
     <link name="${name}_left_lens_frame"/>
   </xacro:macro>
@@ -241,7 +241,7 @@
     <joint name="${name}_left_lens_joint" type="fixed">
       <parent link="${name}"/>
       <child link="${name}_left_lens_frame"/>
-      <origin xyz="-0.22125 0 0.063" rpy="0 0 0"/>
+      <origin xyz="${-0.455/2} 0 0.032" rpy="0 0 0"/>
     </joint>
     <link name="${name}_left_lens_frame"/>
   </xacro:macro>
