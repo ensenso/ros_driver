@@ -1444,11 +1444,15 @@ void StereoCamera::fillCameraInfoFromNxLib(sensor_msgs::msg::CameraInfoPtr const
     // removed), except for the stereo camera matrix.
     GET_D_MATRIX(info).resize(5, 0);
 
+    // Scaling the disparity map also scales the rectified images. The range is 0.1 to 1. The factor has to be applied
+    // to the projection/camera matrix P for correct 3D data.
+    auto scalingFactor = cameraNode[itmParameters][itmDisparityMap][itmScaling].asDouble();
+
     for (int row = 0; row < 3; row++)
     {
       for (int column = 0; column < 3; column++)
       {
-        GET_P_MATRIX(info)[4 * row + column] = stereoCalibrationNode[itmCamera][column][row].asDouble();
+        GET_P_MATRIX(info)[4 * row + column] = stereoCalibrationNode[itmCamera][column][row].asDouble() * scalingFactor;
 
         if (row == column)
         {
