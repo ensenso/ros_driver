@@ -17,6 +17,8 @@ string BINNING                 = Binning
 string EXPOSURE                = Exposure
 # Float
 string FLEX_VIEW               = FlexView
+# String
+string FOLLOW_LINK             = FollowLink
 # Bool
 string FRONT_LIGHT             = FrontLight
 # Float
