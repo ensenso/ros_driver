@@ -138,6 +138,13 @@ if is_ros2():
     def create_publisher(node, msg_type, topic, queue_size=1):
         return node.create_publisher(msg_type, topic, queue_size)
 
+    def get_qos_profile(name):
+        if name == "point_cloud_dip":
+            return rclpy.qos.QoSProfile(
+                reliability=rclpy.qos.ReliabilityPolicy.SYSTEM_DEFAULT,
+                depth=5,
+            )
+
     def create_subscription(node, msg_type, topic, callback, qos_profile=10):
         return node.create_subscription(msg_type, topic, callback, qos_profile)
 
@@ -329,7 +336,10 @@ else:
     def create_publisher(_, msg_type, topic, queue_size=1):
         return rospy.Publisher(topic, msg_type, queue_size=queue_size)
 
-    def create_subscription(_, msg_type, topic, callback):
+    def get_qos_profile(_):
+        return None
+
+    def create_subscription(_, msg_type, topic, callback, __=None):
         return rospy.Subscriber(topic, msg_type, callback)
 
     def wait_for_server(node, client, timeout_sec=None, exit=True):

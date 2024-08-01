@@ -1,0 +1,23 @@
+<launch>
+  <arg name="serial" value="scale_dmap_cam" />
+  <arg name="path" value="$(find ensenso_camera_test)/data/colorized_point_cloud/stereo.zip" />
+
+  <node pkg="nodelet" type="nodelet" name="manager_" args="manager" output="screen" />
+
+  <node pkg="nodelet" type="nodelet" name="Ensenso_$(arg serial)"
+    args="load ensenso_camera/stereo_camera_node /manager_" output="screen">
+    <param name="serial" type="string" value="$(arg serial)" />
+    <param name="file_camera_path" type="string" value="$(arg path)" />
+    <param name="link_frame" type="string" value="Workspace" />
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="dip_pc2"
+    args="load depth_image_proc/point_cloud_xyz /manager_" output="screen">
+    <remap from="/camera_info" to="/depth/camera_info" />
+    <remap from="/image_rect" to="/depth/image" />
+    <remap from="/points" to="/point_cloud_dip" />
+  </node>
+
+  <test pkg="ensenso_camera_test" type="scale_disparity_map.py" test-name="scale_disparity_map_test">
+  </test>
+</launch>

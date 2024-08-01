@@ -30,7 +30,7 @@ RUN sudo apt-get install -f -y
 # Install remaining dependencies
 RUN sudo apt-get -y install libopencv-dev python3-opencv
 RUN sudo apt-get -y install ros-$ROS_DISTRO-tf-transformations
-RUN sudo pip3 install transforms3d
+RUN sudo pip3 install numpy==1.22.4 scipy==1.10.0 transforms3d
 
 USER $USERNAME
 CMD ["/bin/bash"]
