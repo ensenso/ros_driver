@@ -57,6 +57,7 @@ std::map<std::string, ParameterMapping> const parameterInformation{
   { ensenso::msg::Parameter::AUTO_GAIN, { ParameterType::Bool, { itmCapture, itmAutoGain } } },
   { ensenso::msg::Parameter::BINNING, { ParameterType::Number, { itmCapture, itmBinning } } },
   { ensenso::msg::Parameter::EXPOSURE, { ParameterType::Number, { itmCapture, itmExposure } } },
+  { ensenso::msg::Parameter::FOLLOW_LINK, { ParameterType::String, { itmCapture, "Follow", itmLink } } },
   { ensenso::msg::Parameter::FRONT_LIGHT, { ParameterType::Bool, { itmCapture, itmFrontLight } } },
   { ensenso::msg::Parameter::GAIN, { ParameterType::Number, { itmCapture, itmGain } } },
   { ensenso::msg::Parameter::GAIN_BOOST, { ParameterType::Bool, { itmCapture, itmGainBoost } } },
