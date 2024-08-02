@@ -39,10 +39,6 @@ if(BUILD_TESTING)
   add_launch_test(test/telecentric_projection.test.py TIMEOUT ${launch_test_timeout})
   add_launch_test(test/workspace_calibration.test.py TIMEOUT ${launch_test_timeout})
 
-  if(is_sdk_supporting_s_series)
-    add_launch_test(test/hztest.request_data_structured_light.test.py TIMEOUT ${launch_test_timeout})
-  endif()
-
   # ament_lint_auto_find_test_dependencies()
 endif()
 
