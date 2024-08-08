@@ -35,7 +35,6 @@ def format_error(error, note=None):
 # ----------------------------------------------------------------------------------------------------------------------
 if is_ros2():
     import threading
-    import time
 
     import rclpy
 
