@@ -451,9 +451,9 @@ void StereoCamera::onRequestData(ensenso::action::RequestDataGoalConstPtr const&
 
   if (requestDepthImage)
   {
-    // In case camera and target frame are different, the point cloud is recomputed with the relative(toWorld)-flag,
-    // such that the resulting point cloud (and thus the depth image) is transformed by the NxLib with the transform
-    // stored in the stereo camera's link node.
+    // In case camera and target frame are different, the previously computed point cloud has been automatically
+    // transformed to world coordinates by the NxLib. Recompute it with the relative (to camera) flag so that the depth
+    // image is in camera coordinates.
     if (params.cameraFrame != params.targetFrame)
     {
       NxLibCommand computePointMap(cmdComputePointMap, params.serial);
