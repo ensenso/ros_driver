@@ -11,6 +11,7 @@ from launch.actions import TimerAction
 
 from launch_testing.actions import ReadyToTest
 
+from ensenso_camera.ros2_launch import EnsensoInclude
 from ensenso_camera.ros2_launch import LaunchFileInclude as _EnsensoLaunchInclude
 from ensenso_camera.ros2_launch import ScriptInclude as _EnsensoScriptInclude
 
@@ -27,6 +28,16 @@ def get_data_path(filename):
 
 
 def generate_test_description(*includes):
-    descriptions = [include.get_description() for include in includes]
+    descriptions = []
+
+    for include in includes:
+        if isinstance(include, EnsensoInclude):
+            description = include.get_description()
+        else:
+            # e.g. normal Node objects
+            description = include
+        descriptions.append(description)
+
     descriptions.append(TimerAction(period=LAUNCH_DELAY_PERIOD_IN_S, actions=[ReadyToTest()]))
+
     return LaunchDescription(descriptions)
