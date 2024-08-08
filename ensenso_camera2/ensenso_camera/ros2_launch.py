@@ -68,11 +68,16 @@ def get_launch_include(package_name, launch_file_name, launch_arguments={}):
     )
 
 
-class LaunchFileInclude:
+class EnsensoInclude:
     def __init__(self, name, args={}):
         self.name = name
         self.args = args
 
+    def get_description(self):
+        raise NotImplementedError
+
+
+class LaunchFileInclude(EnsensoInclude):
     def get_description(self):
         return get_launch_include("ensenso_camera", self.name, self.args)
 
@@ -80,10 +85,6 @@ class LaunchFileInclude:
         return LaunchDescription([self.get_description()])
 
 
-class ScriptInclude:
-    def __init__(self, name, args={}):
-        self.name = name
-        self.args = args
-
+class ScriptInclude(EnsensoInclude):
     def get_description(self):
         return get_dut_process("ensenso_camera", self.name, self.args)
