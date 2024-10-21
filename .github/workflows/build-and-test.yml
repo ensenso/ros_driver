@@ -111,5 +111,6 @@ jobs:
           CATKIN_LINT: true
           CATKIN_LINT_ARGS: "--resolve-env"
           DOCKER_RUN_OPTS: "-e ENSENSO_INSTALL=/opt/ensenso -e ENSENSO_SDK_VERSION=${{matrix.ensenso_sdk_version}}"
+          PIP_BREAK_SYSTEM_PACKAGES: true
           ROS_DISTRO: ${{matrix.ros_distro}}
           ROS_PYTHON_VERSION: 3
