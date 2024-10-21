@@ -47,6 +47,8 @@
   <depend>tf2_ros</depend>
   <depend>visualization_msgs</depend>
 
+  <depend>python3-transforms3d</depend>
+
   <!-- Only needed when the launch files are added -->
   <!-- <exec_depend>ensenso_description</exec_depend> -->
 
