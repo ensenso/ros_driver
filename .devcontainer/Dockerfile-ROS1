@@ -29,7 +29,5 @@ RUN wget -O /tmp/ensenso.deb https://download.ensenso.com/s/ensensosdk/download?
 RUN sudo dpkg -i /tmp/ensenso.deb
 RUN sudo apt-get install -f -y
 
-RUN sudo pip3 install numpy==1.22.4 scipy==1.10.0
-
 USER $USERNAME
 CMD ["/bin/bash"]
