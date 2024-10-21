@@ -1,9 +1,9 @@
 {
-  "name": "ROS2-SDK-4.0",
+  "name": "ROS2-Humble-SDK-4.0",
   "privileged": true,
   "remoteUser": "rosdev",
   "build": {
-    "dockerfile": "../Dockerfile-ROS2",
+    "dockerfile": "../Dockerfile-ROS2-Humble",
     "args": {
       "USERNAME": "rosdev",
       "ENSENSO_SDK_VERSION": "4.0.1486"

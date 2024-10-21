@@ -1,9 +1,9 @@
 {
-  "name": "ROS1-SDK-4.0",
+  "name": "ROS1-Noetic-SDK-4.0",
   "privileged": true,
   "remoteUser": "rosdev",
   "build": {
-    "dockerfile": "../Dockerfile-ROS1",
+    "dockerfile": "../Dockerfile-ROS1-Noetic",
     "args": {
       "USERNAME": "rosdev",
       "ENSENSO_SDK_VERSION": "4.0.1486"
