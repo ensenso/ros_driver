@@ -8,6 +8,12 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 add_compile_definitions(ROS2)
+if(DEFINED ENV{ROS_DISTRO})
+  if($ENV{ROS_DISTRO} STREQUAL "jazzy")
+    add_compile_definitions(ROS2_JAZZY)
+  endif()
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
