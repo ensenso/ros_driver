@@ -1,0 +1,36 @@
+FROM ros:jazzy
+ARG USERNAME=USERNAME
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+ARG ENSENSO_SDK_VERSION=ENSENSO_SDK_VERSION
+
+# Create the user
+RUN userdel -r ubuntu
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && apt-get update \
+    && apt-get install -y sudo \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y python3-pip curl dpkg wget
+ENV SHELL /bin/bash
+
+# Install Git LFS
+RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+RUN apt-get install git-lfs -y
+
+# Install Ensenso SDK
+ENV ENSENSO_SDK_VERSION=${ENSENSO_SDK_VERSION}
+ENV ENSENSO_INSTALL="/opt/ensenso"
+RUN wget -O /tmp/ensenso.deb https://download.ensenso.com/s/ensensosdk/download?files=ensenso-sdk-${ENSENSO_SDK_VERSION}-x64.deb
+RUN sudo dpkg -i /tmp/ensenso.deb
+RUN sudo apt-get install -f -y
+
+# Install remaining dependencies
+RUN sudo apt-get -y install libpcl-dev libopencv-dev python3-opencv
+RUN sudo apt-get -y install ros-$ROS_DISTRO-tf-transformations
+
+USER $USERNAME
+CMD ["/bin/bash"]
