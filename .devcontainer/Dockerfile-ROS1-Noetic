@@ -1,0 +1,33 @@
+FROM ros:noetic
+ARG USERNAME=USERNAME
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+ARG ENSENSO_SDK_VERSION=ENSENSO_SDK_VERSION
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Create the user
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && apt-get update \
+    && apt-get install -y sudo \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y python3-pip curl dpkg wget python3-catkin-tools
+ENV SHELL /bin/bash
+
+# Install Git LFS
+RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+RUN apt-get install git-lfs -y
+
+# Install Ensenso SDK
+ENV ENSENSO_SDK_VERSION=${ENSENSO_SDK_VERSION}
+ENV ENSENSO_INSTALL="/opt/ensenso"
+RUN wget -O /tmp/ensenso.deb https://download.ensenso.com/s/ensensosdk/download?files=ensenso-sdk-${ENSENSO_SDK_VERSION}-x64.deb
+RUN sudo dpkg -i /tmp/ensenso.deb
+RUN sudo apt-get install -f -y
+
+USER $USERNAME
+CMD ["/bin/bash"]

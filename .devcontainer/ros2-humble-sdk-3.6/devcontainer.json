@@ -1,12 +1,12 @@
 {
-  "name": "ROS2-SDK-3.6",
+  "name": "ROS2-Humble-SDK-3.6",
   "privileged": true,
-  "remoteUser": "benny",
+  "remoteUser": "rosdev",
   "build": {
-    "dockerfile": "../Dockerfile-ROS2",
+    "dockerfile": "../Dockerfile-ROS2-Humble",
     "args": {
-      "USERNAME": "benny",
-      "ENSENSO_SDK_VERSION": "3.6.1621"
+      "USERNAME": "rosdev",
+      "ENSENSO_SDK_VERSION": "3.6.1631"
     }
   },
   "workspaceFolder": "/home/ws/",

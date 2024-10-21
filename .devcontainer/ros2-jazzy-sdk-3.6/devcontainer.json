@@ -1,12 +1,12 @@
 {
-  "name": "ROS1-Noetic-SDK-4.0",
+  "name": "ROS2-Jazzy-SDK-3.6",
   "privileged": true,
   "remoteUser": "rosdev",
   "build": {
-    "dockerfile": "../Dockerfile-ROS1-Noetic",
+    "dockerfile": "../Dockerfile-ROS2-Jazzy",
     "args": {
       "USERNAME": "rosdev",
-      "ENSENSO_SDK_VERSION": "4.0.1486"
+      "ENSENSO_SDK_VERSION": "3.6.1631"
     }
   },
   "workspaceFolder": "/home/ws/",
@@ -24,12 +24,14 @@
     }
   },
   "containerEnv": {
-    "DISPLAY": "unix:0"
+    "DISPLAY": "unix:0",
+    "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST",
+    "ROS_DOMAIN_ID": "42"
   },
   "runArgs": ["--net=host", "-e", "DISPLAY=${env:DISPLAY}"],
   "mounts": [
     "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
     "source=/dev/dri,target=/dev/dri,type=bind,consistency=cached"
   ],
-  "postCreateCommand": "sudo chown -R $(whoami):$(whoami) /home/ws && /home/ws/src/driver/.devcontainer/scripts/setup_workspace_ros1.sh"
+  "postCreateCommand": "sudo chown -R $(whoami):$(whoami) /home/ws && /home/ws/src/driver/.devcontainer/scripts/setup_workspace_ros2.sh"
 }

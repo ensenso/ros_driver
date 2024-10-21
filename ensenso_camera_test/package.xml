@@ -23,6 +23,9 @@
   <depend>rostest</depend>
   <depend>tf</depend>
 
+  <depend>python3-numpy</depend>
+  <depend>python3-scipy</depend>
+
   <export>
   </export>
 </package>

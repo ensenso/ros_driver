@@ -85,7 +85,7 @@ class TestScaleDisparityMap(unittest.TestCase):
         t = np.eye(4)
         q = tf.transform.rotation
         x = tf.transform.translation
-        t[:3, :3] = Rotation.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
+        t[:3, :3] = Rotation.from_quat([q.x, q.y, q.z, q.w]).as_dcm()
         t[:3, 3] = [x.x, x.y, x.z]
 
         points_msg = list(pc2.read_points(point_cloud))

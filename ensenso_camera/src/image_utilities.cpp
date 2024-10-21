@@ -1,5 +1,5 @@
 // Do not change the order of this block. Otherwise getBinaryData with CV::mat overload will not be recognized
-#include <cv_bridge/cv_bridge.h>
+#include "ensenso_camera/ros2/cv_bridge/cv_bridge.h"
 #include "ensenso_camera/image_utilities.h"
 
 #include "ensenso_camera/conversion.h"

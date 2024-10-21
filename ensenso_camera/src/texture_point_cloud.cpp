@@ -2,7 +2,7 @@
 
 // Make sure cv_bridge is imported before image_transport. Otherwise
 // getBinaryData with CV::mat overload will not be recognized.
-#include <cv_bridge/cv_bridge.h>
+#include "ensenso_camera/ros2/cv_bridge/cv_bridge.h"
 
 #include "ensenso_camera/ros2/core.h"
 #include "ensenso_camera/ros2/image_transport.h"
