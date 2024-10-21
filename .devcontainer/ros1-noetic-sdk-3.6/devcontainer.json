@@ -6,7 +6,7 @@
     "dockerfile": "../Dockerfile-ROS1",
     "args": {
       "USERNAME": "benny",
-      "ENSENSO_SDK_VERSION": "3.6.1621"
+      "ENSENSO_SDK_VERSION": "3.6.1631"
     }
   },
   "workspaceFolder": "/home/ws/",
