@@ -11,6 +11,6 @@ sudo dpkg -i /tmp/ensenso.deb
 sudo apt-get install -f -y
 
 if [[ $ROS_VERSION -eq "2" ]]; then
-    sudo apt-get -y install libopencv-dev python3-opencv
+    sudo apt-get -y install libpcl-dev libopencv-dev python3-opencv
     sudo apt-get -y install ros-$ROS_DISTRO-tf-transformations
 fi
