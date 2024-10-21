@@ -23,8 +23,11 @@
   <depend>rclpy</depend>
   <depend>tf_transformations</depend>
   <depend>tf2_ros</depend>
+
   <!-- https://answers.ros.org/question/383007/opencv-and-ros2/ see answer by jimmycanuck -->
   <depend>python3-opencv</depend>
+  <depend>python3-numpy</depend>
+  <depend>python3-scipy</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
