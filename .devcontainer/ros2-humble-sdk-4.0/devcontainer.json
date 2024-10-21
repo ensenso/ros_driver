@@ -1,11 +1,11 @@
 {
   "name": "ROS2-SDK-4.0",
   "privileged": true,
-  "remoteUser": "benny",
+  "remoteUser": "rosdev",
   "build": {
     "dockerfile": "../Dockerfile-ROS2",
     "args": {
-      "USERNAME": "benny",
+      "USERNAME": "rosdev",
       "ENSENSO_SDK_VERSION": "4.0.1486"
     }
   },
