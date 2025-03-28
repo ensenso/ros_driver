@@ -51,17 +51,17 @@ jobs:
         os: [ubuntu-24.04]
         ros_distro: [jazzy]
         ros_version: [2]
-        ensenso_sdk_version: [4.1.976, 4.0.1502, 3.6.1631]
+        ensenso_sdk_version: [4.1.1033, 4.0.1526, 3.6.1631]
         include:
         # Ubuntu 22.04 - humble
           - os: ubuntu-22.04
             ros_distro: humble
             ros_version: 2
-            ensenso_sdk_version: 4.1.976
+            ensenso_sdk_version: 4.1.1033
           - os: ubuntu-22.04
             ros_distro: humble
             ros_version: 2
-            ensenso_sdk_version: 4.0.1502
+            ensenso_sdk_version: 4.0.1526
           - os: ubuntu-22.04
             ros_distro: humble
             ros_version: 2
@@ -70,11 +70,11 @@ jobs:
           - os: ubuntu-20.04
             ros_distro: foxy
             ros_version: 2
-            ensenso_sdk_version: 4.1.976
+            ensenso_sdk_version: 4.1.1033
           - os: ubuntu-20.04
             ros_distro: foxy
             ros_version: 2
-            ensenso_sdk_version: 4.0.1502
+            ensenso_sdk_version: 4.0.1526
           - os: ubuntu-20.04
             ros_distro: foxy
             ros_version: 2
@@ -83,11 +83,11 @@ jobs:
           - os: ubuntu-20.04
             ros_distro: noetic
             ros_version: 1
-            ensenso_sdk_version: 4.1.976
+            ensenso_sdk_version: 4.1.1033
           - os: ubuntu-20.04
             ros_distro: noetic
             ros_version: 1
-            ensenso_sdk_version: 4.0.1502
+            ensenso_sdk_version: 4.0.1526
           - os: ubuntu-20.04
             ros_distro: noetic
             ros_version: 1
