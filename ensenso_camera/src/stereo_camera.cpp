@@ -276,6 +276,10 @@ void StereoCamera::onRequestData(ensenso::action::RequestDataGoalConstPtr const&
   loadParameterSet(goal->parameter_set, computeDisparityMap ? projectorOn : projectorOff);
   ensenso::ros::Time imageTimestamp = capture();
 
+  // Auto values like auto exposure might have changed. Save the parameters so that the updated values are used when
+  // capturing the next time.
+  saveParameterSet(goal->parameter_set, false);
+
   PREEMPT_ACTION_IF_REQUESTED
 
   feedback.images_acquired = true;
