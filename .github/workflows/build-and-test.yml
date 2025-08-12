@@ -66,32 +66,6 @@ jobs:
             ros_distro: humble
             ros_version: 2
             ensenso_sdk_version: 4.0.1526
-        # Ubuntu 20.04 - foxy
-          - os: ubuntu-20.04
-            ros_distro: foxy
-            ros_version: 2
-            ensenso_sdk_version: 4.2.1765
-          - os: ubuntu-20.04
-            ros_distro: foxy
-            ros_version: 2
-            ensenso_sdk_version: 4.1.1033
-          - os: ubuntu-20.04
-            ros_distro: foxy
-            ros_version: 2
-            ensenso_sdk_version: 4.0.1526
-        # Ubuntu 20.04 - noetic
-          - os: ubuntu-20.04
-            ros_distro: noetic
-            ros_version: 1
-            ensenso_sdk_version: 4.2.1765
-          - os: ubuntu-20.04
-            ros_distro: noetic
-            ros_version: 1
-            ensenso_sdk_version: 4.1.1033
-          - os: ubuntu-20.04
-            ros_distro: noetic
-            ros_version: 1
-            ensenso_sdk_version: 4.0.1526
     steps:
       - name: Checkout
         uses: actions/checkout@v4
