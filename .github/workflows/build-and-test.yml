@@ -43,65 +43,23 @@ jobs:
   build_and_test:
     needs: skip_duplicate_workflow_check
     if: ${{needs.skip_duplicate_workflow_check.outputs.should_skip != 'true'}}
-    runs-on: ${{matrix.os}}
-    name: "${{matrix.os}}-ros${{matrix.ros_version}}-${{matrix.ros_distro}}-sdk-${{matrix.ensenso_sdk_version}}"
+    runs-on: ubuntu-24.04
+    name: "ros${{matrix.ros_version}}-${{matrix.ros_distro}}-sdk-${{matrix.ensenso_sdk_version}}"
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04]
-        ros_distro: [jazzy]
-        ros_version: [2]
+        ros_distro: [jazzy, humble, foxy, noetic]
         ensenso_sdk_version: [4.2.1765, 4.1.1033, 4.0.1526]
-        include:
-        # Ubuntu 22.04 - humble
-          - os: ubuntu-22.04
-            ros_distro: humble
-            ros_version: 2
-            ensenso_sdk_version: 4.2.1765
-          - os: ubuntu-22.04
-            ros_distro: humble
-            ros_version: 2
-            ensenso_sdk_version: 4.1.1033
-          - os: ubuntu-22.04
-            ros_distro: humble
-            ros_version: 2
-            ensenso_sdk_version: 4.0.1526
-        # Ubuntu 20.04 - foxy
-          - os: ubuntu-20.04
-            ros_distro: foxy
-            ros_version: 2
-            ensenso_sdk_version: 4.2.1765
-          - os: ubuntu-20.04
-            ros_distro: foxy
-            ros_version: 2
-            ensenso_sdk_version: 4.1.1033
-          - os: ubuntu-20.04
-            ros_distro: foxy
-            ros_version: 2
-            ensenso_sdk_version: 4.0.1526
-        # Ubuntu 20.04 - noetic
-          - os: ubuntu-20.04
-            ros_distro: noetic
-            ros_version: 1
-            ensenso_sdk_version: 4.2.1765
-          - os: ubuntu-20.04
-            ros_distro: noetic
-            ros_version: 1
-            ensenso_sdk_version: 4.1.1033
-          - os: ubuntu-20.04
-            ros_distro: noetic
-            ros_version: 1
-            ensenso_sdk_version: 4.0.1526
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Prepare repo for ROS2 build
-        if: ${{ matrix.ros_version == '2' }}
+        if: ${{ matrix.ros_distro != 'noetic' }}
         run: ./.github/scripts/prepare_ros2_build.sh
         shell: bash
         env:
-          ROS_VERSION: ${{matrix.ros_version}}
+          ROS_VERSION: 2
           ROS_DISTRO: ${{matrix.ros_distro}}
 
       - name: Industrial CI - Build and Test
