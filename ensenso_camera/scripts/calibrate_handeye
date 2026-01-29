@@ -65,9 +65,9 @@ def _main(node_name):
         while time_until_capture > 0.8:
             start_sleep = node.get_clock().now()
             node.get_logger().info("Capturing next pattern in {}s.".format(time_until_capture))
-            ros2py.sleep(0.75)
+            ros2py.sleep(node, 0.75)
             time_until_capture -= node.get_clock().now() - start_sleep
-        ros2py.sleep(time_until_capture)
+        ros2py.sleep(node, time_until_capture)
 
     calibrate_hand_eye(node, calibrate_hand_eye_client)
 
