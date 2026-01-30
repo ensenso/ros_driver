@@ -41,7 +41,7 @@ def calibrate_hand_eye(node, client):
 def _main(node_name):
     node = ros2py.create_node(node_name, args=sys.argv)
 
-    capture_wait = ros2py.get_param(node, "capture_wait", 10.0)
+    capture_wait = ros2py.Duration(ros2py.get_param(node, "capture_wait", 10.0))
     count_poses = max(ros2py.get_param(node, "count_poses", 5), 6)
     timeout = ros2py.get_param(node, "timeout", 60)
 
@@ -61,12 +61,14 @@ def _main(node_name):
             break
 
         # ---- Move the robot to the next position.
-        time_until_capture = capture_wait - (node.get_clock().now() - start_capture)
-        while time_until_capture > 0.8:
+        time_until_capture = ros2py.sub_durations(capture_wait, (node.get_clock().now() - start_capture))
+        while time_until_capture > ros2py.Duration(0.8):
             start_sleep = node.get_clock().now()
-            node.get_logger().info("Capturing next pattern in {}s.".format(time_until_capture))
+            node.get_logger().info(
+                "Capturing next pattern in {}s".format(ros2py.duration_to_seconds(time_until_capture))
+            )
             ros2py.sleep(node, 0.75)
-            time_until_capture -= node.get_clock().now() - start_sleep
+            time_until_capture = ros2py.sub_durations(time_until_capture, (node.get_clock().now() - start_sleep))
         ros2py.sleep(node, time_until_capture)
 
     calibrate_hand_eye(node, calibrate_hand_eye_client)
