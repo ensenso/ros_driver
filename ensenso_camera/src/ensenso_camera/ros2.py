@@ -79,7 +79,7 @@ if is_ros2():
         def wait_for_response(self, timeout_sec=None):
             # Separate sending goal and waiting for response so that we can handle several clients at once by sending
             # all the goals first and then waiting until all clients have received the response.
-            self._event.wait(timeout_sec)
+            self._event.wait(duration_to_seconds(timeout_sec))
             self._response = ActionResponse(self._result.status, self._result.result)
 
         def response_callback(self, future):
@@ -99,11 +99,29 @@ if is_ros2():
         def get_response(self):
             return self._response
 
-    def Duration(sec):
-        return sec
+    def Duration(seconds):
+        return rclpy.duration.Duration(seconds=seconds)
 
-    def sleep(node, secs):
-        frequency = 1.0 / secs
+    def add_durations(a, b):
+        return rclpy.duration.Duration(nanoseconds=a.nanoseconds + b.nanoseconds)
+
+    def sub_durations(a, b):
+        return rclpy.duration.Duration(nanoseconds=a.nanoseconds - b.nanoseconds)
+
+    def duration_to_seconds(duration_or_seconds):
+        if duration_or_seconds is None:
+            return None
+        elif isinstance(duration_or_seconds, rclpy.duration.Duration):
+            return duration_or_seconds.nanoseconds / 1e9
+        else:
+            return duration_or_seconds
+
+    def duration_from_seconds(seconds):
+        return seconds
+
+    def sleep(node, duration_or_seconds):
+        seconds = duration_to_seconds(duration_or_seconds)
+        frequency = 1.0 / seconds
         rate = node.create_rate(frequency)
         rate.sleep()
 
@@ -153,7 +171,7 @@ if is_ros2():
         Returns True if the client established a server connection in the given amount of time, False otherwise.
         """
         node.get_logger().info("Connecting to action server {} ...".format(client._action_name))
-        if not client.wait_for_server(timeout_sec):
+        if not client.wait_for_server(duration_to_seconds(timeout_sec)):
             node.get_logger().error(SERVER_TIMEOUT_ERROR_MESSAGE)
             if exit:
                 sys.exit()
@@ -282,8 +300,20 @@ else:
         def now(self):
             return rospy.Time.now()
 
-    def Duration(sec):
-        return rospy.Duration(sec)
+    def Duration(seconds):
+        return rospy.Duration(seconds)
+
+    def add_durations(a, b):
+        return a + b
+
+    def sub_durations(a, b):
+        return a - b
+
+    def duration_to_seconds(d):
+        return d.to_sec()
+
+    def duration_from_seconds(sec):
+        return Duration(sec)
 
     def sleep(node, secs):
         rospy.sleep(secs)

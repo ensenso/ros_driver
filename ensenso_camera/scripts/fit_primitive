@@ -97,7 +97,7 @@ def _main(node_name):
                 marker.id = marker_id
                 marker.type = Marker.CUBE
                 marker.action = Marker.ADD
-                marker.lifetime = ros2py.Duration(1)
+                marker.lifetime = ros2py.duration_from_seconds(1)
                 marker.color.a = 1.0
                 marker.color.r = 1.0
                 marker.color.g = 0.0
