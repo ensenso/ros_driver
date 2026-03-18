@@ -16,6 +16,7 @@ def _main(node_name):
     loop_rate = ros2py.get_param(node, "rate", 2.0)
     parameter_set = ros2py.get_param(node, "parameter_set", "image_stream")
     timeout = ros2py.get_param(node, "timeout", 60)
+    use_front_light = ros2py.get_param(node, "front_light", True)
     use_rectified_image = ros2py.get_param(node, "rectified", False)
     use_right_image = ros2py.get_param(node, "right", False)
 
@@ -29,7 +30,7 @@ def _main(node_name):
 
     parameters = [
         Parameter(key=Parameter.PROJECTOR, bool_value=False),
-        Parameter(key=Parameter.FRONT_LIGHT, bool_value=True),
+        Parameter(key=Parameter.FRONT_LIGHT, bool_value=use_front_light),
     ]
     set_parameter_goal = SetParameter.Goal(parameter_set=parameter_set, parameters=parameters)
     ros2py.send_action_goal(node, set_parameter_client, set_parameter_goal)
