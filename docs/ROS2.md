@@ -26,7 +26,7 @@ Before we can build the ament workspace we have to install an Ensenso SDK and so
 have an Ensenso SDK installed, you can run:
 ```
 export ENSENSO_INSTALL=/opt/ensenso
-export ENSENSO_SDK_VERSION=3.3.1385
+export ENSENSO_SDK_VERSION=4.3.880
 # Omit the next lines if you have ROS2 sourced, otherwise replace <your-ros-distro> (e.g. with "humble").
 export ROS_VERSION=2
 export ROS_DISTRO=<your-ros-distro>
