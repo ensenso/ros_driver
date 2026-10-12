@@ -27,6 +27,7 @@ private:
 
   /// Original object transforms in the base frame
   std::vector<tf2::Transform> originalTransforms;
+  std::vector<std::string> objectFrames;
 
   std::string objectsFrame;  ///< Frame in which objects are defined
   std::string linkFrame;     ///< Link frame where NxLib expects the objects to be defined
