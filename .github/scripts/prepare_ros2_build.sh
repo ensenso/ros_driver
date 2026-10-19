@@ -35,13 +35,11 @@ if [[ $ROS_VERSION -eq "2" ]]; then
     echo "Preparing repository for ROS2"
 
     ignore_ros1_package "ensenso_camera"
-    ignore_ros1_package "ensenso_camera_msgs"
     ignore_ros1_package "ensenso_camera_test"
     ignore_ros1_package "ensenso_description"
     ignore_ros1_package "ensenso_driver"
 
     recognize_ros2_package "ensenso_camera2"
-    recognize_ros2_package "ensenso_camera_msgs2"
     recognize_ros2_package "ensenso_camera_test2"
     recognize_ros2_package "ensenso_description2"
     recognize_ros2_package "ensenso_driver2"
@@ -55,9 +53,6 @@ if [[ $ROS_VERSION -eq "2" ]]; then
     # ensenso_camera - Python
     copy_to_nonexistent_dir "ensenso_camera/src/ensenso_camera/*.py" "ensenso_camera2/ensenso_camera"
 
-    # ensenso_camera_msgs
-    copy_to_nonexistent_dir "ensenso_camera_msgs/action/*" "ensenso_camera_msgs2/action"
-    copy_to_nonexistent_dir "ensenso_camera_msgs/msg/*" "ensenso_camera_msgs2/msg"
 
     # ensenso_camera_test
     copy_to_nonexistent_dir "ensenso_camera_test/data/*" "ensenso_camera_test2/data"
