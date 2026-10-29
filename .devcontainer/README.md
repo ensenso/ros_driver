@@ -8,4 +8,4 @@
 - The script lets you select one of the available tests
 - For any other ROS command, the ROS overlay and the workspace overlay have to be sourced first
 - This can be done by running `source overlay.sh`
-- In case of ROS2, the repository structure is changed such that it can be built with ROS2; the corresponding changes are committed as well as any pre-existing changes in the working tree before preparing the ROS2 build
+- In case of ROS1, the repository structure is changed such that it can be built with ROS1; the corresponding changes are committed as well as any pre-existing changes in the working tree before preparing the ROS1 build
