@@ -54,12 +54,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare repo for ROS2 build
-        if: ${{ matrix.ros_distro != 'noetic' }}
-        run: ./.github/scripts/prepare_ros2_build.sh
+      - name: Prepare repo for ROS1 build
+        if: ${{ matrix.ros_distro == 'noetic' }}
+        run: ./.github/scripts/prepare_ros1_build.sh
         shell: bash
         env:
-          ROS_VERSION: 2
+          ROS_VERSION: 1
           ROS_DISTRO: ${{matrix.ros_distro}}
 
       - name: Industrial CI - Build and Test
