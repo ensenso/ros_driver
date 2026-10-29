@@ -1,21 +1,20 @@
 # Official ROS driver for [Ensenso](http://www.ensenso.com) stereo cameras [![Build&Test](https://github.com/ensenso/ros_driver/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/ensenso/ros_driver/actions/workflows/build-and-test.yml)
 
-
 ## Documentation
 
-To get started with the package, take a look at the [ROS wiki](http://wiki.ros.org/ensenso_driver).
+This package is ready to be used with ROS2. Take a look at the [getting started guide](docs/getting-started.md) for an introduction to the package.
 
-If you want to use the package with ROS2, see our [ROS2 documentation](docs/ROS2.md) on how to build for ROS2 and for
-further information.
+If you want to use the package with ROS1, see our [ROS1 documentation](docs/ros1.md) on how to build for ROS1 and for further information.
 
 ## Remarks
- * For using this package, you need to have the [Ensenso SDK](https://www.ensenso.com/support/sdk-download) installed.
- * Ensenso B-Series cameras require at least version 2.1.3
- * Ensenso C-Series cameras require at least version 2.1.1
- * Ensenso S- and XR-Series cameras require at least version 1.7.0.
- * Version 1.7.0 and newer requires at least Ensenso SDK 3.0.
- * Version 1.6.3 and older requires at least Ensenso SDK 2.0. Older versions are not supported.
- * All inputs and outputs of this package are in meters and seconds, as the convention for ROS requires. This is different from the NxLib, which uses millimeters and milliseconds.
+
+- For using this package, you need to have the [Ensenso SDK](https://www.ensenso.com/support/sdk-download) installed.
+- Ensenso B-Series cameras require at least version 2.1.3
+- Ensenso C-Series cameras require at least version 2.1.1
+- Ensenso S- and XR-Series cameras require at least version 1.7.0.
+- Version 1.7.0 and newer requires at least Ensenso SDK 3.0.
+- Version 1.6.3 and older requires at least Ensenso SDK 2.0. Older versions are not supported.
+- All inputs and outputs of this package are in meters and seconds, as the convention for ROS requires. This is different from the NxLib, which uses millimeters and milliseconds.
 
 ## Report a Bug
 
