@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Install script for external dependencies such as the Esenso SDK.
+# Install script for external dependencies such as the Ensenso SDK.
 
 set -e
 
