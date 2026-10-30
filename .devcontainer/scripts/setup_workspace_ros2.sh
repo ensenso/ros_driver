@@ -7,7 +7,7 @@ cd /home/ws/
 echo -e "\n=== Running rosdep update and install =================================================="
 mkdir -p log
 echo -e "Updating ..."
-rosdep update > log/rosdep_update.log
+rosdep update --rosdistro ${ROS_DISTRO} > log/rosdep_update.log
 echo -e "Installing ..."
 rosdep install -i --from-paths src --rosdistro ${ROS_DISTRO} -y > log/rosdep_install.log
 
