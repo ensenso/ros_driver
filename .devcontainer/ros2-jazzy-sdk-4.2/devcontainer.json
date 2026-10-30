@@ -1,12 +1,12 @@
 {
-  "name": "ROS2-Jazzy-SDK-3.6",
+  "name": "ROS2-Jazzy-SDK-4.2",
   "privileged": true,
   "remoteUser": "rosdev",
   "build": {
     "dockerfile": "../Dockerfile-ROS2-Jazzy",
     "args": {
       "USERNAME": "rosdev",
-      "ENSENSO_SDK_VERSION": "3.6.1631"
+      "ENSENSO_SDK_VERSION": "4.2.1765"
     }
   },
   "workspaceFolder": "/home/ws/",
